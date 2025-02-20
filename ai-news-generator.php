@@ -1,21 +1,20 @@
 <?php
 /**
  * Plugin Name: AI News Generator
- * Description: Automatically generates AI-powered news articles and publishes them as WordPress posts.
+ * Description: Automatically generates and publishes AI-powered news articles as WordPress posts.
  * Version: 1.0
  * Author: Your Name
  */
 
-
- /*
- TODO: add a property to the prmopt [active / inactive] and exclude inactive prmpts
- TODO: return another entity for the article and save it with the data of the post [like excerpt] 
- TODO: let the function read the previous posts and make the new post exclude all topics mentioned in the posts publishd the last week
- TODO: create a git repo for this plugin
- TODO: Add an proprty to the prmpt [category] and let the generated post be in the same category
- TODO: create the category if not exists
- TODO: parametarize the schedule information
- TODO: check for the liability of the plugin, and is it ok to make it public
+/*
+ TODO: Add a property to the prompt to mark it as active or inactive, and exclude inactive prompts.
+ TODO: Return additional metadata for the article and save it with the post data (e.g., excerpt).
+ TODO: Ensure the function reads previous posts and excludes topics mentioned in posts published in the last week.
+ TODO: Create a Git repository for this plugin.
+ TODO: Add a category property to the prompt and assign the generated post to the specified category.
+ TODO: Create the post category if it does not exist.
+ TODO: Parameterize the schedule information.
+ TODO: Check the plugin's liability and determine if it is suitable for public release.
  */
 if (!defined('ABSPATH')) exit; // Prevent direct access
 
@@ -34,6 +33,35 @@ register_deactivation_hook(__FILE__, function() {
 // Hook into WP Cron to generate AI content
 add_action('generate_ai_news_cron', 'generate_ai_news');
 
+function get_recent_post_excerpts($days = 10) {
+    $args = [
+        'post_type'      => 'post',
+        'posts_per_page' => -1,
+        'date_query'     => [
+            [
+                'after' => date('Y-m-d', strtotime('-' . $days . ' days')),
+                'inclusive' => true,
+            ]
+        ]
+    ];
+    
+    $query = new WP_Query($args);
+    $excerpts = [];
+    
+    if ($query->have_posts()) {
+        while ($query->have_posts()) {
+            $query->the_post();
+            $excerpts[] = [
+                'title' => get_the_title(),
+                'excerpt' => get_the_excerpt(),
+                'link' => get_permalink()
+            ];
+        }
+    }
+    wp_reset_postdata();
+    
+    return $excerpts;
+}
 
 function generate_ai_newsx() {
     $api_key = get_option('openai_api_key'); // Store API key in WP options
@@ -53,6 +81,9 @@ function generate_ai_newsx() {
     $errors = [];
     $successes = [];
 
+    // Get recent post excerpts
+    $recent_posts = get_recent_post_excerpts(10);
+    
     foreach ($settings['prompts'] as $prompt) {
         if (empty($prompt['text'])) continue;
 
@@ -69,6 +100,8 @@ function generate_ai_newsx() {
                 'messages' => [
                     ['role' => 'system', 'content' => $merged_settings['system_content'] ?? 'You are an expert writer specializing in immigration topics.'],
                     ['role' => 'user', 'content' => $prompt['text']],
+                    ['role' => 'user', 'content' => 'Here are summaries of recent articles to avoid repetition. Reference them when needed:
+                        ' . json_encode($recent_posts, JSON_PRETTY_PRINT)],
                 ],
                 'max_tokens' => (int) ($merged_settings['max_tokens'] ?? 1500),
             ]),
@@ -141,7 +174,9 @@ function generate_ai_news() {
 
     // Default settings
     $default_settings = $settings['default_settings'] ?? [];
-    
+    // Get recent post excerpts
+    $recent_posts = get_recent_post_excerpts(20);
+
     foreach ($settings['prompts'] as $prompt) {
         if (empty($prompt['text'])) continue;
 
@@ -156,15 +191,16 @@ function generate_ai_news() {
             'body' => json_encode([
                 'model' => $merged_settings['model'] ?? 'gpt-4-turbo',
                 'messages' => [
-                    ['role' => 'system', 'content' => $merged_settings['system_content'] ?? 'You are an expert writer specializing in immigration topics. Ensure the response is formatted as a JSON object with keys: title and content.'],
+                    ['role' => 'system', 'content' => $merged_settings['system_content'] ?? 'You are an expert writer specializing in immigration topics. Search the internet for the latest news on this topic and generate an article including references to the sources used. Ensure all sources are reputable and properly cited, and include list of references at the end of the article.'],
                     ['role' => 'user', 'content' => $prompt['text']],
+                    ['role' => 'user', 'content' => "Here are summaries of recent articles to avoid repetition. Reference them when needed:\n" . json_encode($recent_posts, JSON_PRETTY_PRINT)]
+
                 ],
                 'max_tokens' => (int)$merged_settings['max_tokens'] ?? 1500,
                 'response_format' => ['type' => 'json_object']
             ], JSON_PRETTY_PRINT),
             'timeout' => $merged_settings['timeout'] ?? 30,
         ]);
-
         if (is_wp_error($response)) {
             error_log('❌ ERROR: OpenAI API Request failed: ' . $response->get_error_message());
             continue;
