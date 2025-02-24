@@ -27,13 +27,14 @@ function get_recent_post_excerpts($days = 10, $category = '') {
         }
     }
     wp_reset_postdata();
-    error_log('ℹ️ Retrieved ' . count($excerpts) . ' recent post excerpts.');
-    error_log(print_r($excerpts, true));
+    // error_log('ℹ️ Retrieved ' . count($excerpts) . ' recent post excerpts.');
+    // error_log(print_r($excerpts, true));
     return $excerpts;
 }
 
 
 function generate_ai_news() {
+    error_log ("started generating news");
     $api_key = get_option('openai_api_key'); // Store API key in WP options
     if (!$api_key) {
         error_log('❌ ERROR: OpenAI API Key is missing.');

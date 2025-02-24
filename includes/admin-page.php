@@ -20,11 +20,11 @@ add_action('manage_post_posts_custom_column', function ($column, $post_id) {
 }, 10, 2);
 
 
-
 function ai_news_settings_page() {
     if (isset($_POST['save_api_key'])) {
         update_option('openai_api_key', sanitize_text_field($_POST['openai_api_key']));
         echo '<div class="updated"><p>✅ OpenAI API Key saved!</p></div>';
+        error_log('OpenAI API Key saved!');
         update_option('news_api_key', sanitize_text_field($_POST['news_api_key']));
         echo '<div class="updated"><p>✅ News API Key saved!</p></div>';
         update_option('unsplash_api_key', sanitize_text_field($_POST['unsplash_api_key']));
@@ -72,7 +72,7 @@ function ai_news_settings_page() {
             <input type="text" name="unsplash_api_secret" value="<?php echo esc_attr(get_option('unsplash_api_secret')); ?>" style="width: 40%;">
             
             <br><br>
-            <label for="pexels_api_key">Key</label>
+            <label for="pexels_api_key">Pexels Key</label>
             <input type="text" name="pexels_api_key" value="<?php echo esc_attr(get_option('pexels_api_key')); ?>" style="width: 100%;">
             <br><br>       
 
@@ -126,4 +126,6 @@ function ai_news_settings_page() {
     </div>
 
     <?php
+
 }
+
