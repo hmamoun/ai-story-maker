@@ -13,6 +13,7 @@ get_header();
         <header class="ai-news-header">
             <h1><?php the_title(); ?></h1>
             <p class="ai-news-meta">Published on <?php echo get_the_date();?></p>
+
         </header>
         <section class="ai-news-content">
             <?php the_content(); ?>
@@ -38,13 +39,14 @@ get_header();
 
     <!-- Sidebar for Other News and Search -->
     <aside class="ai-news-sidebar">
+    <p><a href="<?php echo home_url(); ?>">Back to Home</a></p> 
         <form role="search" method="get" class="search-form" onsubmit="return false;">
             <input type="search" class="search-field" placeholder="Search news..." value="<?php echo get_search_query(); ?>" name="s" id="ai-news-search">
             <button type="button" id="ai-news-search-btn">Search</button>
         </form>
 
         <section class="ai-news-related">
-            <h2>Other News</h2>
+            <h2>Other News and Articles</h2>
             <ul class="ai-news-list" id="ai-news-results">
                 <?php
                 $search_query = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
@@ -88,6 +90,7 @@ get_header();
         max-width: 1000px;
         margin: auto;
         padding: 20px;
+        background: white; /* Added background color */
     }
     .ai-news-article {
         flex: 2;
