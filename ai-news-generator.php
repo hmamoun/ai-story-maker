@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: AI News Generator
+ * Plugin Name: WP AI Story Maker
  * Description: Automatically generates and publishes AI-powered news articles as WordPress posts.
  * Version: 1.0
  * Author: Your Name

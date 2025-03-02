@@ -56,7 +56,7 @@ function ai_news_settings_page() {
 
     ?>
     <div class="wrap">
-        <h1>AI News Generator Settings</h1>
+        <h1>WP AI Story Maker Settings</h1>
         <form method="POST">
             <label for="openai_api_key">OpenAI API Key:</label>
             <input type="text" name="openai_api_key" value="<?php echo esc_attr(get_option('openai_api_key')); ?>" style="width: 100%;">
