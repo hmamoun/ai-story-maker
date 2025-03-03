@@ -1,40 +1,40 @@
-# AI News Generator - WordPress Plugin
+for each post, the toal token and the api request id is saved as pst meta data
+TODO: get picture from pexels in addition to unsplash
+TODO set the auther of the storeis in the settings
 
-## 📌 Overview
-The **AI News Generator** is a WordPress plugin that automates the creation of **SEO-optimized** news articles using OpenAI's API. It generates and publishes AI-powered news posts based on predefined prompts, making content management effortless and efficient.
 
-## 🔹 Features
-✔ **Automated AI-Generated Content** – Uses OpenAI’s GPT-4 to generate high-quality articles.  
-✔ **Customizable Prompts** – Define multiple prompts in WordPress settings for varied content.  
-✔ **Structured JSON Responses** – Ensures AI responses are formatted with `title` and `content`.  
-✔ **WP Cron Integration** – Schedules automatic content generation without manual intervention.  
-✔ **Admin Panel Settings** – Easily configure OpenAI API key, prompts, and scheduling preferences.  
-✔ **Error Handling & Logging** – Provides clear debugging logs for API issues.  
+instruction
+register in open ai and get an API key, save it in the story maker admin page
+register in unsplash and get an API key and secret
 
-## 🔧 Installation & Setup
-Clone the repository into your WordPress plugins directory:
-```sh
-git clone https://github.com/YOUR-USERNAME/ai-news-generator.git wp-content/plugins/ai-news-generator
-```
-Activate the plugin from the **WordPress Admin Panel** under **Plugins**.  
-Navigate to **AI News Settings** to configure OpenAI API key and prompts.  
-The plugin will automatically generate and publish articles based on WP Cron scheduling.  
+add a prompt using the example here, (always include that it should mention the source)
 
-## 📜 Usage
-- **Manually Generate Articles:** Click the **"Generate AI News Now"** button in the admin panel.  
-- **Customize Content Generation:** Define prompts and AI parameters in JSON format.  
-- **Monitor Logs:** Check logs for successful posts and API errors.  
+{
+    "default_settings": {
+        "model": "gpt-4o-mini",
+        "max_tokens": "1500",
+        "timeout": "30",
+        "system_content": "You are an expert writer specializing in immigration topics. Return articles in JSON format. The response must strictly follow this structure: { \"title\": \"Article Title\", \"content\": \"Full article content...\", \"excerpt\": \"A short summary of the article...\", \"references\": [ {\"title\": \"Source 1\", \"link\": \"https:\/\/example.com\/source1\"}, {\"title\": \"Source 2\", \"link\": \"https:\/\/example.com\/source2\"} ] }"
+    },
+    "prompts": [
+        {
+            "text": "You are an expert writer specializing in immigration topics. Search the internet for the latest news on Canadian immigration policies and generate a well-structured, SEO-optimized article. Ensure the article is engaging, fact-based, and up to date. Provide a clear and compelling title.",
+            "category": "Policies",
+            "active": "0"
+        },
+        {
+            "text": "Write an article summarizing the latest statistics on Canadian immigration, covering permanent residency, temporary visas, and refugee intake. Ensure readability by structuring the content effectively and integrating insights from official data sources.",
+            "max_tokens": "1200",
+            "category": "Statistics",
+            "active": "0"
+        },
+        {
+            "text": "Write an engaging article with fun facts about a city in Canada. Use simple but captivating language. Within the article, insert a placeholder in the following format {img_unsplash:keyword1,keyword2,keyword3} using the most relevant keywords for fetching related images from Unsplash. we need at least 2 photos in the body of the article, and one as a heading image",
+            "max_tokens": "1200",
+            "category": "Fun Facts",
+            "active": "1"
+        }
+    ]
+}
 
-## 💡 Future Enhancements
-- Support for **custom post types and taxonomies**.  
-- Integration with **external news APIs** for enriched content.  
-- Enhanced **multi-language support** for broader audience reach.  
-
-## 📬 Contributing
-We welcome contributions! Please open an **issue** or submit a **pull request** to suggest improvements.  
-
-## 📜 License
-This project is licensed under the **MIT License** – free for personal and commercial use.  
-
----
-🚀 **Transform your WordPress site with AI-generated content today!** 🚀
+Instruct ChatGPT to insert the picture tag

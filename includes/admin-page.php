@@ -1,68 +1,107 @@
 <?php
-// Admin Page to Set OpenAI API Key
+/*
+This plugin is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+ */
+// Add the main menu item (Story Maker Settings)
 add_action('admin_menu', function() {
-    add_menu_page('AI News Settings', 'AI News', 'manage_options', 'ai-news-settings', 'ai_news_settings_page', 'dashicons-welcome-widgets-menus', 100);
+    // Main menu item
+    add_menu_page(
+        'Story Maker Settings', 
+        'Story Maker',          
+        'manage_options',       
+        'story-maker-settings', 
+        'fn_story_maker_settings_page', 
+        'dashicons-welcome-widgets-menus', 
+        9                    
+    );
+
+    // Add the submenu item (AI Story Logs) under the main menu
+    add_submenu_page(
+        'story-maker-settings', // Parent slug (same as the main menu's slug)
+        'AI Story Logs',        
+        'Story Maker Logs',     
+        'manage_options',       
+        'ai-storymaker-logs',   
+        'fn_ai_storymaker_logs_page' 
+    );
 });
+
+
 // Add custom columns to the admin post list
+
 add_filter('manage_post_posts_columns', function ($columns) {
-    $columns['ai_news_total_tokens'] = 'Total Tokens';
-    $columns['ai_news_request_id'] = 'Request ID';
+    $columns['story_maker_total_tokens'] = 'Total Tokens';
+    $columns['story_maker_request_id'] = 'Request ID';
     return $columns;
 });
 
 // Populate custom columns with AI metadata
 add_action('manage_post_posts_custom_column', function ($column, $post_id) {
-    if ($column === 'ai_news_total_tokens') {
-        echo esc_html(get_post_meta($post_id, 'ai_news_total_tokens', true) ?: 'N/A');
-    } elseif ($column === 'ai_news_request_id') {
-        echo esc_html(get_post_meta($post_id, 'ai_news_request_id', true) ?: 'N/A');
+    if ($column === 'story_maker_total_tokens') {
+        echo esc_html(get_post_meta($post_id, 'story_maker_total_tokens', true) ?: 'N/A');
+    } elseif ($column === 'story_maker_request_id') {
+        echo esc_html(get_post_meta($post_id, 'story_maker_request_id', true) ?: 'N/A');
     }
 }, 10, 2);
 
 
-function ai_news_settings_page() {
-    if (isset($_POST['save_api_key'])) {
+function fn_story_maker_settings_page() {
+    if (isset($_POST['save_settings'])) {
+        // if there are updates in schedules, clear current schedules
+        // check if intv_ai_storymaker_clear_log is different
+        if (get_option('intv_ai_storymaker_clear_log') != sanitize_text_field($_POST['intv_ai_storymaker_clear_log'])) {
+            wp_clear_scheduled_hook('sc_ai_storymaker_clear_log');
+        }
+        if (get_option('intv_ai_story_scheduled_generate') != sanitize_text_field($_POST['intv_ai_story_scheduled_generate'])) {
+            wp_clear_scheduled_hook('sc_ai_story_scheduled_generate');
+        }
+
         update_option('openai_api_key', sanitize_text_field($_POST['openai_api_key']));
-        echo '<div class="updated"><p>✅ OpenAI API Key saved!</p></div>';
-        error_log('OpenAI API Key saved!');
-        update_option('news_api_key', sanitize_text_field($_POST['news_api_key']));
-        echo '<div class="updated"><p>✅ News API Key saved!</p></div>';
         update_option('unsplash_api_key', sanitize_text_field($_POST['unsplash_api_key']));
         update_option('unsplash_api_secret', sanitize_text_field($_POST['unsplash_api_secret']));
-        echo '<div class="updated"><p>✅ Unsplash API Key and secret were saved!</p></div>';
-        update_option('pexels_api_key', sanitize_text_field($_POST['pexels_api_key']));
-        echo '<div class="updated"><p>✅ Pexels API Key and secret were saved!</p></div>';
+        update_option('intv_ai_storymaker_clear_log', sanitize_text_field($_POST['intv_ai_storymaker_clear_log']));
+        update_option('intv_ai_story_scheduled_generate', sanitize_text_field($_POST['intv_ai_story_scheduled_generate']));
+        echo '<div class="updated"><p>✅ Settings saved!</p></div>';
+        ai_storymaker_log('success', 'Settings saved ');
     }
 
     if (isset($_POST['save_prompts'])) {
-        $raw_json = stripslashes($_POST['ai_news_prompts']);
+        $raw_json = stripslashes($_POST['ai_story_prompts']);
         $decoded_json = json_decode($raw_json, true);
         
         // Ensure JSON decoding was successful
         if (!is_array($decoded_json)) {
             echo '<div class="error"><p>❌ Invalid JSON format. Please check and correct it.</p></div>';
+            ai_storymaker_log('success', '❌ Invalid JSON format. Please check and correct it. ');
         } else {
             // Sanitize the JSON content before saving
             array_walk_recursive($decoded_json, function (&$value) {
                 $value = sanitize_text_field($value);
             });
         
-            update_option('ai_news_prompts', json_encode($decoded_json, JSON_PRETTY_PRINT));
+            update_option('ai_story_prompts', json_encode($decoded_json, JSON_PRETTY_PRINT));
             echo '<div class="updated"><p>✅ Prompts saved successfully!</p></div>';
+            ai_storymaker_log('success', '✅ Prompts saved successfully! ');
         }
-        
-
     }
 
     ?>
     <div class="wrap">
         <h1>WP AI Story Maker Settings</h1>
         <form method="POST">
-            <label for="openai_api_key">OpenAI API Key:</label>
+            <label for="openai_api_key">OpenAI <a href=https://platform.openai.com/>API</a> Key:</label>
             <input type="text" name="openai_api_key" value="<?php echo esc_attr(get_option('openai_api_key')); ?>" style="width: 100%;">
-            <br><br>
+            <!-- <br><br>
             <label for="news_api_key"><a href="https://newsapi.org" target="_blank">News API</a>: </label>
-            <input type="text" name="news_api_key" value="<?php echo esc_attr(get_option('news_api_key')); ?>" style="width: 100%;">
+            <input type="text" name="news_api_key" value="<?php echo esc_attr(get_option('news_api_key')); ?>" style="width: 100%;"> -->
             <br><br>
             Secret and key for <a href="https://unsplash.com/" target="_blank">Unsplash Developers</a>, free source for photos :
             <br>
@@ -72,17 +111,26 @@ function ai_news_settings_page() {
             <input type="text" name="unsplash_api_secret" value="<?php echo esc_attr(get_option('unsplash_api_secret')); ?>" style="width: 40%;">
             
             <br><br>
-            <label for="pexels_api_key">Pexels Key</label>
+            <!-- <label for="pexels_api_key">Pexels Key</label>
             <input type="text" name="pexels_api_key" value="<?php echo esc_attr(get_option('pexels_api_key')); ?>" style="width: 100%;">
-            <br><br>       
+            <br><br>        -->
 
-            <input type="submit" name="save_api_key" value="Save API Key" class="button button-primary">
+            <label for="intv_ai_storymaker_clear_log">Log Retention by days</label>
+            <input type="text" name="intv_ai_storymaker_clear_log" value="<?php echo esc_attr(get_option('intv_ai_storymaker_clear_log')); ?>" style="width: 100px;text-align: center;">
+            <br><br>   
+
+            <label for="intv_ai_story_scheduled_generate">Create stories every </label>
+            <input type="text" name="intv_ai_story_scheduled_generate" value="<?php echo esc_attr(get_option('intv_ai_story_scheduled_generate')); ?>" style="width: 100px;text-align: center;"> Days. 
+
+            <br><br>  
+
+            <input type="submit" name="save_settings" value="Save settings" class="button button-primary">
         </form>
         
         <form method="POST">
             <h2>Prompts</h2>
             <?php
-                $raw_json = get_option('ai_news_prompts', '{}');
+                $raw_json = get_option('ai_story_prompts', '{}');
                 if (is_array($raw_json)) {
                     $raw_json = json_encode($raw_json, JSON_PRETTY_PRINT);
                 }
@@ -94,7 +142,7 @@ function ai_news_settings_page() {
                     $formatted_json = json_encode($decoded_json, JSON_PRETTY_PRINT);
                 }
                 ?>
-            <textarea name="ai_news_prompts" rows="10" style="width: 100%;"><?php echo esc_textarea($formatted_json); ?></textarea>
+            <textarea name="ai_story_prompts" rows="10" style="width: 100%;"><?php echo esc_textarea($formatted_json); ?></textarea>
             <br><br>
             <input type="submit" name="save_prompts" value="Save Prompts" class="button button-primary">
 
@@ -105,8 +153,8 @@ function ai_news_settings_page() {
 
     <hr>
 <?php
-    if (isset($_POST['generate_ai_news'])) {
-        $results = generate_ai_news();
+    if (isset($_POST['generate_ai_story'])) {
+        $results = generate_ai_story();
         if (!empty($results['errors'])) {
             foreach ($results['errors'] as $error) {
             echo '<div class="error"><p>' . esc_html($error) . '</p></div>';
@@ -119,9 +167,9 @@ function ai_news_settings_page() {
         }
     }
 ?>
-    <h2>Manually Generate AI News</h2>
+    <h2>Manually Generate Storeis</h2>
     <form method="POST">
-        <input type="submit" name="generate_ai_news" value="Generate AI News Now" class="button button-secondary">
+        <input type="submit" name="generate_ai_story" value="Generate Stories now Now" class="button button-secondary">
     </form>
     </div>
 

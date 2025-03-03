@@ -1,5 +1,16 @@
 <?
 /*
+This plugin is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+ */
+/*
 Replaces the following place holder in a text with a real image from unsplash
 {img_unsplash:keyword1,keyword2,keyword3}
 
@@ -25,11 +36,16 @@ function fetch_unsplash_image($keywords) {
     $response = wp_remote_get($url);
 
     if (is_wp_error($response)) {
-        return ''; // Return empty if there's an error
+        ai_storymaker_log('error', 'Error fetching Unsplash image: ' . $response->get_error_message());
+        return ''; 
     }
     $body = wp_remote_retrieve_body($response);
     $data = json_decode($body, true);
-    $image_index = array_rand($data['results']); // Pick a random image
+    if (empty($data['results'])) {
+        ai_storymaker_log('error', $data['errors'][0]);
+        return ''; 
+    }
+    $image_index = array_rand($data['results']); 
     if (!empty($data['results'][$image_index]['urls']['small'])) {
         $url = $data['results'][$image_index]['urls']['small'];
         $credits = $data['results'][$image_index]['user']['name'] . ' by unsplash.com';
@@ -42,7 +58,7 @@ function fetch_unsplash_image($keywords) {
     return ''; // Return empty if no images found
 }
 // Example usage:
-    // $article = "This is a fun {img_unsplash:Quebec City} fact about Canada. ";
-    // $updated_article = replace_image_placeholders($article);
-    // echo $updated_article; // Return article with real images
-    // exit();
+//     $article = "This is a fun {img_unsplash:Quebec City} fact about Canada. ";
+//     $updated_article = replace_image_placeholders($article);
+//     echo $updated_article; // Return article with real images
+// exit;
