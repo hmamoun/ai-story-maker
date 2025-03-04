@@ -56,19 +56,20 @@ add_action('manage_post_posts_custom_column', function ($column, $post_id) {
 function fn_story_maker_settings_page() {
     if (isset($_POST['save_settings'])) {
         // if there are updates in schedules, clear current schedules
-        // check if intv_ai_storymaker_clear_log is different
-        if (get_option('intv_ai_storymaker_clear_log') != sanitize_text_field($_POST['intv_ai_storymaker_clear_log'])) {
+        // check if opt_ai_storymaker_clear_log is different
+        if (get_option('opt_ai_storymaker_clear_log') != sanitize_text_field($_POST['opt_ai_storymaker_clear_log'])) {
             wp_clear_scheduled_hook('sc_ai_storymaker_clear_log');
         }
-        if (get_option('intv_ai_story_scheduled_generate') != sanitize_text_field($_POST['intv_ai_story_scheduled_generate'])) {
+        if (get_option('opt_ai_story_scheduled_generate') != sanitize_text_field($_POST['opt_ai_story_scheduled_generate'])) {
             wp_clear_scheduled_hook('sc_ai_story_scheduled_generate');
         }
 
         update_option('openai_api_key', sanitize_text_field($_POST['openai_api_key']));
         update_option('unsplash_api_key', sanitize_text_field($_POST['unsplash_api_key']));
         update_option('unsplash_api_secret', sanitize_text_field($_POST['unsplash_api_secret']));
-        update_option('intv_ai_storymaker_clear_log', sanitize_text_field($_POST['intv_ai_storymaker_clear_log']));
-        update_option('intv_ai_story_scheduled_generate', sanitize_text_field($_POST['intv_ai_story_scheduled_generate']));
+        update_option('opt_ai_storymaker_clear_log', sanitize_text_field($_POST['opt_ai_storymaker_clear_log']));
+        update_option('opt_ai_story_scheduled_generate', sanitize_text_field($_POST['opt_ai_story_scheduled_generate']));
+        update_option('opt_ai_story_auther', intval($_POST['opt_ai_story_auther']));
         echo '<div class="updated"><p>✅ Settings saved!</p></div>';
         ai_storymaker_log('success', 'Settings saved ');
     }
@@ -115,12 +116,25 @@ function fn_story_maker_settings_page() {
             <input type="text" name="pexels_api_key" value="<?php echo esc_attr(get_option('pexels_api_key')); ?>" style="width: 100%;">
             <br><br>        -->
 
-            <label for="intv_ai_storymaker_clear_log">Log Retention by days</label>
-            <input type="text" name="intv_ai_storymaker_clear_log" value="<?php echo esc_attr(get_option('intv_ai_storymaker_clear_log')); ?>" style="width: 100px;text-align: center;">
+            <label for="opt_ai_storymaker_clear_log">Log Retention: </label>
+            <input type="text" name="opt_ai_storymaker_clear_log" value="<?php echo esc_attr(get_option('opt_ai_storymaker_clear_log')); ?>" style="position: absolute;width: 100px;text-align: center;left: 300px;"> days.
             <br><br>   
+            
+            <label for="opt_ai_story_scheduled_generate">Create stories every </label>
+            <input type="text" name="opt_ai_story_scheduled_generate" value="<?php echo esc_attr(get_option('opt_ai_story_scheduled_generate')); ?>"style="position: absolute;width: 100px;text-align: center;left: 300px;"> days. 
 
-            <label for="intv_ai_story_scheduled_generate">Create stories every </label>
-            <input type="text" name="intv_ai_story_scheduled_generate" value="<?php echo esc_attr(get_option('intv_ai_story_scheduled_generate')); ?>" style="width: 100px;text-align: center;"> Days. 
+            <br><br>  
+            <label for="opt_ai_story_auther">Story auther: </label>
+            <?php
+            $users = get_users(array('role__in' => array('author', 'administrator')));
+            ?>
+            <select name="opt_ai_story_auther"style="position: absolute;width: 100px;text-align: center;left: 300px;">
+                <?php foreach ($users as $user) : ?>
+                    <option value="<?php echo esc_attr($user->ID); ?>" <?php selected(get_option('opt_ai_story_auther'), $user->ID); ?>>
+                        <?php echo esc_html($user->display_name); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
 
             <br><br>  
 

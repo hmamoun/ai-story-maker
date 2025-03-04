@@ -10,7 +10,7 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
  */
-function news_scrolling_bar() {
+function story_scrolling_bar() {
 
 
 
@@ -22,11 +22,11 @@ function news_scrolling_bar() {
     ]);
     if ($query->have_posts()) {
         ob_start();
-        echo '<div class="news-scroller">';
-        echo '<div class="news-items">';
+        echo '<div class="story-scroller">';
+        echo '<div class="story-items">';
         while ($query->have_posts()) {
             $query->the_post();
-            echo '<div class="news-item"><a href="' . get_permalink() . '">' . get_the_title() . '</a></div>';
+            echo '<div class="story-item"><a href="' . get_permalink() . '">' . get_the_title() . '</a></div>';
         }
         echo '</div>';
         echo '</div>';
@@ -36,7 +36,7 @@ function news_scrolling_bar() {
 
     return '<p>No news available.</p>';
 }
-add_shortcode('news_scroller', 'news_scrolling_bar');
+add_shortcode('story_scroller', 'story_scrolling_bar');
 add_action('wp_head', function() {
-    echo '<link rel="stylesheet" href="' . plugin_dir_url(__FILE__) . '../assets/news-style.css">';
+    echo '<link rel="stylesheet" href="' . plugin_dir_url(__FILE__) . '../assets/story-style.css">';
 });

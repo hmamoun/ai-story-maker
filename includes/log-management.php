@@ -68,7 +68,7 @@ function fn_ai_storymaker_clear_log(){
     $current_time = time();
     $next_scheduled = wp_next_scheduled('sc_ai_storymaker_clear_log');
     if ($next_scheduled < $current_time || !$next_scheduled) {
-        $interval = get_option('intv_ai_storymaker_clear_log', 30);
+        $interval = get_option('opt_ai_storymaker_clear_log', 30);
         $interval_seconds = $interval * DAY_IN_SECONDS;
         wp_clear_scheduled_hook('sc_ai_storymaker_clear_log');
         wp_schedule_single_event(time() + $interval_seconds, 'sc_ai_storymaker_clear_log');

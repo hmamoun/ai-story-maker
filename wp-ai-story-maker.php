@@ -24,7 +24,7 @@ if (!defined('ABSPATH')) exit; // Prevent direct access
 
 add_filter('template_include', function ($template) {
     if (is_single()) { // Applies to all single posts
-        $plugin_template = plugin_dir_path(__FILE__) . 'templates/single-ai-news.php';
+        $plugin_template = plugin_dir_path(__FILE__) . 'templates/single-ai-story.php';
         if (file_exists($plugin_template)) {
             return $plugin_template;
         } else {
@@ -43,7 +43,7 @@ include_once plugin_dir_path(__FILE__) . 'includes/generate-story.php';
 
 include_once plugin_dir_path(__FILE__) . 'includes/get-photos-unsplash.php';
 include_once plugin_dir_path(__FILE__) . 'includes/get-photos-pexels.php';
-include_once plugin_dir_path(__FILE__) . 'includes/news-scroller.php';
+include_once plugin_dir_path(__FILE__) . 'includes/story-scroller.php';
 
 register_activation_hook(__FILE__, 'ai_storymaker_create_log_table');
 

@@ -128,7 +128,7 @@ function generate_ai_story() {
             'post_status'  => 'publish',
             'post_author'  => 1,
             'post_category' => [get_cat_ID($category)],
-            'page_template' => 'single-ai-news.php',
+            'page_template' => 'single-ai-story.php',
             'meta_input'   => [
                 'ai_news_sources' => isset($parsed_content['references']) && is_array($parsed_content['references'])
                     ? json_encode($parsed_content['references'])
@@ -155,7 +155,7 @@ function fn_ai_story_scheduled_generate(){
     $current_time = time();
     $next_scheduled = wp_next_scheduled('sc_ai_story_scheduled_generate');
     if ($next_scheduled < $current_time || !$next_scheduled) {
-        $interval = get_option('intv_ai_story_scheduled_generate', 0);
+        $interval = get_option('opt_ai_story_scheduled_generate', 0);
         if ($interval < 1) {
             return;
         }
