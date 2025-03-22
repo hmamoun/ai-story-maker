@@ -29,7 +29,7 @@ function ai_storymaker_enqueue_admin_styles($hook) {
     }
     wp_enqueue_style(
         'ai-storymaker-admin-css',
-        plugin_dir_url(__FILE__) . 'assets/story-style-admin.css',
+        plugin_dir_url(__FILE__) . 'admin/css/story-style-admin.css',
         array(),
         '1.0'
     );
@@ -49,7 +49,7 @@ add_filter('template_include', function ($template) {
     }
     return $template;
 });
-include_once plugin_dir_path(__FILE__) . 'includes/admin-page.php';
+include_once plugin_dir_path(__FILE__) . 'admin/admin-page.php';
 include_once plugin_dir_path(__FILE__) . 'includes/generate-story.php';
 include_once plugin_dir_path(__FILE__) . 'includes/get-photos-unsplash.php';
 include_once plugin_dir_path(__FILE__) . 'includes/get-photos-pexels.php';
