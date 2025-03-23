@@ -37,25 +37,13 @@ function story_scrolling_bar() {
     
 }
 add_shortcode('story_scroller', 'story_scrolling_bar');
-    /*
-    The above code will create a shortcode  [story_scroller]  that will display the latest 5 posts in a scrolling bar. 
-    You can add the shortcode in your theme files or in the post content. 
-    Usage: 
-    [story_scroller] 
-    */
 
-
-    // add_action('wp_head', function() {
-    //     echo '<link rel="stylesheet" href="' . esc_html(plugin_dir_url(__FILE__)) . '../assets/story-style.css">';
-    // });
     
     function story_scroller_styles() {
-        $css_url = plugin_dir_url(__FILE__) . '../assets/story-style.css';
-
-    
+        $css_url = plugin_dir_url(__FILE__) . '../public/css/story-style.css';
         wp_enqueue_style('story-scroller', $css_url,
         [],
-        filemtime(plugin_dir_path(__FILE__) . 'css/story-scroller.css') // Versioning
+        filemtime(plugin_dir_path(__FILE__) . '../public/css/story-style.css') // Versioning
     );
     }
     add_action('wp_enqueue_scripts', 'story_scroller_styles',99);

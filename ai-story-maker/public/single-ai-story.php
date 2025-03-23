@@ -47,7 +47,20 @@ get_header();
 
     <!-- Sidebar for Other News and Search -->
     <aside class="ai-story-sidebar">
-    <p><a href="<?php echo esc_url(home_url()); ?>">Back to Home</a></p> 
+    <p><a href="<?php echo esc_url(home_url()); ?>">
+<?php
+// show the icon and the title of the website, add an anchro tag to the home page
+$custom_logo_id = get_theme_mod('custom_logo');
+$logo = wp_get_attachment_image_src($custom_logo_id, 'full');
+if (has_custom_logo()) {
+    echo '<img src="' . esc_url($logo[0]) . '" alt="' . get_bloginfo('name') . '">';
+} else {
+    echo get_bloginfo('name');
+}
+
+?>
+
+    </a></p> 
         <form role="search" method="get" class="search-form" onsubmit="return false;">
             <input type="search" class="search-field" placeholder="Search stories..." value="<?php echo get_search_query(); ?>" name="s" id="ai-story-search">
             <input type="hidden" id="search_nonce" value="<?php echo esc_html(wp_create_nonce('search_nonce')); ?>">
@@ -113,9 +126,9 @@ get_header();
 function enqueue_story_style() {
     wp_enqueue_style(
         'story-style',
-        plugin_dir_url(__FILE__) . '../assets/story-style.css',
+        plugin_dir_url(__FILE__) . '../public/css/story-style.css',
         array(), // No dependencies
-        filemtime(plugin_dir_path(__FILE__) . '../assets/story-style.css'), // Cache busting
+        filemtime(plugin_dir_path(__FILE__) . '../public/css/story-style.css'), // Cache busting
         'all' // Media type
     );
 }

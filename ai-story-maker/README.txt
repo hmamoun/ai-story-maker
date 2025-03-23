@@ -46,21 +46,35 @@ AI Story Maker
 
 ## 📂 Plugin Files & Structure
 ```
-/ai-Story Maker
- ├── LICENSE                        # GPLv2 or later license
- ├── README.md                      # Plugin documentation
- ├── assets
- │   └── story-style.css             # Styles for AI-generated stories
- ├── includes
- │   ├── admin-page.php              # Admin dashboard functionality
- │   ├── generate-story.php          # AI story generation logic
- │   ├── get-photos-pexels.php       # Fetch photos from Pexels (TODO: Not yet implemented)
- │   ├── get-photos-unsplash.php     # Fetch photos from Unsplash API
- │   ├── log-management.php          # Logging system for generated content
- │   └── story-scroller.php           # Story scroller feature [short-code] for AI stories
- ├── templates
- │   └── single-ai-story.php         # Template for displaying AI-generated stories
- └── ai-story-maker.php           # Main plugin file
+.
+├── LICENSE
+├── README.txt
+├── admin
+│   ├── class-ai-story-maker-admin.php
+│   ├── class-ai-story-maker-api-keys.php
+│   ├── class-ai-story-maker-prompt-editor.php
+│   ├── class-ai-story-maker-settings-page.php
+│   ├── css
+│   │   ├── index.php
+│   │   └── story-style-admin.css
+│   └── index.php
+├── ai-story-maker.php
+├── includes
+│   ├── generate-story.php
+│   ├── get-photos-unsplash.php
+│   ├── index.php
+│   ├── log-management.php
+│   ├── repository-open-graph.svg
+│   └── story-scroller.php
+├── languages
+│   └── index.php
+├── public
+│   ├── css
+│   │   ├── index.php
+│   │   └── story-style.css
+│   ├── index.php
+│   └── single-ai-story.php
+└── uninstall.php
 ```
 
 ## 📜 Guide to Writing a Sample Prompt

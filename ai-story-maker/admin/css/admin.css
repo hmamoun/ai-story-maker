@@ -48,3 +48,22 @@
 .ai-storymaker-settings .submit-button {
     margin-top: 20px;
 }
+.deleted-prompt {
+    text-decoration: line-through;
+    color: red;
+}
+
+
+/* New row styling */
+.new-prompt-row {
+    background-color: #e0f7fa !important;; /* Light cyan */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Row marked for deletion */
+.marked-for-deletion {
+    background-color: #ffccbc !important;; /* Light red/orange */
+    transition: opacity 0.5s ease, background-color 0.5s ease;
+    opacity: 0.5;
+}
