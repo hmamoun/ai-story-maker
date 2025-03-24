@@ -96,7 +96,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                         </td>
                         <td>
                             <button class="delete-prompt button button-danger" ><?php esc_html_e( 'Delete', 'ai-story-maker' ); ?></button>
-                            <button class="make-story button button-primary" data-index="<?php echo esc_attr( $index ); ?>"><?php esc_html_e( 'Make', 'ai-story-maker' ); ?></button>
+                            <!-- <button class="make-story button button-primary" data-index="<?php echo esc_attr( $index ); ?>"><?php esc_html_e( 'Make', 'ai-story-maker' ); ?></button> -->
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -107,8 +107,9 @@ if ( ! defined( 'ABSPATH' ) ) {
         <form method="POST" class="ai-storymaker-settings" id="prompt-form">
             <?php wp_nonce_field( 'save_story_prompts', 'story_prompts_nonce' ); ?>
             <input type="hidden" name="prompts" id="prompts-data" value="">
+            <input type="hidden" id="generate-story-nonce" value="<?php echo esc_attr( wp_create_nonce( 'generate_story_nonce' ) ); ?>">
             <input type="submit" name="save_prompts_v2" value="<?php esc_attr_e( 'Save Changes', 'ai-story-maker' ); ?>" class="button button-primary">
-            <button id="make-stories" class="button button-primary"><?php esc_html_e( 'Generate Active Stories', 'ai-story-maker' ); ?></button>
+            <button id="make-stories-button" class="button button-primary"><?php esc_html_e( 'Generate Active Stories', 'ai-story-maker' ); ?></button>
         </form>
     </div>
     <h2>Schedule</h2>

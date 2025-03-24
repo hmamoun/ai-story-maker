@@ -107,7 +107,8 @@ class Admin {
             <h2><?php esc_html_e( 'Welcome to AI Story Maker', 'ai-story-maker' ); ?></h2>
             <p><?php esc_html_e( 'AI Story Maker is a plugin that generates stories using OpenAI\'s GPT-3 model.', 'ai-story-maker' ); ?></p>
             <p><?php esc_html_e( 'To get started, you need to enter your OpenAI API key in the settings page.', 'ai-story-maker' ); ?></p>
-            <p><?php esc_html_e( 'You can also generate stories using the prompts page.', 'ai-story-maker' ); ?></p>
+            <p><?php esc_html_e( 'You can also generate stories using the prompts tab.', 'ai-story-maker' ); ?></p>
+            <p><?php esc_html_e( 'Stories will be saved as posts in your WordPress site, the plugin is shipped with a template to show posts, and a [story_scroller] shortcode', 'ai-story-maker' ); ?></p>
             <p>
                 <?php printf(
                     /* translators: %s: GitHub Wiki URL */
@@ -118,7 +119,6 @@ class Admin {
             <?php
 		} elseif ( 'prompts' === $active_tab ) {
 			// Include the prompt editor page.
-			//include 'admin-page-prompt-editor.php';
             $this->prompt_editor->render();
 			$nextRun           = date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), wp_next_scheduled( 'sc_ai_story_scheduled_generate' ) );
 			$currentServerDate = date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), current_time( 'timestamp' ) );

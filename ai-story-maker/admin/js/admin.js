@@ -1,89 +1,86 @@
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
     const promptList = document.getElementById("prompt-list");
     const prompt_form = document.getElementById("prompt-form");
     const promptsData = document.getElementById("prompts-data");
-    
+
     // Capture inline edits
     document.querySelectorAll(".editable").forEach(element => {
-        element.addEventListener("input", function() {
+        element.addEventListener("input", function () {
             element.dataset.changed = "true";
         });
     });
 
     // Toggle active checkbox
     document.querySelectorAll(".toggle-active").forEach(checkbox => {
-        checkbox.addEventListener("change", function() {
+        checkbox.addEventListener("change", function () {
             checkbox.dataset.changed = "true";
         });
     });
 
-    document.addEventListener("click", function(e) {
-        if (e.target && e.target.matches('.delete-prompt')) {
-            e.target.closest("tr").classList.add('marked-for-deletion');
+    document.addEventListener("click", function (e) {
+        if (e.target && e.target.matches(".delete-prompt")) {
+            e.target.closest("tr").classList.add("marked-for-deletion");
         }
     });
+
     // Add new prompt
     const addPromptBtn = document.getElementById("add-prompt");
     if (addPromptBtn) {
-        addPromptBtn.addEventListener("click", function() {
-        const promptList = document.getElementById("prompt-list");
-        const lastRow = promptList.querySelector("tr:last-child");
-        if (lastRow) {
-            const newRow = lastRow.cloneNode(true);
-            // Remove the deleted-prompt class from the new row
-            newRow.classList.remove("marked-for-deletion");
-            // Clear the changed attribute from the new row
-            newRow.querySelectorAll("[data-changed]").forEach(el => {
-                delete el.dataset.changed;
-            }
-            );
-            // add class unsaved-prompt to the new row, make it overwrite the default color
-            newRow.classList.add("new-prompt-row");
+        addPromptBtn.addEventListener("click", function () {
+            const promptList = document.getElementById("prompt-list");
+            const lastRow = promptList.querySelector("tr:last-child");
+            if (lastRow) {
+                const newRow = lastRow.cloneNode(true);
+                // Remove the deleted-prompt class from the new row
+                newRow.classList.remove("marked-for-deletion");
+                // Clear the changed attribute from the new row
+                newRow.querySelectorAll("[data-changed]").forEach(el => {
+                    delete el.dataset.changed;
+                });
+                // Add class unsaved-prompt to the new row, overriding the default color
+                newRow.classList.add("new-prompt-row");
 
-
-
-
-            // Reset editable text field to default content
-            const textEl = newRow.querySelector("[data-field='text']");
-            if (textEl) {
-                textEl.innerText = "New Prompt";
-                delete textEl.dataset.changed;
+                // Reset editable text field to default content
+                const textEl = newRow.querySelector("[data-field='text']");
+                if (textEl) {
+                    textEl.innerText = "New Prompt";
+                    delete textEl.dataset.changed;
+                }
+                // Reset category dropdown to its first option
+                const categorySelect = newRow.querySelector("[data-field='category'] select");
+                if (categorySelect) {
+                    categorySelect.selectedIndex = 0;
+                }
+                // Reset photos dropdown to its first option
+                const photosSelect = newRow.querySelector("[data-field='photos'] select");
+                if (photosSelect) {
+                    photosSelect.selectedIndex = 0;
+                }
+                // Uncheck active checkbox and clear changed attribute
+                const checkbox = newRow.querySelector("[data-field='active'] .toggle-active, [data-field='active'] input");
+                if (checkbox) {
+                    checkbox.checked = false;
+                    delete checkbox.dataset.changed;
+                }
+                promptList.appendChild(newRow);
             }
-            // Reset category dropdown to its first option
-            const categorySelect = newRow.querySelector("[data-field='category'] select");
-            if (categorySelect) {
-                categorySelect.selectedIndex = 0;
-            }
-            // Reset photos dropdown to its first option
-            const photosSelect = newRow.querySelector("[data-field='photos'] select");
-            if (photosSelect) {
-                photosSelect.selectedIndex = 0;
-            }
-            // Uncheck active checkbox and clear changed attribute
-            const checkbox = newRow.querySelector("[data-field='active'] .toggle-active, [data-field='active'] input");
-            if (checkbox) {
-                checkbox.checked = false;
-                delete checkbox.dataset.changed;
-            }
-            promptList.appendChild(newRow);
-        }
         });
     }
 
     // Handle form submission
     if (prompt_form) {
         prompt_form.addEventListener("submit", function (event) {
-            // remove the rows with the deleted-prompt class
-            document.querySelectorAll("marked-for-deletion").forEach(row => {
+            // Remove the rows with the marked-for-deletion class
+            document.querySelectorAll(".marked-for-deletion").forEach(row => {
                 row.remove();
-            }
-            );
+            });
+
             let settings = {
-                "default_settings": {
-                    "model": document.getElementById("model").value,
-                    "system_content": document.getElementById("system_content").value
+                default_settings: {
+                    model: document.getElementById("model").value,
+                    system_content: document.getElementById("system_content").value
                 },
-                "prompts": []
+                prompts: []
             };
 
             document.querySelectorAll("#prompt-list tr").forEach(row => {
@@ -107,4 +104,35 @@ document.addEventListener("DOMContentLoaded", function() {
             prompt_form.submit();
         });
     }
+});
+
+document.getElementById("make-stories-button").addEventListener("click", function (e) {
+    e.preventDefault();
+    const nonce = document.getElementById("generate-story-nonce").value;
+    fetch(ajaxurl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+            action: "generate_ai_story",
+            nonce: nonce
+        })
+    })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => { throw new Error(text) });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Show success messages (or update the UI accordingly)
+                console.log("Story generated:", data.data);
+            } else {
+                // Show error messages
+                console.error("Error generating story:", data.data);
+            }
+        })
+        .catch(error => {
+            console.error("Fetch error:", error);
+        });
 });

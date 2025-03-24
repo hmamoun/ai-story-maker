@@ -47,20 +47,23 @@ AI Story Maker
 ## 📂 Plugin Files & Structure
 ```
 .
-├── LICENSE
-├── README.txt
 ├── admin
+│   ├── css
+│   │   ├── admin.css
+│   │   └── index.php
+│   ├── js
+│   │   ├── admin.js
+│   │   └── index.php
+│   ├── templates
+│   │   ├── index.php
+│   │   └── prompt-editor-template.php
 │   ├── class-ai-story-maker-admin.php
 │   ├── class-ai-story-maker-api-keys.php
 │   ├── class-ai-story-maker-prompt-editor.php
 │   ├── class-ai-story-maker-settings-page.php
-│   ├── css
-│   │   ├── index.php
-│   │   └── story-style-admin.css
 │   └── index.php
-├── ai-story-maker.php
 ├── includes
-│   ├── generate-story.php
+│   ├── class-ai-story-maker-generator.php
 │   ├── get-photos-unsplash.php
 │   ├── index.php
 │   ├── log-management.php
@@ -74,7 +77,11 @@ AI Story Maker
 │   │   └── story-style.css
 │   ├── index.php
 │   └── single-ai-story.php
+├── LICENSE
+├── README.txt
+├── ai-story-maker.php
 └── uninstall.php
+
 ```
 
 ## 📜 Guide to Writing a Sample Prompt

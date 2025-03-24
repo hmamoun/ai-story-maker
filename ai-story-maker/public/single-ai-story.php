@@ -28,7 +28,7 @@ get_header();
         </section>
         <?php
         // Retrieve references from post meta
-        $references = get_post_meta(get_the_ID(), 'ai_story_sources', true);
+        $references = get_post_meta(get_the_ID(), '_ai_story_maker_sources', true);
         $references = json_decode($references, true); // Decode JSON if stored as JSON
         ?>
         <?php if (!empty($references) && is_array($references)) : ?>
@@ -136,3 +136,8 @@ enqueue_story_style();
 //add_action('wp_enqueue_scripts', 'enqueue_story_style');
 get_footer(); 
 ?>
+<footer class="ai-story-maker-footer">
+    <p>
+        This story is created by AI Story Maker, a plugin by <a href="https://exedotcom.ca" title="Exedotcom" rel="nofollow" style="color: inherit;">Exedotcom.ca</a>
+    </p>
+</footer>

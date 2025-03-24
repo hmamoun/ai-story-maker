@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-class Genrator {
+class Story_Generator {
 
     private $api_key;
     private $default_settings;
@@ -36,42 +36,30 @@ class Genrator {
      *
      * @return array
      */
-    public function get_recent_post_excerpts( $days = 10, $category = '' ) {
-        $args = [
-            'post_type'      => 'post',
-            'posts_per_page' => -1,
-            'date_query'     => [
-                [
-                    'after'     => gmdate( 'Y-m-d', strtotime( '-' . $days . ' days' ) ),
-                    'inclusive' => true,
-                ],
-            ],
-        ];
+    public function get_recent_post_excerpts($number_of_posts) {
+        $query = new \WP_Query(array(
+            'posts_per_page' => $number_of_posts,
+            'post_status' => 'publish',
+        ));
 
-        $query    = new WP_Query( $args );
-        $excerpts = [];
-
-        if ( $query->have_posts() ) {
-            while ( $query->have_posts() ) {
+        $excerpts = array();
+        if ($query->have_posts()) {
+            while ($query->have_posts()) {
                 $query->the_post();
-                $excerpts[] = [
-                    'title'   => get_the_title(),
-                    'excerpt' => get_the_excerpt(),
-                    'link'    => get_permalink(),
-                ];
+                $excerpts[] = get_the_excerpt();
             }
+            wp_reset_postdata();
         }
-        wp_reset_postdata();
 
         return $excerpts;
     }
+
 
     /**
      * Generate AI Story using OpenAI API
      */
     public function generate_ai_story() {
         $this->api_key = get_option( 'openai_api_key' );
-
         if ( ! $this->api_key ) {
             $this->log( 'error', 'OpenAI API Key is missing.' );
             return;
@@ -91,7 +79,7 @@ class Genrator {
         $recent_posts = $this->get_recent_post_excerpts( 20 );
 
         // Admin preset to guarantee required structure
-        $admin_prompt_settings = 'The response must strictly follow this structure: { "title": "Article Title", "content": "Full article content...", "excerpt": "A short summary of the article...", "references": [ {"title": "Source 1", "link": "https://yourdomain.com/source1"}, {"title": "Source 2", "link": "https://yourdomain.com/source2"} ] } return the real https tested domain for your references, not example.com';
+        $admin_prompt_settings = 'The response must strictly follow this json structure: { "title": "Article Title", "content": "Full article content...", "excerpt": "A short summary of the article...", "references": [ {"title": "Source 1", "link": "https://yourdomain.com/source1"}, {"title": "Source 2", "link": "https://yourdomain.com/source2"} ] } return the real https tested domain for your references, not example.com';
 
         foreach ( $settings['prompts'] as $prompt ) {
 
@@ -180,20 +168,21 @@ class Genrator {
                 'page_template' => 'single-ai-story.php',
                 'post_excerpt'  => isset( $parsed_content['excerpt'] ) ? $parsed_content['excerpt'] : 'No excerpt available.',
                 'meta_input'    => [
-                    'ai_story_sources'     => isset( $parsed_content['references'] ) && is_array( $parsed_content['references'] )
+                    '_ai_story_maker_sources'     => isset( $parsed_content['references'] ) && is_array( $parsed_content['references'] )
                         ? json_encode( $parsed_content['references'] )
                         : json_encode( [] ),
-                    'ai_story_total_tokens' => $total_tokens,
-                    'ai_story_request_id'   => $request_id,
+                    '_ai_story_maker_total_tokens' => $total_tokens,
+                    '_ai_story_maker_request_id'   => $request_id,
                 ],
             ];
 
             $post_id = wp_insert_post( $post_arr );
 
             if ( $post_id ) {
-                update_post_meta( $post_id, 'ai_story_sources', isset( $parsed_content['references'] ) && is_array( $parsed_content['references'] ) ? json_encode( $parsed_content['references'] ) : json_encode( [] ) );
-                update_post_meta( $post_id, 'ai_story_total_tokens', $total_tokens );
-                update_post_meta( $post_id, 'ai_story_request_id', $request_id );
+                update_post_meta( $post_id, '_ai_story_maker_sources', isset( $parsed_content['references'] ) && is_array( $parsed_content['references'] ) ? json_encode( $parsed_content['references'] ) : json_encode( [] ) );
+                update_post_meta( $post_id, '_ai_story_maker_total_tokens', $total_tokens );
+                update_post_meta( $post_id, '_ai_story_maker_request_id', $request_id );
+           
                 $this->log( 'success', 'AI-generated news article published: ' . get_permalink( $post_id ), $request_id );
             }
         }
@@ -224,5 +213,5 @@ class Genrator {
     }
 }
 
-// Initialize the AI Story Maker
-new Genrator();
+// // Initialize the AI Story Maker
+// new Story_Generator();
