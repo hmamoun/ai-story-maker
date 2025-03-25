@@ -49,6 +49,8 @@ class Admin {
         include_once plugin_dir_path( __FILE__ ) . 'class-ai-story-maker-prompt-editor.php';
         include_once plugin_dir_path( __FILE__ ) . 'class-ai-story-maker-api-keys.php';
         include_once plugin_dir_path( __FILE__ ) . 'class-ai-story-maker-settings-page.php';
+        include_once plugin_dir_path( __FILE__ ) . '../includes/class-ai-story-maker-log-manegement.php'; // Include the Log_Manager class
+
     }
 
     /**
@@ -118,22 +120,33 @@ class Admin {
             </p>
             <?php
 		} elseif ( 'prompts' === $active_tab ) {
-			// Include the prompt editor page.
             $this->prompt_editor->render();
-			$nextRun           = date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), wp_next_scheduled( 'sc_ai_story_scheduled_generate' ) );
-			$currentServerDate = date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), current_time( 'timestamp' ) );
-			$RemainingTime     = human_time_diff( current_time( 'timestamp' ), wp_next_scheduled( 'sc_ai_story_scheduled_generate' ) );
+
 
 		} elseif ( 'log' === $active_tab ) {
+            // Display the logs page.
+           \AI_Story_Maker\Log_Manager::display_logs_page();
+
+
         }
+        // Get the next time 'ai_story_generator_repeating_event' even will run
+        $next_event = wp_next_scheduled( 'ai_story_generator_repeating_event' );
+        if ( $next_event ) {
+            $time_diff = $next_event - time();
+            if ( $time_diff > 0 ) {
+            $days    = floor( $time_diff / ( 60 * 60 * 24 ) );
+            $hours   = floor( ( $time_diff % ( 60 * 60 * 24 ) ) / ( 60 * 60 ) );
+            $minutes = floor( ( $time_diff % ( 60 * 60 ) ) / 60 );
+            $next_event = sprintf( '%dd %dh %dm', $days, $hours, $minutes );
+            } else {
+            $next_event = 'Already passed, go to the Prompts tab and click "Generate Active Stories" to generate and reschedule.';
+            }
+        } else {
+            $next_event = 'Not scheduled';
+        }
+        echo '<p>' . esc_html__( 'Next scheduled story generation:', 'ai-story-maker' ) . ' ' . $next_event . '</p>';
 	}
 
-    // /**
-    //  * Renders the prompt editor page.
-    //  */
-    // public function render_prompt_editor() {
-    //     $this->prompt_editor->render();
-    // }
 
 }
 

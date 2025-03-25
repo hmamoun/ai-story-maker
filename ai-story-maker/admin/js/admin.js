@@ -62,6 +62,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     checkbox.checked = false;
                     delete checkbox.dataset.changed;
                 }
+                const promptIdEl = newRow.querySelector("[data-field='prompt_id']");
+                if (promptIdEl) {
+                    promptIdEl.value = "";
+                }
+
                 promptList.appendChild(newRow);
             }
         });
@@ -89,11 +94,13 @@ document.addEventListener("DOMContentLoaded", function () {
                     const categorySelect = row.querySelector("[data-field='category'] select");
                     const photosSelect = row.querySelector("[data-field='photos'] select");
                     const activeEl = row.querySelector("[data-field='active']");
+                    const prompt_id = row.querySelector("[data-field='prompt_id']");
                     settings.prompts.push({
                         text: textEl.innerText.trim(),
                         category: categorySelect ? categorySelect.value : "",
                         photos: photosSelect ? photosSelect.value : "",
-                        active: activeEl && activeEl.checked ? 1 : 0
+                        active: activeEl && activeEl.checked ? 1 : 0,
+                        prompt_id: prompt_id && prompt_id.value ? prompt_id.value : "prompt_" + Date.now() + "_" + Math.floor(Math.random() * 1000)
                     });
                 }
             });
@@ -106,6 +113,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 });
 
+// check if the button exists before adding the event listener
+if (document.getElementById("make-stories-button"))
 document.getElementById("make-stories-button").addEventListener("click", function (e) {
     e.preventDefault();
     const nonce = document.getElementById("generate-story-nonce").value;
@@ -113,7 +122,7 @@ document.getElementById("make-stories-button").addEventListener("click", functio
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({
-            action: "generate_ai_story",
+            action: "generate_ai_stories",
             nonce: nonce
         })
     })

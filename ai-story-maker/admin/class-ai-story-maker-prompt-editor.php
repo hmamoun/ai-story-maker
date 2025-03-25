@@ -32,6 +32,7 @@ class Prompt_Editor {
             $updated_prompts = isset( $_POST['prompts'] ) ? json_decode( stripslashes( $_POST['prompts'] ), true ) : [];
             update_option( 'ai_story_prompts', json_encode( $updated_prompts, JSON_PRETTY_PRINT ) );
             echo '<div class="updated"><p>✅ ' . esc_html__( 'Prompts saved successfully!', 'ai-story-maker' ) . '</p></div>';
+            Log_Manager::log( 'info', 'Prompts saved successfully.' );   
         }
 
         // Gather data for the view.
@@ -41,6 +42,7 @@ class Prompt_Editor {
         $default_settings = isset( $settings['default_settings'] ) ? $settings['default_settings'] : [];
         $categories       = get_categories( array( 'hide_empty' => false ) );
 
+
         if ( ! is_array( $prompts ) ) {
             $prompts = [];
         }
@@ -48,10 +50,16 @@ class Prompt_Editor {
             $prompts[] = [ 'text' => 'Write your first prompt here.. ', 'category' => '', 'photos' => 0, 'active' => false ];
         }
 
-        // Extract data so that the template file can access these variables.
-        extract( compact( 'prompts', 'default_settings', 'categories' ) );
+
+
+
+
+
+        // Prepare an associative array with the needed variables.
+        $data = compact( 'prompts', 'default_settings', 'categories' );
 
         // Load the view template.
         include plugin_dir_path( __FILE__ ) . 'templates/prompt-editor-template.php';
     }
+
 }

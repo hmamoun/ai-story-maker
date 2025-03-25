@@ -22,13 +22,13 @@ class Settings_Page {
 
 			if ( ! $story_maker_nonce || ! wp_verify_nonce( $story_maker_nonce, 'save_story_maker_settings' ) ) {
 				echo '<div class="error"><p>❌ ' . esc_html__( 'Security check failed. Please try again.', 'ai-story-maker' ) . '</p></div>';
-				ai_storymaker_log( 'error', '❌ Security check failed. Please try again.' );
+				Log_Manager::log(  'error', '❌ Security check failed. Please try again.' );
 				return;
 			}
 
 			if ( API_Keys::validate_openai_api_key( sanitize_text_field( wp_unslash( $_POST['openai_api_key'] ) ) ) === false ) {
 				echo '<div class="error"><p>❌ ' . esc_html__( 'Invalid OpenAI API key.', 'ai-story-maker' ) . '</p></div>';
-				ai_storymaker_log( 'error', '❌ Invalid OpenAI API key.' );
+				Log_Manager::log(  'error', '❌ Invalid OpenAI API key.' );
 				return;
 			}
 
@@ -40,8 +40,8 @@ class Settings_Page {
 			}
 
 			if (
-				isset( $_POST['opt_ai_story_scheduled_generate'] ) &&
-				get_option( 'opt_ai_storymaker_clear_log' ) !== sanitize_text_field( wp_unslash( $_POST['opt_ai_story_scheduled_generate'] ) )
+				isset( $_POST['opt_ai_story_repeat_interval_days'] ) &&
+				get_option( 'opt_ai_storymaker_clear_log' ) !== sanitize_text_field( wp_unslash( $_POST['opt_ai_story_repeat_interval_days'] ) )
 			) {
 				wp_clear_scheduled_hook( 'sc_ai_story_scheduled_generate' );
 			}
@@ -59,15 +59,15 @@ class Settings_Page {
 			if ( isset( $_POST['opt_ai_storymaker_clear_log'] ) ) {
 				update_option( 'opt_ai_storymaker_clear_log', sanitize_text_field( wp_unslash( $_POST['opt_ai_storymaker_clear_log'] ) ) );
 			}
-			if ( isset( $_POST['opt_ai_story_scheduled_generate'] ) ) {
-				update_option( 'opt_ai_story_scheduled_generate', sanitize_text_field( wp_unslash( $_POST['opt_ai_story_scheduled_generate'] ) ) );
+			if ( isset( $_POST['opt_ai_story_repeat_interval_days'] ) ) {
+				update_option( 'opt_ai_story_repeat_interval_days', sanitize_text_field( wp_unslash( $_POST['opt_ai_story_repeat_interval_days'] ) ) );
 			}
 			if ( isset( $_POST['opt_ai_story_auther'] ) ) {
 				update_option( 'opt_ai_story_auther', intval( $_POST['opt_ai_story_auther'] ) );
 			}
 
 			echo '<div class="updated"><p>✅ ' . esc_html__( 'Settings saved!', 'ai-story-maker' ) . '</p></div>';
-			ai_storymaker_log( 'success', 'Settings saved ' );
+			Log_Manager::log( 'info', 'Settings saved' );
 		}
 		?>
 		<div class="wrap">
@@ -110,13 +110,13 @@ class Settings_Page {
 					<?php endfor; ?>
 				</select>
 				<hr>
-				<label for="opt_ai_story_scheduled_generate"><?php esc_html_e( 'Generate New Stories Every (Days):', 'ai-story-maker' ); ?></label>
+				<label for="opt_ai_story_repeat_interval_days"><?php esc_html_e( 'Generate New Stories Every (Days):', 'ai-story-maker' ); ?></label>
 				<p>
 					<?php esc_html_e( 'AI Story Maker can automatically generate new stories at regular intervals. Set to 0 to disable scheduled generation.', 'ai-story-maker' ); ?>
 				</p>
-				<select name="opt_ai_story_scheduled_generate">
+				<select name="opt_ai_story_repeat_interval_days">
 					<?php for ( $i = 0; $i <= 30; $i++ ) : ?>
-						<option value="<?php echo $i; ?>" <?php selected( get_option( 'opt_ai_story_scheduled_generate' ), $i ); ?>>
+						<option value="<?php echo $i; ?>" <?php selected( get_option( 'opt_ai_story_repeat_interval_days' ), $i ); ?>>
 							<?php echo $i; ?> <?php esc_html_e( 'Day(s)', 'ai-story-maker' ); ?>
 						</option>
 					<?php endfor; ?>

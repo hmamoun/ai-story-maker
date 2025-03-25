@@ -20,7 +20,7 @@ $options = array(
 	'openai_api_key',
     'unsplash_api_key',
     'unsplash_api_secret',
-    'opt_ai_story_scheduled_generate',
+    'opt_ai_story_repeat_interval_days',
 
 );
 foreach ($options as $option) {
