@@ -66,7 +66,7 @@ AI Story Maker
 │   ├── class-ai-story-maker-story-generator.php
 │   ├── get-photos-unsplash.php
 │   ├── index.php
-│   ├── class-ai-story-maker-log-manegement.php.php
+│   ├── class-ai-story-maker-log-management.php.php
 │   ├── repository-open-graph.svg
 │   └── story-scroller.php
 ├── languages

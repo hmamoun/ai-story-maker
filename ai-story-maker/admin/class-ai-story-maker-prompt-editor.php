@@ -31,7 +31,7 @@ class Prompt_Editor {
             check_admin_referer( 'save_story_prompts', 'story_prompts_nonce' );
             $updated_prompts = isset( $_POST['prompts'] ) ? json_decode( stripslashes( $_POST['prompts'] ), true ) : [];
             update_option( 'ai_story_prompts', json_encode( $updated_prompts, JSON_PRETTY_PRINT ) );
-            echo '<div class="updated"><p>✅ ' . esc_html__( 'Prompts saved successfully!', 'ai-story-maker' ) . '</p></div>';
+            echo '<div id="ai-story-maker-messages" class="notice notice-info"><p>✅ ' . esc_html__( 'Prompts saved successfully!', 'ai-story-maker' ) . '</p></div>';
             Log_Manager::log( 'info', 'Prompts saved successfully.' );   
         }
 

@@ -15,7 +15,8 @@ GNU General Public License for more details.
  */
 // Get the post data
 if (!defined('ABSPATH')) exit;
-get_header();
+//get_header();
+wp_head();
 ?>
 <main class="ai-story-container">
     <article class="ai-story-article">
@@ -101,9 +102,11 @@ if (has_custom_logo()) {
                 }
             endwhile;
             wp_reset_postdata();
-        else :
+        endif;
+
+        if ($displayed_posts === 0) :
             ?>
-            <li>No results found. Please try a different search.</li>
+            <li>No other stories found.</li>
         <?php endif; ?>
     </ul>
 </section>
@@ -140,5 +143,5 @@ enqueue_story_style();
     </p>
 </footer>
 <?php
-get_footer(); 
+wp_footer()
 ?>

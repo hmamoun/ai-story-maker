@@ -1,6 +1,9 @@
 <?php
 /*
+/*
  * This plugin is free software; you can redistribute it and/or
+ */
+/*
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
@@ -29,15 +32,22 @@ class Admin {
      * Constructor registers the admin menu.
      */
     public function __construct() {
+
         // Load the additional class files.
+
+
         $this->load_dependencies();
-        $this->enqueue_scripts();
+        
+        // Hook the enqueue_scripts method to the admin_enqueue_scripts action.
+        add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+        // $this->enqueue_scripts();
 
         // Instantiate the page-specific classes.
         $this->prompt_editor = new Prompt_Editor();
         $this->api_keys = new API_Keys();
         $this->settings_page = new Settings_Page();
 
+ 
         // Register the admin menu.
         add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
     }
@@ -49,7 +59,7 @@ class Admin {
         include_once plugin_dir_path( __FILE__ ) . 'class-ai-story-maker-prompt-editor.php';
         include_once plugin_dir_path( __FILE__ ) . 'class-ai-story-maker-api-keys.php';
         include_once plugin_dir_path( __FILE__ ) . 'class-ai-story-maker-settings-page.php';
-        include_once plugin_dir_path( __FILE__ ) . '../includes/class-ai-story-maker-log-manegement.php'; // Include the Log_Manager class
+        include_once plugin_dir_path( __FILE__ ) . '../includes/class-ai-story-maker-log-management.php'; // Include the Log_Manager class
 
     }
 
@@ -83,6 +93,7 @@ class Admin {
     public function render_main_page() {
 		$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'welcome';
 		?>
+        <div id="ai-story-maker-messages" class="notice notice-info hidden"></div>
 		<h2 class="nav-tab-wrapper">
             <a href="?page=story-maker-settings&tab=welcome" class="nav-tab <?php echo ( $active_tab === 'welcome' ) ? 'nav-tab-active' : ''; ?>">
 				<?php esc_html_e( 'Welcome to AI Story Maker', 'ai-story-maker' ); ?>
@@ -118,7 +129,27 @@ class Admin {
                     '<a href="' . esc_url( 'https://github.com/hmamoun/ai-story-maker/wiki' )  . '" target="_blank">' . esc_html__( 'GitHub Wiki', 'ai-story-maker' ) . '</a>'
                 ); ?>
             </p>
+            
             <?php
+                // Get the next time 'ai_story_generator_repeating_event' even will run
+                $next_event = wp_next_scheduled( 'ai_story_generator_repeating_event' );
+                if ( $next_event ) {
+                    $time_diff = $next_event - time();
+                    if ( $time_diff > 0 ) {
+                    $days    = floor( $time_diff / ( 60 * 60 * 24 ) );
+                    $hours   = floor( ( $time_diff % ( 60 * 60 * 24 ) ) / ( 60 * 60 ) );
+                    $minutes = floor( ( $time_diff % ( 60 * 60 ) ) / 60 );
+                    $next_event = sprintf( '%dd %dh %dm', $days, $hours, $minutes );
+                    } else {
+                        $next_event = 'Already passed, go to the Prompts tab and click "Generate Active Stories" to generate and reschedule.';
+                    }
+                } else {
+                    $next_event = 'Not scheduled';
+                }
+                echo '<p>' . esc_html__( 'Next scheduled story generation:', 'ai-story-maker' ) . ' ' . $next_event . '</p>';
+
+
+
 		} elseif ( 'prompts' === $active_tab ) {
             $this->prompt_editor->render();
 
@@ -129,22 +160,7 @@ class Admin {
 
 
         }
-        // Get the next time 'ai_story_generator_repeating_event' even will run
-        $next_event = wp_next_scheduled( 'ai_story_generator_repeating_event' );
-        if ( $next_event ) {
-            $time_diff = $next_event - time();
-            if ( $time_diff > 0 ) {
-            $days    = floor( $time_diff / ( 60 * 60 * 24 ) );
-            $hours   = floor( ( $time_diff % ( 60 * 60 * 24 ) ) / ( 60 * 60 ) );
-            $minutes = floor( ( $time_diff % ( 60 * 60 ) ) / 60 );
-            $next_event = sprintf( '%dd %dh %dm', $days, $hours, $minutes );
-            } else {
-            $next_event = 'Already passed, go to the Prompts tab and click "Generate Active Stories" to generate and reschedule.';
-            }
-        } else {
-            $next_event = 'Not scheduled';
-        }
-        echo '<p>' . esc_html__( 'Next scheduled story generation:', 'ai-story-maker' ) . ' ' . $next_event . '</p>';
+    
 	}
 
 

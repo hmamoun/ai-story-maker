@@ -39,13 +39,6 @@ class Settings_Page {
 				wp_clear_scheduled_hook( 'schd_ai_story_maker_clear_log' );
 			}
 
-			if (
-				isset( $_POST['opt_ai_story_repeat_interval_days'] ) &&
-				get_option( 'opt_ai_storymaker_clear_log' ) !== sanitize_text_field( wp_unslash( $_POST['opt_ai_story_repeat_interval_days'] ) )
-			) {
-				wp_clear_scheduled_hook( 'sc_ai_story_scheduled_generate' );
-			}
-
 			// Update API keys and options.
 			if ( isset( $_POST['openai_api_key'] ) ) {
 				update_option( 'openai_api_key', sanitize_text_field( wp_unslash( $_POST['openai_api_key'] ) ) );
@@ -66,7 +59,7 @@ class Settings_Page {
 				update_option( 'opt_ai_story_auther', intval( $_POST['opt_ai_story_auther'] ) );
 			}
 
-			echo '<div class="updated"><p>✅ ' . esc_html__( 'Settings saved!', 'ai-story-maker' ) . '</p></div>';
+			echo '<div class="notice notice-info"><p>✅ ' . esc_html__( 'Settings saved!', 'ai-story-maker' ) . '</p></div>';
 			Log_Manager::log( 'info', 'Settings saved' );
 		}
 		?>

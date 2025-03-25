@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
-    const promptList = document.getElementById("prompt-list");
+
     const prompt_form = document.getElementById("prompt-form");
     const promptsData = document.getElementById("prompts-data");
 
@@ -117,6 +117,9 @@ document.addEventListener("DOMContentLoaded", function () {
 if (document.getElementById("make-stories-button"))
 document.getElementById("make-stories-button").addEventListener("click", function (e) {
     e.preventDefault();
+
+    this.disabled = true;
+
     const nonce = document.getElementById("generate-story-nonce").value;
     fetch(ajaxurl, {
         method: "POST",
@@ -134,14 +137,22 @@ document.getElementById("make-stories-button").addEventListener("click", functio
         })
         .then(data => {
             if (data.success) {
-                // Show success messages (or update the UI accordingly)
-                console.log("Story generated:", data.data);
+                const messageDiv = document.getElementById("ai-story-maker-messages");
+                messageDiv.className = "notice notice-success visible";
+                messageDiv.innerText = "Story generated successfully!";
+
             } else {
-                // Show error messages
-                console.error("Error generating story:", data.data);
+                const messageDiv = document.createElement("div");
+                messageDiv.className = "notice notice-error visible";
+                messageDiv.innerText = "Error generating stories please check the logs!";
             }
         })
         .catch(error => {
             console.error("Fetch error:", error);
+        })
+        .finally(() => {
+            this.disabled = false;
         });
 });
+
+

@@ -44,26 +44,33 @@ class Story_Generator {
      * Generate AI Story using OpenAI API.
      */
     public function generate_ai_stories() {
-
+        $results = array(
+            'errors'    => array(),
+            'successes' => array(),
+        );
+    
         $this->api_key = get_option( 'openai_api_key' );
         if ( ! $this->api_key ) {
-            Log_Manager::log(  'error', __( 'OpenAI API Key is missing.', 'ai-story-generator' ) );
-            return;
+            $error = __( 'OpenAI API Key is missing.', 'ai-story-generator' );
+            Log_Manager::log( 'error', $error );
+            $results['errors'][] = $error;
+            wp_send_json_error( $results );
         }
-
+    
         $raw_settings = get_option( 'ai_story_prompts', '' );
         $settings     = json_decode( $raw_settings, true );
-
+    
         if ( json_last_error() !== JSON_ERROR_NONE || empty( $settings['prompts'] ) ) {
-            Log_Manager::log(  'error', __( 'Invalid JSON format or no prompts found.', 'ai-story-generator' ) );
-            return;
+            $error = __( 'Invalid JSON format or no prompts found.', 'ai-story-generator' );
+            Log_Manager::log( 'error', $error );
+            $results['errors'][] = $error;
+            wp_send_json_error( $results );
         }
-
+    
         $this->default_settings = isset( $settings['default_settings'] ) ? $settings['default_settings'] : array();
         $recent_posts           = $this->get_recent_post_excerpts( 20 );
         $admin_prompt_settings  = __( 'The response must strictly follow this json structure: { "title": "Article Title", "content": "Full article content...", "excerpt": "A short summary of the article...", "references": [ {"title": "Source 1", "link": "https://yourdomain.com/source1"}, {"title": "Source 2", "link": "https://yourdomain.com/source2"} ] } return the real https tested domain for your references, not example.com', 'ai-story-generator' );
-
-        // Loop through each prompt.
+    
         foreach ( $settings['prompts'] as &$prompt ) {
             if ( isset( $prompt['active'] ) && "0" === $prompt['active'] ) {
                 continue;
@@ -71,45 +78,38 @@ class Story_Generator {
             if ( empty( $prompt['text'] ) ) {
                 continue;
             }
-            // Ensure each prompt has a unique ID.
             if ( ! isset( $prompt['prompt_id'] ) || empty( $prompt['prompt_id'] ) ) {
                 $prompt['prompt_id'] = uniqid( 'ai_prompt_' );
             }
-            // self::generate_ai_story(
-            //     $prompt['prompt_id'],
-            //     $prompt,
-            //     $this->default_settings,
-            //     $recent_posts,
-            //     $admin_prompt_settings,
-            //     $this->api_key
-            // );
+            // Generate the AI story immediately if needed (uncomment to run).
+            self::generate_ai_story( $prompt['prompt_id'], $prompt, $this->default_settings, $recent_posts, $admin_prompt_settings, $this->api_key );
         }
+        wp_clear_scheduled_hook( 'ai_story_generator_repeating_event' );
 
-        // Read the repeat interval in days.
-        $n = isset( $settings['opt_ai_story_repeat_interval_days'] ) ? absint( $settings['opt_ai_story_repeat_interval_days'] ) : 0;
-        update_option( 'ai_story_repeat_interval_days', $n );
-
-        // If n is not zero, schedule the recurring job.
-        if ( 0 !== $n ) {
-            if ( ! wp_next_scheduled( 'ai_story_generator_repeating_event' ) ) {
-                wp_schedule_event( time() + ( $n * DAY_IN_SECONDS ), 'custom_interval', 'ai_story_generator_repeating_event' );
-            }
-        }else {
-            // if n is zero, unschedule the recurring job if exists.
+        $opt_value = get_option( 'opt_ai_story_repeat_interval_days' );
+        $abs_value = absint( $opt_value );
+        if ( $opt_value != $abs_value ) {
+            update_option( 'ai_story_repeat_interval_days', $abs_value );
+        }
+        $n = $abs_value;
+        
+        if ( 0 === $n ) {
             wp_clear_scheduled_hook( 'ai_story_generator_repeating_event' );
 
+        } else {
+            if ( ! wp_next_scheduled( 'ai_story_generator_repeating_event' ) ) {
+                // wp_schedule_single_event( time() + ( $n * DAY_IN_SECONDS ), 'ai_story_generator_repeating_event' );
+                wp_schedule_single_event( time() + ( $n *10 ), 'ai_story_generator_repeating_event' );
+            }
         }
-
-        // Log the event.
-        Log_Manager::log(  'info', __( 'AI story generation completed.', 'ai-story-generator' ) );
-
-        // return ajax response
-        return array(
-            'successes' => __( 'AI story generation completed.', 'ai-story-generator' ),
-        );
-        
-        
+    
+        Log_Manager::log( 'info', __( 'AI story generation completed.', 'ai-story-generator' ) );
+        $results['successes'][] = __( 'AI story generation completed.', 'ai-story-generator' );
+    
+        // Send a proper JSON response back to the browser.
+        wp_send_json_success( $results );
     }
+    
 
     /**
      * Replace image placeholders in the content.
