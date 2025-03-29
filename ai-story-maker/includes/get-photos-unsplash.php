@@ -37,13 +37,13 @@ function fetch_unsplash_image($keywords) {
     $response = wp_remote_get($url);
 
     if (is_wp_error($response)) {
-        Log_Manager::log( 'error', 'Error fetching Unsplash image: ' . $response->get_error_message());
+        $ai_story_maker_log_manager::log( 'error', 'Error fetching Unsplash image: ' . $response->get_error_message());
         return ''; 
     }
     $body = wp_remote_retrieve_body($response);
     $data = json_decode($body, true);
     if (empty($data['results'])) {
-        Log_Manager::log( 'error', $data['errors'][0]);
+        $ai_story_maker_log_manager::log( 'error', $data['errors'][0]);
         return ''; 
     }
     $image_index = array_rand($data['results']); 

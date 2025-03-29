@@ -23,6 +23,16 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Log_Manager {
 
+
+
+	/**
+	 * Log_Manager constructor.
+	 */
+	public function __construct() {
+		// add_action( 'admin_menu', [ $this, 'add_logs_page' ] );
+		add_action( 'admin_init', [ __CLASS__, 'create_log_table' ] );
+	}	
+
 	/**
 	 * Creates the log table if it doesn't exist.
 	 */
@@ -139,3 +149,5 @@ class Log_Manager {
 
 // Hook the log cleanup to our class method.
 add_action( 'schd_ai_story_maker_clear_log', [ 'AI_Story_Maker\Log_Manager', 'clear_logs' ] );
+global $ai_story_maker_log_manager;
+$ai_story_maker_log_manager = new Log_Manager();

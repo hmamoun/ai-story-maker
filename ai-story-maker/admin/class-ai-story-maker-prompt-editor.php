@@ -32,7 +32,7 @@ class Prompt_Editor {
             $updated_prompts = isset( $_POST['prompts'] ) ? json_decode( stripslashes( $_POST['prompts'] ), true ) : [];
             update_option( 'ai_story_prompts', json_encode( $updated_prompts, JSON_PRETTY_PRINT ) );
             echo '<div id="ai-story-maker-messages" class="notice notice-info"><p>✅ ' . esc_html__( 'Prompts saved successfully!', 'ai-story-maker' ) . '</p></div>';
-            Log_Manager::log( 'info', 'Prompts saved successfully.' );   
+            $ai_story_maker_log_manager::log( 'info', 'Prompts saved successfully.' );   
         }
 
         // Gather data for the view.

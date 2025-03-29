@@ -91,6 +91,7 @@ class Admin {
      * Renders the main admin settings page.
      */
     public function render_main_page() {
+        global $ai_story_maker_log_manager;
 		$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'welcome';
 		?>
         <div id="ai-story-maker-messages" class="notice notice-info hidden"></div>
@@ -131,32 +132,29 @@ class Admin {
             </p>
             
             <?php
-                // Get the next time 'ai_story_generator_repeating_event' even will run
+                // bmark Schedule to display the next event
                 $next_event = wp_next_scheduled( 'ai_story_generator_repeating_event' );
                 if ( $next_event ) {
                     $time_diff = $next_event - time();
-                    if ( $time_diff > 0 ) {
-                    $days    = floor( $time_diff / ( 60 * 60 * 24 ) );
-                    $hours   = floor( ( $time_diff % ( 60 * 60 * 24 ) ) / ( 60 * 60 ) );
-                    $minutes = floor( ( $time_diff % ( 60 * 60 ) ) / 60 );
-                    $next_event = sprintf( '%dd %dh %dm', $days, $hours, $minutes );
-                    } else {
-                        $next_event = 'Already passed, go to the Prompts tab and click "Generate Active Stories" to generate and reschedule.';
-                    }
-                } else {
-                    $next_event = 'Not scheduled';
-                }
-                echo '<p>' . esc_html__( 'Next scheduled story generation:', 'ai-story-maker' ) . ' ' . $next_event . '</p>';
+
+                        $days    = floor( $time_diff / ( 60 * 60 * 24 ) );
+                        $hours   = floor( ( $time_diff % ( 60 * 60 * 24 ) ) / ( 60 * 60 ) );
+                        $minutes = floor( ( $time_diff % ( 60 * 60 ) ) / 60 );
+                        $next_event = sprintf( '%dd %dh %dm', $days, $hours, $minutes );
+                        echo '<p>' . esc_html__( 'Next scheduled story generation:', 'ai-story-maker' ) . ' ' . $next_event . '</p>';
 
 
 
+                    } 
+
+               
 		} elseif ( 'prompts' === $active_tab ) {
             $this->prompt_editor->render();
 
 
 		} elseif ( 'log' === $active_tab ) {
             // Display the logs page.
-           \AI_Story_Maker\Log_Manager::display_logs_page();
+            $ai_story_maker_log_manager::display_logs_page();
 
 
         }

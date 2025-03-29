@@ -15,7 +15,6 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-
 class Plugin {
     public function __construct() {
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_styles' ) );
@@ -32,8 +31,6 @@ class Plugin {
         include_once plugin_dir_path( __FILE__ ) . 'includes/get-photos-unsplash.php';
         include_once plugin_dir_path( __FILE__ ) . 'includes/story-scroller.php';
         include_once plugin_dir_path( __FILE__ ) . 'includes/class-ai-story-maker-log-management.php';
-
-
     }
 
     /**
@@ -80,43 +77,54 @@ class Plugin {
         if ( function_exists( 'ai_storymaker_create_log_table' ) ) {
             ai_storymaker_create_log_table();
         }
+        
+        // bmark Schedule on activation
+        if ( ! wp_next_scheduled( 'ai_story_generator_repeating_event' ) ) {
+            wp_schedule_event( time(), 'daily', 'ai_story_generator_repeating_event' );
+        }
+    }
+
+    /**
+     * Deactivation callback to clear scheduled events.
+     */
+    public static function deactivate() {
+        wp_clear_scheduled_hook( 'ai_story_generator_repeating_event' );
     }
 }
 
 // Instantiate the main plugin class.
 new Plugin();
 
-
-
-
 // Register activation hook using the Plugin's static method.
 register_activation_hook( __FILE__, array( 'AI_Story_Maker\Plugin', 'activate' ) );
 
-/**
- * AJAX action to generate an AI story.
- */
-add_action( 'wp_ajax_generate_ai_stories', function() {
-    // Verify nonce and user capabilities.
-    if ( ! check_ajax_referer( 'generate_story_nonce', 'nonce', false ) ) {
-        wp_send_json_error( [ 'message' => 'Security check failed.' ] );
-    }
-    // Instantiate your generator class and generate the story.
-    $story_generator = new Story_Generator();
-    $results = $story_generator->generate_ai_stories();
-    if ( ! empty( $results['errors'] ) ) {
-        wp_send_json_error( $results['errors'] );
+// Register deactivation hook to clear scheduled events.
+register_deactivation_hook( __FILE__, array( 'AI_Story_Maker\Plugin', 'deactivate' ) );
+
+function ai_story_generator_check_schedule() {
+    global $ai_story_maker_log_manager;
+    $next_event = wp_next_scheduled('ai_story_generator_repeating_event');
+    
+    if ($next_event) {
+        $time_diff = $next_event - time();
+        
+        if ($time_diff < 0) {
+            // bmark Schedule execute
+            $story_generator = new Story_Generator();
+            $story_generator->generate_ai_stories();
+            $ai_story_maker_log_manager::log('info', 'Generated stories schedule.');
+        }
     } else {
-        wp_send_json_success( $results['successes'] );
+        // Check if the schedule is set; if not, set it.
+        $n = absint(get_option('opt_ai_story_repeat_interval_days'));
+        
+        if (0 !== $n) {
+            // bmark Schedule in the case of no schedule
+            $next_schedule = date('Y-m-d H:i:s', time() + $n * DAY_IN_SECONDS);
+            wp_schedule_single_event(time() + $n * DAY_IN_SECONDS, 'ai_story_generator_repeating_event');
+            $ai_story_maker_log_manager::log('info', __('Set next schedule to ' . $next_schedule, 'ai-story-generator'));
+        } else {
+            $ai_story_maker_log_manager::log('info', __('Schedule for next story is unset', 'ai-story-generator'));
+        }
     }
-});
-
-/**
- * Action to generate an AI story on a scheduled basis
- */
-add_action( 'ai_story_generator_repeating_event', __NAMESPACE__ . '\\ai_story_generator_repeating_callback' );
-
-function ai_story_generator_repeating_callback() {
-    error_log ('The Scheduled one is running');
-    $story_generator = new Story_Generator();
-    $story_generator->generate_ai_stories();
-}
+}           

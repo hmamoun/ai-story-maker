@@ -31,6 +31,5 @@ global $wpdb;
 $table_name = $wpdb->prefix . 'ai_storymaker_logs';
 $wpdb->query("DROP TABLE IF EXISTS {$table_name}");
 
-// remove plugin cron events
-
-// ..etc., based on what needs to be removed
+// bmark Schedule on uninstall
+wp_clear_scheduled_hook( 'ai_story_generator_repeating_event' );

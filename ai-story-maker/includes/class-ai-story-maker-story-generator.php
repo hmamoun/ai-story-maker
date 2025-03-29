@@ -10,11 +10,10 @@ class Story_Generator {
     private $api_key;
     private $default_settings;
 
+
     public function __construct() {
         // Hook into an action to trigger AI story generation.
         add_action( 'ai_story_generate', [ $this, 'generate_ai_stories' ] );
-
-
     }
 
     /**
@@ -24,19 +23,17 @@ class Story_Generator {
      * @return array
      */
     public function get_recent_post_excerpts( $number_of_posts ) {
-        $query = new \WP_Query( array(
-            'posts_per_page' => $number_of_posts,
-            'post_status'    => 'publish',
-        ) );
+        $number_of_posts = absint( $number_of_posts );
 
-        $excerpts = array();
-        if ( $query->have_posts() ) {
-            while ( $query->have_posts() ) {
-                $query->the_post();
-                $excerpts[] = get_the_excerpt();
-            }
-            wp_reset_postdata();
+        $posts = get_posts( array(
+            'numberposts' => $number_of_posts,
+            'post_status' => 'publish',
+        ) );
+        foreach ( $posts as $post ) {
+            setup_postdata( $post );
+            $excerpts[] = get_the_excerpt( $post->ID );
         }
+        wp_reset_postdata();
         return $excerpts;
     }
 
@@ -44,33 +41,37 @@ class Story_Generator {
      * Generate AI Story using OpenAI API.
      */
     public function generate_ai_stories() {
+        global $ai_story_maker_log_manager;
+
         $results = array(
             'errors'    => array(),
             'successes' => array(),
         );
-    
+
         $this->api_key = get_option( 'openai_api_key' );
         if ( ! $this->api_key ) {
             $error = __( 'OpenAI API Key is missing.', 'ai-story-generator' );
-            Log_Manager::log( 'error', $error );
+            $ai_story_maker_log_manager::log( 'error', $error );
             $results['errors'][] = $error;
             wp_send_json_error( $results );
         }
-    
+
         $raw_settings = get_option( 'ai_story_prompts', '' );
         $settings     = json_decode( $raw_settings, true );
-    
+
         if ( json_last_error() !== JSON_ERROR_NONE || empty( $settings['prompts'] ) ) {
             $error = __( 'Invalid JSON format or no prompts found.', 'ai-story-generator' );
-            Log_Manager::log( 'error', $error );
+            $ai_story_maker_log_manager::log( 'error', $error );
             $results['errors'][] = $error;
             wp_send_json_error( $results );
         }
-    
+
         $this->default_settings = isset( $settings['default_settings'] ) ? $settings['default_settings'] : array();
+
         $recent_posts           = $this->get_recent_post_excerpts( 20 );
+
         $admin_prompt_settings  = __( 'The response must strictly follow this json structure: { "title": "Article Title", "content": "Full article content...", "excerpt": "A short summary of the article...", "references": [ {"title": "Source 1", "link": "https://yourdomain.com/source1"}, {"title": "Source 2", "link": "https://yourdomain.com/source2"} ] } return the real https tested domain for your references, not example.com', 'ai-story-generator' );
-    
+
         foreach ( $settings['prompts'] as &$prompt ) {
             if ( isset( $prompt['active'] ) && "0" === $prompt['active'] ) {
                 continue;
@@ -79,37 +80,25 @@ class Story_Generator {
                 continue;
             }
             if ( ! isset( $prompt['prompt_id'] ) || empty( $prompt['prompt_id'] ) ) {
-                $prompt['prompt_id'] = uniqid( 'ai_prompt_' );
+                continue;
             }
             // Generate the AI story immediately if needed (uncomment to run).
-            self::generate_ai_story( $prompt['prompt_id'], $prompt, $this->default_settings, $recent_posts, $admin_prompt_settings, $this->api_key );
+            // self::generate_ai_story( $prompt['prompt_id'], $prompt, $this->default_settings, $recent_posts, $admin_prompt_settings, $this->api_key );
         }
-        wp_clear_scheduled_hook( 'ai_story_generator_repeating_event' );
-
-        $opt_value = get_option( 'opt_ai_story_repeat_interval_days' );
-        $abs_value = absint( $opt_value );
-        if ( $opt_value != $abs_value ) {
-            update_option( 'ai_story_repeat_interval_days', $abs_value );
-        }
-        $n = $abs_value;
-        
-        if ( 0 === $n ) {
-            wp_clear_scheduled_hook( 'ai_story_generator_repeating_event' );
-
+        // bmark Schedule after generate
+        $n = absint(get_option( 'opt_ai_story_repeat_interval_days' ));
+        if ( 0 !== $n ) {
+                // cancel the current schedule
+                wp_clear_scheduled_hook( 'ai_story_generator_repeating_event' );
+                // schedule the next event  
+                $next_schedule = date( 'Y-m-d H:i:s', time() +  $n * DAY_IN_SECONDS );
+                wp_schedule_single_event( time() + $n * DAY_IN_SECONDS , 'ai_story_generator_repeating_event' );
+                $ai_story_maker_log_manager::log( 'info', __( 'Set next schedule to ' . $next_schedule, 'ai-story-generator' ) );
         } else {
-            if ( ! wp_next_scheduled( 'ai_story_generator_repeating_event' ) ) {
-                // wp_schedule_single_event( time() + ( $n * DAY_IN_SECONDS ), 'ai_story_generator_repeating_event' );
-                wp_schedule_single_event( time() + ( $n *10 ), 'ai_story_generator_repeating_event' );
-            }
+            $ai_story_maker_log_manager::log( 'info', __( 'Schedule for next story is unset', 'ai-story-generator' ) );
+            wp_clear_scheduled_hook( 'ai_story_generator_repeating_event' );
         }
-    
-        Log_Manager::log( 'info', __( 'AI story generation completed.', 'ai-story-generator' ) );
-        $results['successes'][] = __( 'AI story generation completed.', 'ai-story-generator' );
-    
-        // Send a proper JSON response back to the browser.
-        wp_send_json_success( $results );
     }
-    
 
     /**
      * Replace image placeholders in the content.
@@ -150,45 +139,37 @@ class Story_Generator {
                     'role'    => 'user',
                     'content' => $prompt['text'],
                 ],
-                [
-                    'role'    => 'user',
-                    'content' => __( "Here are summaries of recent articles to avoid repetition. Reference them when needed:", 'ai-story-generator' )
-                        . "\n" . json_encode( $recent_posts, JSON_PRETTY_PRINT ),
-                ],
             ],
-            'max_completion_tokens' => (int)( $merged_settings['max_tokens'] ?? 1500 ),
-            'response_format'       => [ 'type' => 'json_object' ],
         ];
 
         $response = wp_remote_post(
-            "https://api.openai.com/v1/chat/completions",
+            'https://api.openai.com/v1/chat/completions',
             [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $api_key,
                     'Content-Type'  => 'application/json',
                 ],
-                'body'    => json_encode( $body, JSON_PRETTY_PRINT ),
-                'timeout' => $merged_settings['timeout'] ?? 30,
+                'body'    => wp_json_encode( $body ),
             ]
         );
 
         if ( is_wp_error( $response ) ) {
-            error_log( __( 'OpenAI API Request failed: ', 'ai-story-generator' ) . $response->get_error_message() );
+            $error = $response->get_error_message();
+            $ai_story_maker_log_manager::log( 'error', $error );
             return;
         }
 
         $response_body = json_decode( wp_remote_retrieve_body( $response ), true );
         if ( ! isset( $response_body['choices'][0]['message']['content'] ) ) {
-            $error_message = isset( $response_body['error']['message'] )
-                ? $response_body['error']['message']
-                : __( 'Unknown error', 'ai-story-generator' );
-            error_log( $error_message );
+            $error = __( 'Invalid response from OpenAI API.', 'ai-story-generator' );
+            $ai_story_maker_log_manager::log( 'error', $error );
             return;
         }
 
         $parsed_content = json_decode( $response_body['choices'][0]['message']['content'], true );
         if ( ! isset( $parsed_content['title'], $parsed_content['content'] ) ) {
-            error_log( __( 'OpenAI response does not contain valid JSON with title and content.', 'ai-story-generator' ) );
+            $error = __( 'Invalid content structure.', 'ai-story-generator' );
+            $ai_story_maker_log_manager::log( 'error', $error );
             return;
         }
 
@@ -199,11 +180,7 @@ class Story_Generator {
         $category     = isset( $prompt['category'] ) ? sanitize_text_field( $prompt['category'] ) : __( 'News', 'ai-story-generator' );
 
         if ( ! term_exists( $category, 'category' ) ) {
-            $term = wp_insert_term( $category, 'category' );
-            if ( is_wp_error( $term ) ) {
-                error_log( __( 'Failed to insert category term: ', 'ai-story-generator' ) . $term->get_error_message() );
-                return;
-            }
+            wp_insert_term( $category, 'category' );
         }
 
         // Instantiate the class to use instance methods.
@@ -214,16 +191,16 @@ class Story_Generator {
         // Determine the post author.
         $post_author = 0;
         if ( isset( $prompt['author'] ) && ! empty( $prompt['author'] ) ) {
-            $post_author = absint( $prompt['author'] );
-            if ( ! get_userdata( $post_author ) ) {
-                $post_author = 0;
+            $user = get_user_by( 'login', $prompt['author'] );
+            if ( $user ) {
+                $post_author = $user->ID;
             }
         }
         if ( ! $post_author ) {
             $post_author = get_current_user_id();
         }
         if ( ! $post_author ) {
-            $post_author = get_option( 'ai_story_default_author', 1 );
+            $post_author = 1; // Default to admin user ID 1 if no user is logged in.
         }
 
         $post_arr = [
@@ -232,24 +209,19 @@ class Story_Generator {
             'post_status'   => 'publish',
             'post_author'   => $post_author,
             'post_category' => [ get_cat_ID( $category ) ],
-            'page_template' => 'single-ai-story.php',
-            'post_excerpt'  => isset( $parsed_content['excerpt'] ) ? $parsed_content['excerpt'] : __( 'No excerpt available.', 'ai-story-generator' ),
             'meta_input'    => [
-                '_ai_story_maker_sources'     => isset( $parsed_content['references'] ) && is_array( $parsed_content['references'] )
-                    ? json_encode( $parsed_content['references'] )
-                    : json_encode( [] ),
-                '_ai_story_maker_total_tokens' => $total_tokens,
-                '_ai_story_maker_request_id'   => $request_id,
+                '_ai_story_maker_request_id' => $request_id,
+                '_ai_story_maker_tokens'     => $total_tokens,
+                '_ai_story_maker_sources'    => isset( $parsed_content['references'] ) ? wp_json_encode( $parsed_content['references'] ) : '',
             ],
         ];
 
         $post_id = wp_insert_post( $post_arr );
         if ( is_wp_error( $post_id ) ) {
-            error_log( __( 'Failed to insert post: ', 'ai-story-generator' ) . $post_id->get_error_message() );
+            $error = $post_id->get_error_message();
+            $ai_story_maker_log_manager::log( 'error', $error );
             return;
         }
-        error_log( __( 'AI-generated news article published: ', 'ai-story-generator' ) . get_permalink( $post_id ) );
+
     }
-
-
 }

@@ -16,19 +16,20 @@ class Settings_Page {
 	 * Renders the settings page.
 	 */
 	public function render() {
+		global $ai_story_maker_log_manager;
 		// Process form submission for saving settings.
 		if ( isset( $_POST['save_settings'] ) ) {
 			$story_maker_nonce = isset( $_POST['story_maker_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['story_maker_nonce'] ) ) : '';
 
 			if ( ! $story_maker_nonce || ! wp_verify_nonce( $story_maker_nonce, 'save_story_maker_settings' ) ) {
 				echo '<div class="error"><p>❌ ' . esc_html__( 'Security check failed. Please try again.', 'ai-story-maker' ) . '</p></div>';
-				Log_Manager::log(  'error', '❌ Security check failed. Please try again.' );
+				$ai_story_maker_log_manager::log(  'error', '❌ Security check failed. Please try again.' );
 				return;
 			}
 
 			if ( API_Keys::validate_openai_api_key( sanitize_text_field( wp_unslash( $_POST['openai_api_key'] ) ) ) === false ) {
 				echo '<div class="error"><p>❌ ' . esc_html__( 'Invalid OpenAI API key.', 'ai-story-maker' ) . '</p></div>';
-				Log_Manager::log(  'error', '❌ Invalid OpenAI API key.' );
+				$ai_story_maker_log_manager::log(  'error', '❌ Invalid OpenAI API key.' );
 				return;
 			}
 
@@ -60,7 +61,7 @@ class Settings_Page {
 			}
 
 			echo '<div class="notice notice-info"><p>✅ ' . esc_html__( 'Settings saved!', 'ai-story-maker' ) . '</p></div>';
-			Log_Manager::log( 'info', 'Settings saved' );
+			$ai_story_maker_log_manager::log( 'info', 'Settings saved' );
 		}
 		?>
 		<div class="wrap">
