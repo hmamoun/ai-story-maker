@@ -97,7 +97,8 @@ class Log_Manager {
 			wp_cache_set( 'ai_storymaker_logs', $logs, '', 300 ); // Cache for 5 minutes.
 		}
 
-		echo '<div class="wrap"><h1>AI Story Maker Logs</h1>';
+		echo '
+		<div class="wrap"><div class="ai-storymaker-settings"><h2>AI Story Maker Logs</h2>';
 		echo '<table class="widefat"><thead><tr><th>ID</th><th>Type</th><th>Message</th><th>Request ID</th><th>Timestamp</th></tr></thead><tbody>';
 
 		if ( ! empty( $logs ) ) {
@@ -112,7 +113,7 @@ class Log_Manager {
 			}
 		}
 
-		echo '</tbody></table></div>';
+		echo '</tbody></table></div></div>';
 	}
 
 	/**
@@ -149,5 +150,4 @@ class Log_Manager {
 
 // Hook the log cleanup to our class method.
 add_action( 'schd_ai_story_maker_clear_log', [ 'AI_Story_Maker\Log_Manager', 'clear_logs' ] );
-global $ai_story_maker_log_manager;
-$ai_story_maker_log_manager = new Log_Manager();
+

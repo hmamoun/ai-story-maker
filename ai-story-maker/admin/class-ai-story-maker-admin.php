@@ -27,6 +27,7 @@ class Admin {
     protected $prompt_editor;
     protected $api_keys;
     protected $settings_page;
+    protected $log_manager;
 
     /**
      * Constructor registers the admin menu.
@@ -46,6 +47,7 @@ class Admin {
         $this->prompt_editor = new Prompt_Editor();
         $this->api_keys = new API_Keys();
         $this->settings_page = new Settings_Page();
+        $this->log_manager = new Log_Manager();
 
  
         // Register the admin menu.
@@ -91,13 +93,12 @@ class Admin {
      * Renders the main admin settings page.
      */
     public function render_main_page() {
-        global $ai_story_maker_log_manager;
 		$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'welcome';
 		?>
         <div id="ai-story-maker-messages" class="notice notice-info hidden"></div>
 		<h2 class="nav-tab-wrapper">
             <a href="?page=story-maker-settings&tab=welcome" class="nav-tab <?php echo ( $active_tab === 'welcome' ) ? 'nav-tab-active' : ''; ?>">
-				<?php esc_html_e( 'Welcome to AI Story Maker', 'ai-story-maker' ); ?>
+				<?php esc_html_e( 'AI Story Maker', 'ai-story-maker' ); ?>
 			</a>           
 			<a href="?page=story-maker-settings&tab=general" class="nav-tab <?php echo ( $active_tab === 'general' ) ? 'nav-tab-active' : ''; ?>">
 				<?php esc_html_e( 'General Settings', 'ai-story-maker' ); ?>
@@ -113,50 +114,14 @@ class Admin {
 
 		// Process form submission for saving settings.
 
-
-		if ( 'general' === $active_tab ) {
-                $this->settings_page->render();
-        } elseif ( 'welcome' === $active_tab ) {
-            ?>
-            <h2><?php esc_html_e( 'Welcome to AI Story Maker', 'ai-story-maker' ); ?></h2>
-            <p><?php esc_html_e( 'AI Story Maker is a plugin that generates stories using OpenAI\'s GPT-3 model.', 'ai-story-maker' ); ?></p>
-            <p><?php esc_html_e( 'To get started, you need to enter your OpenAI API key in the settings page.', 'ai-story-maker' ); ?></p>
-            <p><?php esc_html_e( 'You can also generate stories using the prompts tab.', 'ai-story-maker' ); ?></p>
-            <p><?php esc_html_e( 'Stories will be saved as posts in your WordPress site, the plugin is shipped with a template to show posts, and a [story_scroller] shortcode', 'ai-story-maker' ); ?></p>
-            <p>
-                <?php printf(
-                    /* translators: %s: GitHub Wiki URL */
-                    esc_html__( 'For more info go to %s', 'ai-story-maker' ),
-                    '<a href="' . esc_url( 'https://github.com/hmamoun/ai-story-maker/wiki' )  . '" target="_blank">' . esc_html__( 'GitHub Wiki', 'ai-story-maker' ) . '</a>'
-                ); ?>
-            </p>
-            
-            <?php
-                // bmark Schedule to display the next event
-                $next_event = wp_next_scheduled( 'ai_story_generator_repeating_event' );
-                if ( $next_event ) {
-                    $time_diff = $next_event - time();
-
-                        $days    = floor( $time_diff / ( 60 * 60 * 24 ) );
-                        $hours   = floor( ( $time_diff % ( 60 * 60 * 24 ) ) / ( 60 * 60 ) );
-                        $minutes = floor( ( $time_diff % ( 60 * 60 ) ) / 60 );
-                        $next_event = sprintf( '%dd %dh %dm', $days, $hours, $minutes );
-                        echo '<p>' . esc_html__( 'Next scheduled story generation:', 'ai-story-maker' ) . ' ' . $next_event . '</p>';
-
-
-
-                    } 
-
-               
-		} elseif ( 'prompts' === $active_tab ) {
+        if ( 'welcome' === $active_tab ) {
+            include_once plugin_dir_path( __FILE__ ) . 'templates/welcome-tab-template.php';
+        } elseif ( 'general' === $active_tab ) {
+            $this->settings_page->render();
+        } elseif ( 'prompts' === $active_tab ) {
             $this->prompt_editor->render();
-
-
-		} elseif ( 'log' === $active_tab ) {
-            // Display the logs page.
-            $ai_story_maker_log_manager::display_logs_page();
-
-
+        } elseif ( 'log' === $active_tab ) {
+            $this->log_manager->display_logs_page();
         }
     
 	}

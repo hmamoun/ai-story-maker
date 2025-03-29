@@ -7,38 +7,33 @@ if ( ! defined( 'ABSPATH' ) ) {
 ?>
 <div class="wrap">
     <div class="ai-storymaker-settings">
-        <h2><?php esc_html_e( 'Story Generation Settings', 'ai-story-maker' ); ?></h2>
-        <?php wp_nonce_field( 'save_story_prompts', 'story_prompts_nonce' ); ?>
-        <table class="wp-list-table widefat fixed striped">
-            <thead>
-                <tr>
-                    <th width="15%"><?php esc_html_e( 'Model', 'ai-story-maker' ); ?></th>
-                    <th><?php esc_html_e( 'General Behaviour', 'ai-story-maker' ); ?></th>
-                </tr>
-            </thead>
-            <tr>
-                <td>
-                    <select name="model" id="model">
-                        <option value="gpt-4o-mini" <?php selected( $data['default_settings']['model'] ?? '', 'gpt-4o-mini' ); ?>>GPT-4o Mini</option>
-                        <option value="gpt-4o" <?php selected( $data['default_settings']['model'] ?? '', 'gpt-4o' ); ?>>GPT-4o</option>
-                        <option value="gpt-4o-large" <?php selected( $data['default_settings']['model'] ?? '', 'gpt-4o-large' ); ?>>GPT-4o Large</option>
-                    </select>
-                </td>
-                <td>
-                    <textarea name="system_content" id="system_content" rows="5" style="width: 100%;"><?php echo esc_textarea( $data['default_settings']['system_content'] ?? '' ); ?></textarea>
-                </td>
-            </tr>
-        </table>
-        <hr>
-        <h2><?php esc_html_e( 'Story Prompts', 'ai-story-maker' ); ?></h2>
-        <p><?php esc_html_e( 'Add or remove prompts to generate multiple stories. Each prompt can have:', 'ai-story-maker' ); ?></p>
-        <ul>
-            <li><?php esc_html_e( 'A category (choose one from your WordPress categories).', 'ai-story-maker' ); ?></li>
-            <li><?php esc_html_e( 'The number of photos to include.', 'ai-story-maker' ); ?></li>
-            <li><?php esc_html_e( 'An active or inactive status (inactive prompts are ignored).', 'ai-story-maker' ); ?></li>
-        </ul>
-        <p><?php esc_html_e( 'Use "Add Prompt" to create a new prompt, and "Delete" to remove one. Click "Save Changes" to update the prompt list. Click "Generate Story" on a specific prompt to create a story immediately.', 'ai-story-maker' ); ?></p>
+    <h2>AI Story Settings</h2>
+  <p>
+    Use the <strong>top settings</strong> to choose a default AI model (e.g., GPT-4) and define the <strong>General Behavior</strong>—a set of overarching instructions that will apply to all prompts. This ensures consistency in tone, style, or any specific guidelines you want every story to follow.
+  </p>
+  
 
+  
+
+
+        <?php wp_nonce_field( 'save_story_prompts', 'story_prompts_nonce' ); ?>
+
+            <div class="setting-item">
+                <label for="model"><?php esc_html_e( 'Model', 'ai-story-maker' ); ?></label>
+                <select name="model" id="model">
+                    <option value="gpt-4o-mini" <?php selected( $data['default_settings']['model'] ?? '', 'gpt-4o-mini' ); ?>>GPT-4o Mini</option>
+                    <option value="gpt-4o" <?php selected( $data['default_settings']['model'] ?? '', 'gpt-4o' ); ?>>GPT-4o</option>
+                    <option value="gpt-4o-large" <?php selected( $data['default_settings']['model'] ?? '', 'gpt-4o-large' ); ?>>GPT-4o Large</option>
+                </select>
+            </div>
+            <div class="setting-item">
+                <label for="system_content"><?php esc_html_e( 'General Behaviour', 'ai-story-maker' ); ?></label>
+                <textarea name="system_content" id="system_content" rows="5" style="width: 100%;"><?php echo esc_textarea( $data['default_settings']['system_content'] ?? '' ); ?></textarea>
+            </div>
+            <h2>Prompt List</h2>
+  <p>
+    Below, you can create and manage multiple prompts. Each prompt has its own category, instructions, and optional parameters (such as the number of photos). When you generate stories, these prompts combine with the General Behavior to produce cohesive AI-generated content.
+  </p>
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
@@ -81,18 +76,25 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <?php endforeach; ?>
             </tbody>
         </table>
-        <button id="add-prompt" class="button button-primary"><?php esc_html_e( '+', 'ai-story-maker' ); ?></button>
+        <button id="add-prompt" class="button button-primary"><?php esc_html_e( 'Insert', 'ai-story-maker' ); ?></button>
         <hr>
-        <form method="POST" class="ai-storymaker-settings" id="prompt-form">
+        <form method="POST" id="prompt-form">
             <?php wp_nonce_field( 'save_story_prompts', 'story_prompts_nonce' ); ?>
             <input type="hidden" name="prompts" id="prompts-data" value="">
             <input type="hidden" id="generate-story-nonce" value="<?php echo esc_attr( wp_create_nonce( 'generate_story_nonce' ) ); ?>">
             <input type="submit" name="save_prompts_v2" value="<?php esc_attr_e( 'Save Prompts', 'ai-story-maker' ); ?>" class="button button-primary">
-            <button id="make-stories-button" class="button button-primary"><?php esc_html_e( 'Generate Active Stories', 'ai-story-maker' ); ?></button>
+
         </form>
-
-                                    
-
+                                    <hr>
+                                    <div class="pre-generate-info">
+  <p>
+    Please review your general settings and prompts below. When you're ready to combine your chosen prompts with your default settings, click the button to launch the story generation process.
+  </p>
+  <p>
+    You can always check the next scheduled generation time in the <strong>AI Story Maker</strong> tab.
+  </p>
+</div>             
+        <button id="make-stories-button" class="button button-primary"><?php esc_html_e( 'Launch Story Generation', 'ai-story-maker' ); ?></button>
     </div>
 
 

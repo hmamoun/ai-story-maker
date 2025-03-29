@@ -11,25 +11,32 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Handles the rendering and processing of the AI Story Maker settings page.
  */
 class Settings_Page {
+	protected $log_manager;
+	/**
+	 * Constructor initializes the settings page.
+	 */
+	public function __construct() {
+		$this->log_manager = new Log_Manager();
 
+	}
 	/**
 	 * Renders the settings page.
 	 */
 	public function render() {
-		global $ai_story_maker_log_manager;
+
 		// Process form submission for saving settings.
 		if ( isset( $_POST['save_settings'] ) ) {
 			$story_maker_nonce = isset( $_POST['story_maker_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['story_maker_nonce'] ) ) : '';
 
 			if ( ! $story_maker_nonce || ! wp_verify_nonce( $story_maker_nonce, 'save_story_maker_settings' ) ) {
 				echo '<div class="error"><p>❌ ' . esc_html__( 'Security check failed. Please try again.', 'ai-story-maker' ) . '</p></div>';
-				$ai_story_maker_log_manager::log(  'error', '❌ Security check failed. Please try again.' );
+				$this->log_manager->log(  'error', '❌ Security check failed. Please try again.' );
 				return;
 			}
 
 			if ( API_Keys::validate_openai_api_key( sanitize_text_field( wp_unslash( $_POST['openai_api_key'] ) ) ) === false ) {
 				echo '<div class="error"><p>❌ ' . esc_html__( 'Invalid OpenAI API key.', 'ai-story-maker' ) . '</p></div>';
-				$ai_story_maker_log_manager::log(  'error', '❌ Invalid OpenAI API key.' );
+				$this->log_manager->log(  'error', '❌ Invalid OpenAI API key.' );
 				return;
 			}
 
@@ -53,15 +60,26 @@ class Settings_Page {
 			if ( isset( $_POST['opt_ai_storymaker_clear_log'] ) ) {
 				update_option( 'opt_ai_storymaker_clear_log', sanitize_text_field( wp_unslash( $_POST['opt_ai_storymaker_clear_log'] ) ) );
 			}
+			// bmark Schedule in case of changing settings
 			if ( isset( $_POST['opt_ai_story_repeat_interval_days'] ) ) {
+				$interval = intval( sanitize_text_field( wp_unslash( $_POST['opt_ai_story_repeat_interval_days'] ) ) );
+				$n = absint(get_option('opt_ai_story_repeat_interval_days'));
+				// If the value is 0, clear the scheduled event.
+				if ( sanitize_text_field( wp_unslash( $_POST['opt_ai_story_repeat_interval_days'] ) ) == 0 ) {
+					wp_clear_scheduled_hook( 'ai_story_generator_repeating_event' );
+				} 
 				update_option( 'opt_ai_story_repeat_interval_days', sanitize_text_field( wp_unslash( $_POST['opt_ai_story_repeat_interval_days'] ) ) );
+				if (  $n != $interval ) {
+					wp_clear_scheduled_hook( 'ai_story_generator_repeating_event' );
+					ai_story_generator_check_schedule(); 
+				}
 			}
 			if ( isset( $_POST['opt_ai_story_auther'] ) ) {
 				update_option( 'opt_ai_story_auther', intval( $_POST['opt_ai_story_auther'] ) );
 			}
 
 			echo '<div class="notice notice-info"><p>✅ ' . esc_html__( 'Settings saved!', 'ai-story-maker' ) . '</p></div>';
-			$ai_story_maker_log_manager::log( 'info', 'Settings saved' );
+			$this->log_manager->log( 'info', 'Settings saved' );
 		}
 		?>
 		<div class="wrap">
@@ -132,7 +150,7 @@ class Settings_Page {
 						</option>
 					<?php endforeach; ?>
 				</select>
-
+						<hr>
 				<input type="submit" name="save_settings" value="<?php esc_attr_e( 'Save Settings', 'ai-story-maker' ); ?>" class="button button-primary submit-button">
 			</form>
 		</div>

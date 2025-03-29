@@ -9,9 +9,13 @@ class Story_Generator {
 
     private $api_key;
     private $default_settings;
+    protected $log_manager;
 
 
     public function __construct() {
+        // Load the Log_Manager class.
+        
+        $this->log_manager = new Log_Manager();
         // Hook into an action to trigger AI story generation.
         add_action( 'ai_story_generate', [ $this, 'generate_ai_stories' ] );
     }
@@ -41,7 +45,7 @@ class Story_Generator {
      * Generate AI Story using OpenAI API.
      */
     public function generate_ai_stories() {
-        global $ai_story_maker_log_manager;
+
 
         $results = array(
             'errors'    => array(),
@@ -51,7 +55,8 @@ class Story_Generator {
         $this->api_key = get_option( 'openai_api_key' );
         if ( ! $this->api_key ) {
             $error = __( 'OpenAI API Key is missing.', 'ai-story-generator' );
-            $ai_story_maker_log_manager::log( 'error', $error );
+            $this->log_manager::log( 'error', $error );
+            // $ai_story_maker_log_manager::log( 'error', $error );
             $results['errors'][] = $error;
             wp_send_json_error( $results );
         }
@@ -61,7 +66,8 @@ class Story_Generator {
 
         if ( json_last_error() !== JSON_ERROR_NONE || empty( $settings['prompts'] ) ) {
             $error = __( 'Invalid JSON format or no prompts found.', 'ai-story-generator' );
-            $ai_story_maker_log_manager::log( 'error', $error );
+            $this->log_manager::log( 'error', $error );
+            // $ai_story_maker_log_manager::log( 'error', $error );
             $results['errors'][] = $error;
             wp_send_json_error( $results );
         }
@@ -93,9 +99,12 @@ class Story_Generator {
                 // schedule the next event  
                 $next_schedule = date( 'Y-m-d H:i:s', time() +  $n * DAY_IN_SECONDS );
                 wp_schedule_single_event( time() + $n * DAY_IN_SECONDS , 'ai_story_generator_repeating_event' );
-                $ai_story_maker_log_manager::log( 'info', __( 'Set next schedule to ' . $next_schedule, 'ai-story-generator' ) );
+                // Log the next schedule
+                $this->log_manager::log( 'info', __( 'Set next schedule to ' . $next_schedule, 'ai-story-generator' ) );
+                // $ai_story_maker_log_manager::log( 'info', __( 'Set next schedule to ' . $next_schedule, 'ai-story-generator' ) );
         } else {
-            $ai_story_maker_log_manager::log( 'info', __( 'Schedule for next story is unset', 'ai-story-generator' ) );
+            $this->log_manager::log( 'info', __( 'Schedule for next story is unset', 'ai-story-generator' ) );
+            //$ai_story_maker_log_manager::log( 'info', __( 'Schedule for next story is unset', 'ai-story-generator' ) );
             wp_clear_scheduled_hook( 'ai_story_generator_repeating_event' );
         }
     }

@@ -16,10 +16,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class Plugin {
+    protected $log_manager;
     public function __construct() {
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_styles' ) );
         add_filter( 'template_include', array( $this, 'template_include_filter' ) );
         $this->load_dependencies();
+        $this->log_manager = new Log_Manager();
     }
 
     /**
@@ -102,17 +104,19 @@ register_activation_hook( __FILE__, array( 'AI_Story_Maker\Plugin', 'activate' )
 register_deactivation_hook( __FILE__, array( 'AI_Story_Maker\Plugin', 'deactivate' ) );
 
 function ai_story_generator_check_schedule() {
-    global $ai_story_maker_log_manager;
+    $log_manager = new Log_Manager();
     $next_event = wp_next_scheduled('ai_story_generator_repeating_event');
     
     if ($next_event) {
         $time_diff = $next_event - time();
         
-        if ($time_diff < 0) {
+        if ($time_diff < -5) {
             // bmark Schedule execute
             $story_generator = new Story_Generator();
             $story_generator->generate_ai_stories();
-            $ai_story_maker_log_manager::log('info', 'Generated stories schedule.');
+            // Log the event
+            $log_manager::log('info', 'Generated stories schedule.');
+            // $ai_story_maker_log_manager::log('info', 'Generated stories schedule.');
         }
     } else {
         // Check if the schedule is set; if not, set it.
@@ -122,9 +126,10 @@ function ai_story_generator_check_schedule() {
             // bmark Schedule in the case of no schedule
             $next_schedule = date('Y-m-d H:i:s', time() + $n * DAY_IN_SECONDS);
             wp_schedule_single_event(time() + $n * DAY_IN_SECONDS, 'ai_story_generator_repeating_event');
-            $ai_story_maker_log_manager::log('info', __('Set next schedule to ' . $next_schedule, 'ai-story-generator'));
-        } else {
-            $ai_story_maker_log_manager::log('info', __('Schedule for next story is unset', 'ai-story-generator'));
-        }
+            // Log the next schedule
+            $log_manager::log('info', __('Set next schedule to ' . $next_schedule, 'ai-story-generator'));
+            //$ai_story_maker_log_manager::log('info', __('Set next schedule to ' . $next_schedule, 'ai-story-generator'));
+        } 
     }
-}           
+}          
+ai_story_generator_check_schedule(); 
