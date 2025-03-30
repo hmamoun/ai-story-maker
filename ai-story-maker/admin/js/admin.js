@@ -117,8 +117,9 @@ document.addEventListener("DOMContentLoaded", function () {
 if (document.getElementById("make-stories-button"))
 document.getElementById("make-stories-button").addEventListener("click", function (e) {
     e.preventDefault();
-
+    $originalCaption = this.innerHTML;
     this.disabled = true;
+    this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating... do not leave or close the page';
 
     const nonce = document.getElementById("generate-story-nonce").value;
     fetch(ajaxurl, {
@@ -142,7 +143,7 @@ document.getElementById("make-stories-button").addEventListener("click", functio
                 messageDiv.innerText = "Story generated successfully!";
 
             } else {
-                const messageDiv = document.createElement("div");
+                const messageDiv = document.getElementById("ai-story-maker-messages");
                 messageDiv.className = "notice notice-error visible";
                 messageDiv.innerText = "Error generating stories please check the logs!";
             }
@@ -152,6 +153,7 @@ document.getElementById("make-stories-button").addEventListener("click", functio
         })
         .finally(() => {
             this.disabled = false;
+            this.innerHTML = $originalCaption;
         });
 });
 

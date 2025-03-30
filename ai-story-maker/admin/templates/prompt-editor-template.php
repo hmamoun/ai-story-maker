@@ -2,8 +2,6 @@
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
-
-// Now use the $data array to access your values.
 ?>
 <div class="wrap">
     <div class="ai-storymaker-settings">
@@ -34,7 +32,7 @@ if ( ! defined( 'ABSPATH' ) ) {
   <p>
     Below, you can create and manage multiple prompts. Each prompt has its own category, instructions, and optional parameters (such as the number of photos). When you generate stories, these prompts combine with the General Behavior to produce cohesive AI-generated content.
   </p>
-        <table class="wp-list-table widefat fixed striped">
+        <table class="wp-list-table widefat fixed striped" border="1">
             <thead>
                 <tr>
                     <th><?php esc_html_e( 'Prompt', 'ai-story-maker' ); ?></th>
