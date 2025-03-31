@@ -65,6 +65,7 @@ class Prompt_Editor {
                 'category' => '',
                 'photos'   => 0,
                 'active'   => false,
+                'auto_publish' => false,
             ];
         }
 

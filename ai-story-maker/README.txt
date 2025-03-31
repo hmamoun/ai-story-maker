@@ -18,6 +18,12 @@ AI Story Maker
  
 # AI Story Maker
 
+/*
+
+add: control your prompt library, activate / de-activate prompts / make them directly publish posts, or just generate and keep as draft waiting for you to review, before manually publishiing
+*/
+
+
 ## 📌 Overview
 **AI Story Maker** is a WordPress plugin that generates AI-powered stories and fetches relevant images automatically. It integrates with OpenAI for text generation and Unsplash for high-quality images, offering a seamless content creation experience.
 
@@ -46,27 +52,29 @@ AI Story Maker
 
 ## 📂 Plugin Files & Structure
 ```
-.
+├── LICENSE
+├── README.txt
 ├── admin
-│   ├── css
-│   │   ├── admin.css
-│   │   └── index.php
-│   ├── js
-│   │   ├── admin.js
-│   │   └── index.php
-│   ├── templates
-│   │   ├── index.php
-│   │   └── prompt-editor-template.php
 │   ├── class-ai-story-maker-admin.php
 │   ├── class-ai-story-maker-api-keys.php
 │   ├── class-ai-story-maker-prompt-editor.php
 │   ├── class-ai-story-maker-settings-page.php
-│   └── index.php
-├── includes
-│   ├── class-ai-story-maker-story-generator.php
-│   ├── get-photos-unsplash.php
+│   ├── css
+│   │   ├── admin.css
+│   │   └── index.php
 │   ├── index.php
-│   ├── class-ai-story-maker-log-management.php.php
+│   ├── js
+│   │   ├── admin.js
+│   │   └── index.php
+│   └── templates
+│       ├── index.php
+│       ├── prompt-editor-template.php
+│       └── welcome-tab-template.php
+├── ai-story-maker.php
+├── includes
+│   ├── class-ai-story-maker-log-management.php
+│   ├── class-ai-story-maker-story-generator.php
+│   ├── index.php
 │   ├── repository-open-graph.svg
 │   └── story-scroller.php
 ├── languages
@@ -76,10 +84,10 @@ AI Story Maker
 │   │   ├── index.php
 │   │   └── story-style.css
 │   ├── index.php
+│   ├── js
+│   │   ├── index.php
+│   │   └── public.js
 │   └── single-ai-story.php
-├── LICENSE
-├── README.txt
-├── ai-story-maker.php
 └── uninstall.php
 
 ```

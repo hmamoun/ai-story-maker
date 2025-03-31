@@ -1,12 +1,14 @@
-/**
+/*
+ * -----------------------------------------------------------------------------
  * File: admin.css
  * Path: /Users/ano/Documents/repos/ai-story-maker/ai-story-maker/admin/css/admin.css
  *
  * Description:
- * This stylesheet provides the style definitions for the AI Story Maker admin
+ * This stylesheet provides style definitions for the AI Story Maker admin
  * settings interface. It contains styling for the settings container, forms,
  * input fields, labels, and specific row states such as newly added prompts
  * and rows marked for deletion.
+ * -----------------------------------------------------------------------------
  */
 
 /* Container for AI Story Maker settings */
@@ -42,9 +44,9 @@
 
 /* Select field styling */
 .ai-storymaker-settings select {
-    appearance: none;
     -webkit-appearance: none;
-    -moz-appearance: none;
+       -moz-appearance: none;
+            appearance: none;
     background: #ccc;
     height: 32px;
     line-height: 32px;
@@ -64,8 +66,21 @@
 
 /* Submit button styling */
 .ai-storymaker-settings .submit-button {
+
     margin-top: 20px;
 }
+
+.wp-core-ui .button-primary {
+    display: block;
+    margin: auto;
+}
+#add-prompt {
+    display: block ;
+    margin-right: 0;
+
+}
+
+
 
 /* Style for deleted prompt text */
 .deleted-prompt {
@@ -75,14 +90,23 @@
 
 /* New row styling */
 .new-prompt-row {
-    background-color: #e0f7fa !important; /* Light cyan */
+    background-color: #e0f7fa !important;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 /* Row marked for deletion */
 .marked-for-deletion {
-    background-color: #ffccbc !important; /* Light red/orange */
+    background-color: #ffccbc !important;
     transition: opacity 0.5s ease, background-color 0.5s ease;
     opacity: 0.5;
+}
+
+.wp-list-table td[data-field="category"],
+.wp-list-table td[data-field="photos"],
+.wp-list-table td[data-field="active"] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
 }

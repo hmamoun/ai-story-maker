@@ -66,6 +66,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (promptIdEl) {
                     promptIdEl.value = "";
                 }
+                const auto_publish = newRow.querySelector("[data-field='auto_publish'] input");
+                if (auto_publish) {
+                    auto_publish.value = "";
+                }
 
                 promptList.appendChild(newRow);
             }
@@ -95,11 +99,13 @@ document.addEventListener("DOMContentLoaded", function () {
                     const photosSelect = row.querySelector("[data-field='photos'] select");
                     const activeEl = row.querySelector("[data-field='active']");
                     const prompt_id = row.querySelector("[data-field='prompt_id']");
+                    const auto_publish = row.querySelector("[data-field='auto_publish']");
                     settings.prompts.push({
                         text: textEl.innerText.trim(),
                         category: categorySelect ? categorySelect.value : "",
                         photos: photosSelect ? photosSelect.value : "",
                         active: activeEl && activeEl.checked ? 1 : 0,
+                        auto_publish: auto_publish && auto_publish.checked ? 1 : 0,
                         prompt_id: prompt_id && prompt_id.value ? prompt_id.value : "prompt_" + Date.now() + "_" + Math.floor(Math.random() * 1000)
                     });
                 }

@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     <div class="ai-storymaker-settings">
     <h2>AI Story Settings</h2>
   <p>
-    Use the <strong>top settings</strong> to choose a default AI model (e.g., GPT-4) and define the <strong>General Behavior</strong>—a set of overarching instructions that will apply to all prompts. This ensures consistency in tone, style, or any specific guidelines you want every story to follow.
+    Use the this part to choselect a default AI model (e.g., GPT-4) and define the <strong>Instructions</strong> a set of instructions that will apply to all prompts. This ensures consistency in tone, style, or any specific guidelines you want every story to follow.
   </p>
   
 
@@ -25,7 +25,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                 </select>
             </div>
             <div class="setting-item">
-                <label for="system_content"><?php esc_html_e( 'General Behaviour', 'ai-story-maker' ); ?></label>
+                <label for="system_content"><?php esc_html_e( 'General Instructions', 'ai-story-maker' ); ?></label>
                 <textarea name="system_content" id="system_content" rows="5" style="width: 100%;"><?php echo esc_textarea( $data['default_settings']['system_content'] ?? '' ); ?></textarea>
             </div>
             <h2>Prompt List</h2>
@@ -37,8 +37,9 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <tr>
                     <th><?php esc_html_e( 'Prompt', 'ai-story-maker' ); ?></th>
                     <th width="10%"><?php esc_html_e( 'Category', 'ai-story-maker' ); ?></th>
-                    <th width="5%"><?php esc_html_e( 'No. of Photos', 'ai-story-maker' ); ?></th>
-                    <th width="5%"><?php esc_html_e( 'Active', 'ai-story-maker' ); ?></th>
+                    <th width="5%"><?php esc_html_e( 'Photos Count', 'ai-story-maker' ); ?></th>
+                    <th width="5%"><?php esc_html_e( 'Active Prompt', 'ai-story-maker' ); ?></th>
+                    <th width="5%"><?php esc_html_e( 'Auto Publish Post', 'ai-story-maker' ); ?></th>
                     <th width="10%"><?php esc_html_e( 'Actions', 'ai-story-maker' ); ?></th>
                 </tr>
             </thead>
@@ -50,7 +51,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                         <td contenteditable="true" data-field="category">
                             <select name="category">
                                 <?php foreach ( $data['categories'] as $cat ) : ?>
-                                    <option value="<?php echo esc_attr( $cat->slug ); ?>" <?php selected( $prompt['category'] ?? '', $cat->slug ); ?>>
+                                    <option value="<?php echo esc_attr( $cat->name ); ?>" <?php selected( $prompt['category'] ?? '', $cat->name ); ?>>
                                         <?php echo esc_html( $cat->name ); ?>
                                     </option>
                                 <?php endforeach; ?>
@@ -68,14 +69,17 @@ if ( ! defined( 'ABSPATH' ) ) {
                             <input type="checkbox" class="toggle-active" data-field="active" <?php checked( $prompt['active'] ?? 0, "1" ); ?> />
                         </td>
                         <td>
+                            <input type="checkbox" class="toggle-active" data-field="auto_publish" <?php checked( $prompt['auto_publish'] ?? 0, "1" ); ?> />
+                        </td>
+                        <td>
                             <button class="delete-prompt button button-danger"><?php esc_html_e( 'Delete', 'ai-story-maker' ); ?></button>
                         </td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
-        <button id="add-prompt" class="button button-primary"><?php esc_html_e( 'Insert', 'ai-story-maker' ); ?></button>
-        <hr>
+        <button id="add-prompt" class="button button-primary" ><?php esc_html_e( 'Add a new prompt', 'ai-story-maker' ); ?></button>
+
         <form method="POST" id="prompt-form">
             <?php wp_nonce_field( 'save_story_prompts', 'story_prompts_nonce' ); ?>
             <input type="hidden" name="prompts" id="prompts-data" value="">
