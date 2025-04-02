@@ -1,4 +1,22 @@
 <?php
+/**
+ * Plugin Name: AI Story Maker
+ * prompt-editor-template.php
+ * 
+ * Description: included in the admin area for the prompt editor.
+ * 
+ * Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
+ * Version: 1.0
+ * Author: Hayan Mamoun
+ * Author URI: https://exedotcom.ca
+ * License: GPLv2 or later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
+ * Text Domain: ai-story-maker
+ * Domain Path: /languages
+ * Requires PHP: 7.4
+ * Requires at least: 5.0
+ * Tested up to: 6.7
+ */
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }

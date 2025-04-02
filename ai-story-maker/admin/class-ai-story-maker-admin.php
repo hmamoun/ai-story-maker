@@ -1,7 +1,10 @@
 <?php
-/*
-/*
- * This plugin is free software; you can redistribute it and/or
+/**
+ * AI Story Maker Admin Class
+ *
+ * @package AI_Story_Maker
+ * @license GPL-2.0-or-later
+ * @link https://www.gnu.org/licenses/gpl-2.0.html
  */
 /*
  * modify it under the terms of the GNU General Public License
@@ -43,12 +46,25 @@ class Admin {
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
         // $this->enqueue_scripts();
 
-        // Instantiate the page-specific classes.
-        $this->prompt_editor = new Prompt_Editor();
-        $this->api_keys = new API_Keys();
-        $this->settings_page = new Settings_Page();
-        $this->log_manager = new Log_Manager();
+        if ( class_exists( 'Log_Manager' ) ) {
+            $this->log_manager = new Log_Manager();
+        } 
 
+        // Instantiate the page-specific classes.
+        if ( class_exists( 'Prompt_Editor' ) ) {
+            $this->prompt_editor = new Prompt_Editor();
+        } 
+        
+        if ( class_exists( 'API_Keys' ) ) {
+            $this->api_keys = new API_Keys();
+        }
+        
+        if ( class_exists( 'Settings_Page' ) ) {
+            $this->settings_page = new Settings_Page();
+        } 
+        
+
+        
  
         // Register the admin menu.
         add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
@@ -57,12 +73,21 @@ class Admin {
      * Loads required dependency files for admin pages.
      */
     private function load_dependencies() {
-        // Assuming these files are in the same folder as this file.
-        include_once plugin_dir_path( __FILE__ ) . 'class-ai-story-maker-prompt-editor.php';
-        include_once plugin_dir_path( __FILE__ ) . 'class-ai-story-maker-api-keys.php';
-        include_once plugin_dir_path( __FILE__ ) . 'class-ai-story-maker-settings-page.php';
-        include_once plugin_dir_path( __FILE__ ) . '../includes/class-ai-story-maker-log-management.php'; // Include the Log_Manager class
-
+        $files = [
+            'class-ai-story-maker-prompt-editor.php',
+            'class-ai-story-maker-api-keys.php',
+            'class-ai-story-maker-settings-page.php',
+            '../includes/class-ai-story-maker-log-management.php',
+        ];
+    
+        foreach ( $files as $file ) {
+            $path = plugin_dir_path( __FILE__ ) . $file;
+            if ( file_exists( $path ) ) {
+                include_once $path;
+            } else {
+                $this->error_log->log( "Missing dependency file: $path" );
+            }
+        }
     }
 
     /**
@@ -70,8 +95,19 @@ class Admin {
      * 
      */
     public function enqueue_scripts() {
-        wp_enqueue_script( 'ai-story-maker-admin', plugin_dir_url( __FILE__ ) . 'js/admin.js', array( 'jquery' ), '1.0', true );
-        wp_enqueue_style( 'ai-story-maker-admin', plugin_dir_url( __FILE__ ) . 'css/admin.css', array(), '1.0' );
+        wp_enqueue_script(
+            'ai-story-maker-admin',
+            plugin_dir_url( __FILE__ ) . 'js/admin.js',
+            array( 'jquery' ),
+            filemtime( plugin_dir_path( __FILE__ ) . 'js/admin.js' ),
+            true
+        );
+        wp_enqueue_style(
+            'ai-story-maker-admin',
+            plugin_dir_url( __FILE__ ) . 'css/admin.css',
+            array(),
+            filemtime( plugin_dir_path( __FILE__ ) . 'css/admin.css' )
+        );
     }
     /**
      * Registers the main and submenu pages in the admin area.
@@ -93,8 +129,12 @@ class Admin {
      * Renders the main admin settings page.
      */
     public function render_main_page() {
-		$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'welcome';
-		?>
+        $allowed_tabs = [ 'welcome', 'general', 'prompts', 'log' ];
+        // Safe: `tab` is used only for read-only navigation, not for processing user-submitted data.
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $active_tab = isset( $_GET['tab'] ) && in_array( $_GET['tab'], $allowed_tabs, true ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'welcome';
+            
+        ?>
         <div id="ai-story-maker-messages" class="notice notice-info hidden"></div>
 		<h2 class="nav-tab-wrapper">
             <a href="?page=story-maker-settings&tab=welcome" class="nav-tab <?php echo ( $active_tab === 'welcome' ) ? 'nav-tab-active' : ''; ?>">

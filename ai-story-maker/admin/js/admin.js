@@ -1,3 +1,18 @@
+/**
+ * Admin JavaScript for AI Story Maker
+ * Handles the dynamic behavior of the admin settings page.
+ * - Inline editing of prompts
+ * - Adding new prompts
+ * - Deleting prompts
+ * - Submitting the form with JSON data
+ * - AJAX request for generating stories
+ * - Handling the response from the server
+ * - Displaying success or error messages
+ * - Spinner animation on button click
+ * - Handling the "Make Stories" button click
+ * - Handling the "Add Prompt" button click
+ * - Handling the "Delete Prompt" button click
+ */
 document.addEventListener("DOMContentLoaded", function () {
 
     const prompt_form = document.getElementById("prompt-form");

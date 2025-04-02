@@ -1,5 +1,22 @@
 <?php
-/*
+/**
+ * Log Management class
+ * Handles logging for the AI Story Maker plugin.
+ * This class provides methods to create a log table, log messages, and display logs.
+ * Plugin Name: AI Story Maker
+ * Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
+ * Description: AI-powered WordPress plugin that generates engaging stories, articles, and images using Large Language Models.
+ * Version: 1.0
+ * Author: Hayan Mamoun
+ * Author URI: https://exedotcom.ca
+ * License: GPLv2 or later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
+ * Text Domain: ai-story-maker
+ * Domain Path: /languages
+ * Requires PHP: 7.4
+ * Requires at least: 5.0
+ * Tested up to: 6.7
+ 
 This plugin is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
@@ -63,7 +80,8 @@ class Log_Manager {
 	public static function log( $type, $message, $request_id = null ) {
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'ai_storymaker_logs';
-
+		// safe: log goes to a custom table
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$wpdb->insert(
 			$table_name,
 			[
@@ -89,8 +107,10 @@ class Log_Manager {
 		// Check cache before querying the database.
 		$logs = wp_cache_get( 'ai_storymaker_logs' );
 		if ( false === $logs ) {
+			// safe: i prefer not to user caching here
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 			$logs = $wpdb->get_results(
+				// sage: log table is a custom table
 				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$wpdb->prepare( "SELECT * FROM $table_name ORDER BY created_at DESC LIMIT %d", 50 )
 			);
@@ -134,7 +154,7 @@ class Log_Manager {
 
 			$table_name     = esc_sql( $wpdb->prefix . 'ai_storymaker_logs' );
 			$date_threshold = gmdate( 'Y-m-d H:i:s', strtotime( "-{$interval} days" ) );
-
+			// safe : log table is a custom table
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->delete(
 				$table_name,

@@ -1,4 +1,23 @@
 <?php
+/**
+ * Story Generator Class
+ * Description: This class handles the generation of AI stories using OpenAI API.
+ * It includes methods for fetching recent posts, generating stories, and replacing image placeholders.
+ * 
+ * Plugin Name: AI Story Maker
+ * Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
+ * Description: AI-powered WordPress plugin that generates engaging stories, articles, and images using Large Language Models.
+ * Version: 1.0
+ * Author: Hayan Mamoun
+ * Author URI: https://exedotcom.ca
+ * License: GPLv2 or later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
+ * Text Domain: ai-story-maker
+ * Domain Path: /languages
+ * Requires PHP: 7.4
+ * Requires at least: 5.0
+ * Tested up to: 6.7
+ */
 namespace AI_Story_Maker;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -59,7 +78,7 @@ class Story_Generator {
 
         $this->api_key = get_option( 'openai_api_key' );
         if ( ! $this->api_key ) {
-            $error = __( 'OpenAI API Key is missing.', 'ai-story-generator' );
+            $error = __( 'OpenAI API Key is missing.', 'ai-story-maker' );
             $this->log_manager::log( 'error', $error );
             $results['errors'][] = $error;
             wp_send_json_error( $results );
@@ -69,7 +88,7 @@ class Story_Generator {
         $settings     = json_decode( $raw_settings, true );
 
         if ( json_last_error() !== JSON_ERROR_NONE || empty( $settings['prompts'] ) ) {
-            $error = __( 'Invalid JSON format or no prompts found.', 'ai-story-generator' );
+            $error = __( 'Invalid JSON format or no prompts found.', 'ai-story-maker' );
             $this->log_manager::log( 'error', $error );
             $results['errors'][] = $error;
             wp_send_json_error( $results );
@@ -77,7 +96,7 @@ class Story_Generator {
 
         $this->default_settings = isset( $settings['default_settings'] ) ? $settings['default_settings'] : array();
 
-        $admin_prompt_settings  = __( 'The response must strictly follow this json structure: { "title": "Article Title", "content": "Full article content...", "excerpt": "A short summary of the article...", "references": [ {"title": "Source 1", "link": "https://yourdomain.com/source1"}, {"title": "Source 2", "link": "https://yourdomain.com/source2"} ] } return the real https tested domain for your references, not example.com', 'ai-story-generator' );
+        $admin_prompt_settings  = __( 'The response must strictly follow this json structure: { "title": "Article Title", "content": "Full article content...", "excerpt": "A short summary of the article...", "references": [ {"title": "Source 1", "link": "https://yourdomain.com/source1"}, {"title": "Source 2", "link": "https://yourdomain.com/source2"} ] } return the real https tested domain for your references, not example.com', 'ai-story-maker' );
 
         foreach ( $settings['prompts'] as &$prompt ) {
             if ( isset( $prompt['active'] ) && 0 === $prompt['active'] ) {
@@ -101,12 +120,17 @@ class Story_Generator {
                 // cancel the current schedule
                 wp_clear_scheduled_hook( 'ai_story_generator_repeating_event' );
                 // schedule the next event  
-                $next_schedule = date( 'Y-m-d H:i:s', time() +  $n * DAY_IN_SECONDS );
+                $next_schedule = gmtdate( 'Y-m-d H:i:s', time() +  $n * DAY_IN_SECONDS );
                 wp_schedule_single_event( time() + $n * DAY_IN_SECONDS , 'ai_story_generator_repeating_event' );
+               
+                $this->log_manager::log(
+					'info',
+                    // translators: %s: Date and time 
+					sprintf( __( 'Set next schedule to %s', 'ai-story-maker' ), $next_schedule )
+				);
 
-                $this->log_manager::log( 'info', __( 'Set next schedule to ' . $next_schedule, 'ai-story-generator' ) );
         } else {
-            $this->log_manager::log( 'info', __( 'Schedule for next story is unset', 'ai-story-generator' ) );
+            $this->log_manager::log( 'info', __( 'Schedule for next story is unset', 'ai-story-maker' ) );
             wp_clear_scheduled_hook( 'ai_story_generator_repeating_event' );
         }
     }
@@ -128,22 +152,22 @@ class Story_Generator {
         $default_system_content = isset( $merged_settings['system_content'] )
             ? $merged_settings['system_content']
             : '';
-            $default_system_content .= "\n" . __( 'You are an article generator. Your task is to search the web for the topic and create an article based on the given prompt.', 'ai-story-generator' );
-            $default_system_content .= "\n" . __( 'The article should be informative, engaging, and well-structured.', 'ai-story-generator' );
+            $default_system_content .= "\n" . __( 'You are an article generator. Your task is to search the web for the topic and create an article based on the given prompt.', 'ai-story-maker' );
+            $default_system_content .= "\n" . __( 'The article should be informative, engaging, and well-structured.', 'ai-story-maker' );
 
-            $default_system_content .= "\n" . __( '- at least 1000 words long.', 'ai-story-generator' );
-            $default_system_content .= "\n" . __( '- written in a professional tone.', 'ai-story-generator' );
-            $default_system_content .= "\n" . __( '- free of grammatical errors and typos.', 'ai-story-generator' );
-            $default_system_content .= "\n" . __( '- relevant to the given prompt.', 'ai-story-generator' );
-            $default_system_content .= "\n" . __( '- unique and not plagiarized.', 'ai-story-generator' );
-            $default_system_content .= "\n" . __( '- written in English.', 'ai-story-generator' );
-            $default_system_content .= "\n" . __( 'The article should not include any of the following recent posts or titles:', 'ai-story-generator' );
+            $default_system_content .= "\n" . __( '- at least 1000 words long.', 'ai-story-maker' );
+            $default_system_content .= "\n" . __( '- written in a professional tone.', 'ai-story-maker' );
+            $default_system_content .= "\n" . __( '- free of grammatical errors and typos.', 'ai-story-maker' );
+            $default_system_content .= "\n" . __( '- relevant to the given prompt.', 'ai-story-maker' );
+            $default_system_content .= "\n" . __( '- unique and not plagiarized.', 'ai-story-maker' );
+            $default_system_content .= "\n" . __( '- written in English.', 'ai-story-maker' );
+            $default_system_content .= "\n" . __( 'The article should not include any of the following recent posts or titles:', 'ai-story-maker' );
             foreach ( $recent_posts as $post ) {
-                $default_system_content .= "\n" . __( 'Title: ', 'ai-story-generator' ) . $post['title'];
-                $default_system_content .= "\n" . __( 'Excerpt: ', 'ai-story-generator' ) . $post['excerpt'];
+                $default_system_content .= "\n" . __( 'Title: ', 'ai-story-maker' ) . $post['title'];
+                $default_system_content .= "\n" . __( 'Excerpt: ', 'ai-story-maker' ) . $post['excerpt'];
             }
-            $default_system_content .= "\n" . __( 'The article should be divided into sections with appropriate headings and subheadings.', 'ai-story-generator' );
-            $default_system_content .= "\n" . __( 'The article should include at least 2 valid reference links.', 'ai-story-generator' );
+            $default_system_content .= "\n" . __( 'The article should be divided into sections with appropriate headings and subheadings.', 'ai-story-maker' );
+            $default_system_content .= "\n" . __( 'The article should include at least 2 valid reference links.', 'ai-story-maker' );
 
 
 
@@ -151,7 +175,7 @@ class Story_Generator {
 
             $thePrompt = $prompt['text'];
             if ($prompt['photos'] > 0) {
-                $thePrompt .= "\n" . __( 'Include at least ', 'ai-story-generator' ) . $prompt['photos'] . __( ' placeholders for images in the article. insert a placeholder in the following format {img_unsplash:keyword1,keyword2,keyword3} using the most relevant keywords for fetching related images from Unsplash', 'ai-story-generator' );
+                $thePrompt .= "\n" . __( 'Include at least ', 'ai-story-maker' ) . $prompt['photos'] . __( ' placeholders for images in the article. insert a placeholder in the following format {img_unsplash:keyword1,keyword2,keyword3} using the most relevant keywords for fetching related images from Unsplash', 'ai-story-maker' );
             }
             $response = wp_remote_post("https://api.openai.com/v1/chat/completions", [
                 'headers' => [
@@ -169,7 +193,14 @@ class Story_Generator {
                 ], JSON_PRETTY_PRINT),
                 'timeout' => $merged_settings['timeout'] ?? 30,
             ]);
+        $status_code = wp_remote_retrieve_response_code( $response );
 
+        if ( $status_code !== 200 ) {
+            // translators: %d: HTTP status code
+            $error_msg = sprintf( __( 'OpenAI API returned HTTP %d', 'ai-story-maker' ), $status_code );
+            $this->log_manager->log( 'error', $error_msg );
+            wp_send_json_error( array( 'errors' => array( $error_msg ) ) );
+        }
         if ( is_wp_error( $response ) ) {
             $error = $response->get_error_message();
             $this->log_manager->log( 'error', $error );
@@ -178,14 +209,14 @@ class Story_Generator {
 
         $response_body = json_decode( wp_remote_retrieve_body( $response ), true );
         if ( ! isset( $response_body['choices'][0]['message']['content'] ) ) {
-            $error = __( 'Invalid response from OpenAI API.', 'ai-story-generator' );
+            $error = __( 'Invalid response from OpenAI API.', 'ai-story-maker' );
             $this->log_manager->log( 'error', $error );
             wp_send_json_error( array( 'errors' => array( $error ) ) );
         }
 
         $parsed_content = json_decode( $response_body['choices'][0]['message']['content'], true );
         if ( ! isset( $parsed_content['title'], $parsed_content['content'] ) ) {
-            $error = __( 'Invalid content structure.', 'ai-story-generator' );
+            $error = __( 'Invalid content structure.', 'ai-story-maker' );
             $this->log_manager->log( 'error', $error );
             wp_send_json_error( array( 'errors' => array( $error ) ) );
         }
@@ -193,12 +224,12 @@ class Story_Generator {
 
         $total_tokens = isset( $response_body['usage']['total_tokens'] ) ? (int)$response_body['usage']['total_tokens'] : 0;
         $request_id   = isset( $response_body['id'] ) ? sanitize_text_field( $response_body['id'] ) : uniqid( 'ai_news_' );
-        $title        = isset( $parsed_content['title'] ) ? sanitize_text_field( $parsed_content['title'] ) : __( 'Untitled Article', 'ai-story-generator' );
-        $content      = isset( $parsed_content['content'] ) ? wp_kses_post( $parsed_content['content'] ) : __( 'Content not available.', 'ai-story-generator' );
+        $title        = isset( $parsed_content['title'] ) ? sanitize_text_field( $parsed_content['title'] ) : __( 'Untitled Article', 'ai-story-maker' );
+        $content      = isset( $parsed_content['content'] ) ? wp_kses_post( $parsed_content['content'] ) : __( 'Content not available.', 'ai-story-maker' );
         $content      = $this->replace_image_placeholders( $content );
-        $category     = isset( $prompt['category'] ) ? sanitize_text_field( $prompt['category'] ) : __( 'News', 'ai-story-generator' );
+        $category     = isset( $prompt['category'] ) ? sanitize_text_field( $prompt['category'] ) : __( 'News', 'ai-story-maker' );
 
-        $content .= '<div class="ai-story-model">' . __( 'generated by:', 'ai-story-generator' ) . ' ' . esc_html( $merged_settings['model'] ) . '</div>';
+        $content .= '<div class="ai-story-model">' . __( 'generated by:', 'ai-story-maker' ) . ' ' . esc_html( $merged_settings['model'] ) . '</div>';
 
         // Determine the post author.
         $post_author = 0;
@@ -291,7 +322,7 @@ class Story_Generator {
         if (!empty($data['results'][$image_index]['urls']['small'])) {
             $url = $data['results'][$image_index]['urls']['small'];
             $credits = $data['results'][$image_index]['user']['name'] . ' by unsplash.com';
-            // required by unsplash
+            // as required by unsplash
             // phpcs:ignore PluginCheck.CodeAnalysis.ImageFunctions.NonEnqueuedImage
             $ret = '<figure><img src="' . esc_url($url) . '" alt="' . esc_attr(implode(' ', $keywords)) . '" /><figcaption>' . esc_html($credits) . '</figcaption></figure>';
     

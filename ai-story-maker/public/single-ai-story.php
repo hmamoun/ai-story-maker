@@ -54,9 +54,9 @@ wp_head();
 $custom_logo_id = get_theme_mod('custom_logo');
 $logo = wp_get_attachment_image_src($custom_logo_id, 'full');
 if (has_custom_logo()) {
-    echo '<img src="' . esc_url($logo[0]) . '" alt="' . get_bloginfo('name') . '">';
+    echo wp_get_attachment_image($custom_logo_id, 'full');
 } else {
-    echo get_bloginfo('name');
+    echo esc_html(get_bloginfo('name'));
 }
 
 ?>

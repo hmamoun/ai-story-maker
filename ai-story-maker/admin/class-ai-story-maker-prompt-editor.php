@@ -1,5 +1,9 @@
 <?php
 /*
+    * AI Story Maker 
+    * Prompt Editor class
+    * Description: This class handles the admin prompt editor page for managing story prompts.
+    
  * This plugin is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -37,9 +41,10 @@ class Prompt_Editor {
      */
     public function render() {
         // Process form submission (business logic stays in the class)
-        if ( $_SERVER['REQUEST_METHOD'] === 'POST' && isset( $_POST['save_prompts_v2'] ) ) {
+        if ( isset( $_SERVER['REQUEST_METHOD'] ) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset( $_POST['save_prompts_v2'] ) ) {
             check_admin_referer( 'save_story_prompts', 'story_prompts_nonce' );
-            $updated_prompts = isset( $_POST['prompts'] ) ? json_decode( stripslashes( $_POST['prompts'] ), true ) : [];
+            $raw_prompts_input = isset( $_POST['prompts'] ) ? sanitize_textarea_field( wp_unslash( $_POST['prompts'] ) ) : '';
+            $updated_prompts   = $raw_prompts_input ? json_decode( $raw_prompts_input, true ) : [];
             update_option( 'ai_story_prompts', json_encode( $updated_prompts, JSON_PRETTY_PRINT ) );
 
             echo '<div id="ai-story-maker-messages" class="notice notice-info"><p>✅ ' 

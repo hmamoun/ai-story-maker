@@ -1,4 +1,22 @@
 <?php
+/**
+ * class: Setting page for AI Story Maker
+ * description: This class handles the rendering and processing of the AI Story Maker settings page.
+ * 
+ * Plugin Name: AI Story Maker
+ * Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
+ * Description: AI-powered WordPress plugin that generates engaging stories, articles, and images using Large Language Models.
+ * Version: 1.0
+ * Author: Hayan Mamoun
+ * Author URI: https://exedotcom.ca
+ * License: GPLv2 or later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
+ * Text Domain: ai-story-maker
+ * Domain Path: /languages
+ * Requires PHP: 7.4
+ * Requires at least: 5.0
+ * Tested up to: 6.7
+ */
 namespace AI_Story_Maker;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -34,7 +52,7 @@ class Settings_Page {
 				return;
 			}
 
-			if ( API_Keys::validate_openai_api_key( sanitize_text_field( wp_unslash( $_POST['openai_api_key'] ) ) ) === false ) {
+			if ( ! isset( $_POST['openai_api_key'] ) || API_Keys::validate_openai_api_key( sanitize_text_field( wp_unslash( $_POST['openai_api_key'] ) ) ) === false ) {
 				echo '<div class="error"><p>❌ ' . esc_html__( 'Invalid OpenAI API key.', 'ai-story-maker' ) . '</p></div>';
 				$this->log_manager->log(  'error', '❌ Invalid OpenAI API key.' );
 				return;
@@ -71,7 +89,7 @@ class Settings_Page {
 				update_option( 'opt_ai_story_repeat_interval_days', sanitize_text_field( wp_unslash( $_POST['opt_ai_story_repeat_interval_days'] ) ) );
 				if (  $n != $interval ) {
 					wp_clear_scheduled_hook( 'ai_story_generator_repeating_event' );
-					ai_story_generator_check_schedule(); 
+					ai_story_maker_check_schedule(); 
 				}
 			}
 			if ( isset( $_POST['opt_ai_story_auther'] ) ) {
@@ -116,8 +134,8 @@ class Settings_Page {
 				</p>
 				<select name="opt_ai_storymaker_clear_log">
 					<?php for ( $i = 0; $i <= 30; $i++ ) : ?>
-						<option value="<?php echo $i; ?>" <?php selected( get_option( 'opt_ai_storymaker_clear_log' ), $i ); ?>>
-							<?php echo $i; ?> <?php esc_html_e( 'Day(s)', 'ai-story-maker' ); ?>
+						<option value="<?php echo esc_attr( $i ); ?>" <?php selected( get_option( 'opt_ai_storymaker_clear_log' ), $i ); ?>>
+							<?php  echo esc_attr( $i ); ?> <?php esc_html_e( 'Day(s)', 'ai-story-maker' ); ?>
 						</option>
 					<?php endfor; ?>
 				</select>
@@ -128,8 +146,8 @@ class Settings_Page {
 				</p>
 				<select name="opt_ai_story_repeat_interval_days">
 					<?php for ( $i = 0; $i <= 30; $i++ ) : ?>
-						<option value="<?php echo $i; ?>" <?php selected( get_option( 'opt_ai_story_repeat_interval_days' ), $i ); ?>>
-							<?php echo $i; ?> <?php esc_html_e( 'Day(s)', 'ai-story-maker' ); ?>
+						<option value="<?php  echo esc_attr( $i ); ?>" <?php selected( get_option( 'opt_ai_story_repeat_interval_days' ), $i ); ?>>
+							<?php  echo esc_attr( $i ); ?> <?php esc_html_e( 'Day(s)', 'ai-story-maker' ); ?>
 						</option>
 					<?php endfor; ?>
 				</select>
