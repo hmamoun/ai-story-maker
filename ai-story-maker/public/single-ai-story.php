@@ -15,7 +15,8 @@ GNU General Public License for more details.
  */
 // Get the post data
 if (!defined('ABSPATH')) exit;
-get_header();
+//get_header();
+wp_head();
 ?>
 <main class="ai-story-container">
     <article class="ai-story-article">
@@ -28,7 +29,7 @@ get_header();
         </section>
         <?php
         // Retrieve references from post meta
-        $references = get_post_meta(get_the_ID(), 'ai_story_sources', true);
+        $references = get_post_meta(get_the_ID(), '_ai_story_maker_sources', true);
         $references = json_decode($references, true); // Decode JSON if stored as JSON
         ?>
         <?php if (!empty($references) && is_array($references)) : ?>
@@ -47,7 +48,20 @@ get_header();
 
     <!-- Sidebar for Other News and Search -->
     <aside class="ai-story-sidebar">
-    <p><a href="<?php echo esc_url(home_url()); ?>">Back to Home</a></p> 
+    <p><a href="<?php echo esc_url(home_url()); ?>">
+<?php
+// show the icon and the title of the website, add an anchro tag to the home page
+$custom_logo_id = get_theme_mod('custom_logo');
+$logo = wp_get_attachment_image_src($custom_logo_id, 'full');
+if (has_custom_logo()) {
+    echo wp_get_attachment_image($custom_logo_id, 'full');
+} else {
+    echo esc_html(get_bloginfo('name'));
+}
+
+?>
+
+    </a></p> 
         <form role="search" method="get" class="search-form" onsubmit="return false;">
             <input type="search" class="search-field" placeholder="Search stories..." value="<?php echo get_search_query(); ?>" name="s" id="ai-story-search">
             <input type="hidden" id="search_nonce" value="<?php echo esc_html(wp_create_nonce('search_nonce')); ?>">
@@ -88,9 +102,11 @@ get_header();
                 }
             endwhile;
             wp_reset_postdata();
-        else :
+        endif;
+
+        if ($displayed_posts === 0) :
             ?>
-            <li>No results found. Please try a different search.</li>
+            <li>No other stories found.</li>
         <?php endif; ?>
     </ul>
 </section>
@@ -113,13 +129,19 @@ get_header();
 function enqueue_story_style() {
     wp_enqueue_style(
         'story-style',
-        plugin_dir_url(__FILE__) . '../assets/story-style.css',
+        plugin_dir_url(__FILE__) . '../public/css/story-style.css',
         array(), // No dependencies
-        filemtime(plugin_dir_path(__FILE__) . '../assets/story-style.css'), // Cache busting
+        filemtime(plugin_dir_path(__FILE__) . '../public/css/story-style.css'), // Cache busting
         'all' // Media type
     );
 }
 enqueue_story_style();
-//add_action('wp_enqueue_scripts', 'enqueue_story_style');
-get_footer(); 
+?>
+<footer class="ai-story-maker-footer">
+    <p>
+        This story is created by AI Story Maker, a plugin by <a href="https://exedotcom.ca" title="Exedotcom" rel="nofollow" style="color: inherit;">Exedotcom.ca</a>
+    </p>
+</footer>
+<?php
+wp_footer()
 ?>

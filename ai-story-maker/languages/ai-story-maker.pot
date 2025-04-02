@@ -1,0 +1,325 @@
+# Copyright (C) 2025 Hayan Mamoun
+# This file is distributed under the GPLv2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: AI Story Maker 1.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/ai-story-maker\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2025-04-02T01:43:31+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.11.0\n"
+"X-Domain: ai-story-maker\n"
+
+#. Plugin Name of the plugin
+#: ai-story-maker.php
+#: admin/class-ai-story-maker-admin.php:125
+#: admin/class-ai-story-maker-admin.php:147
+msgid "AI Story Maker"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: ai-story-maker.php
+msgid "https://github.com/hmamoun/ai-story-maker"
+msgstr "https://github.com/hmamoun/ai-story-maker"
+
+#. Description of the plugin
+#: ai-story-maker.php
+msgid "AI-powered WordPress plugin that generates engaging stories, articles, and images using Large Language Models."
+msgstr ""
+
+#. Author of the plugin
+#: ai-story-maker.php
+msgid "Hayan Mamoun"
+msgstr ""
+
+#. Author URI of the plugin
+#: ai-story-maker.php
+msgid "https://exedotcom.ca"
+msgstr ""
+
+#: admin/class-ai-story-maker-admin.php:124
+msgid "AI Story Maker Settings"
+msgstr ""
+
+#: admin/class-ai-story-maker-admin.php:150
+msgid "General Settings"
+msgstr ""
+
+#: admin/class-ai-story-maker-admin.php:153
+msgid "Prompts"
+msgstr ""
+
+#: admin/class-ai-story-maker-admin.php:156
+msgid "log"
+msgstr ""
+
+#: admin/class-ai-story-maker-prompt-editor.php:46
+msgid "Prompts saved successfully!"
+msgstr ""
+
+#: admin/class-ai-story-maker-settings-page.php:32
+msgid "Security check failed. Please try again."
+msgstr ""
+
+#: admin/class-ai-story-maker-settings-page.php:38
+msgid "Invalid OpenAI API key."
+msgstr ""
+
+#: admin/class-ai-story-maker-settings-page.php:81
+msgid "Settings saved!"
+msgstr ""
+
+#: admin/class-ai-story-maker-settings-page.php:88
+msgid "API Keys"
+msgstr ""
+
+#: admin/class-ai-story-maker-settings-page.php:90
+msgid "AI Story Maker integrates with OpenAI and Unsplash APIs to generate content and images. Please enter your API keys below. Registration may be required to obtain them."
+msgstr ""
+
+#: admin/class-ai-story-maker-settings-page.php:93
+msgid "OpenAI"
+msgstr ""
+
+#: admin/class-ai-story-maker-settings-page.php:93
+msgid "API"
+msgstr ""
+
+#: admin/class-ai-story-maker-settings-page.php:93
+#: admin/class-ai-story-maker-settings-page.php:100
+msgid "Key:"
+msgstr ""
+
+#: admin/class-ai-story-maker-settings-page.php:95
+msgid "OpenAI API Key"
+msgstr ""
+
+#: admin/class-ai-story-maker-settings-page.php:97
+msgid "Unsplash"
+msgstr ""
+
+#: admin/class-ai-story-maker-settings-page.php:97
+msgid "API Key and Secret"
+msgstr ""
+
+#: admin/class-ai-story-maker-settings-page.php:101
+msgid "Key"
+msgstr ""
+
+#: admin/class-ai-story-maker-settings-page.php:102
+msgid "Secret:"
+msgstr ""
+
+#: admin/class-ai-story-maker-settings-page.php:103
+msgid "Secret"
+msgstr ""
+
+#: admin/class-ai-story-maker-settings-page.php:106
+msgid "Story Generation Settings"
+msgstr ""
+
+#: admin/class-ai-story-maker-settings-page.php:107
+msgid "Log Retention (Days):"
+msgstr ""
+
+#. translators: %s: link to log page
+#: admin/class-ai-story-maker-settings-page.php:112
+msgid "AI Story Maker maintains a detailed log of its activities. Choose how many days to retain the logs, or set to 0 to keep them indefinitely. You can view the log <a href=\"%s\">here</a>."
+msgstr ""
+
+#: admin/class-ai-story-maker-settings-page.php:120
+#: admin/class-ai-story-maker-settings-page.php:132
+msgid "Day(s)"
+msgstr ""
+
+#: admin/class-ai-story-maker-settings-page.php:125
+msgid "Generate New Stories Every (Days):"
+msgstr ""
+
+#: admin/class-ai-story-maker-settings-page.php:127
+msgid "AI Story Maker can automatically generate new stories at regular intervals. Set to 0 to disable scheduled generation."
+msgstr ""
+
+#: admin/class-ai-story-maker-settings-page.php:137
+msgid "Select Story Author:"
+msgstr ""
+
+#: admin/class-ai-story-maker-settings-page.php:139
+msgid "Select the author for AI-generated stories. If you need to create a new author, you can do so"
+msgstr ""
+
+#: admin/class-ai-story-maker-settings-page.php:140
+msgid "here"
+msgstr ""
+
+#: admin/class-ai-story-maker-settings-page.php:141
+msgid "Ensure the role is set to \"Author\"."
+msgstr ""
+
+#: admin/class-ai-story-maker-settings-page.php:154
+msgid "Save Settings"
+msgstr ""
+
+#: admin/templates/prompt-editor-template.php:20
+msgid "Model"
+msgstr ""
+
+#: admin/templates/prompt-editor-template.php:28
+msgid "General Instructions"
+msgstr ""
+
+#: admin/templates/prompt-editor-template.php:38
+msgid "Prompt"
+msgstr ""
+
+#: admin/templates/prompt-editor-template.php:39
+msgid "Category"
+msgstr ""
+
+#: admin/templates/prompt-editor-template.php:40
+msgid "Photos Count"
+msgstr ""
+
+#: admin/templates/prompt-editor-template.php:41
+msgid "Active Prompt"
+msgstr ""
+
+#: admin/templates/prompt-editor-template.php:42
+msgid "Auto Publish Post"
+msgstr ""
+
+#: admin/templates/prompt-editor-template.php:43
+msgid "Actions"
+msgstr ""
+
+#: admin/templates/prompt-editor-template.php:75
+msgid "Delete"
+msgstr ""
+
+#: admin/templates/prompt-editor-template.php:81
+msgid "Add a new prompt"
+msgstr ""
+
+#: admin/templates/prompt-editor-template.php:87
+msgid "Save Prompts"
+msgstr ""
+
+#: admin/templates/prompt-editor-template.php:99
+msgid "Launch Story Generation"
+msgstr ""
+
+#: admin/templates/welcome-tab-template.php:64
+msgid "No scheduled story generation."
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:62
+msgid "OpenAI API Key is missing."
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:72
+msgid "Invalid JSON format or no prompts found."
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:80
+msgid "The response must strictly follow this json structure: { \"title\": \"Article Title\", \"content\": \"Full article content...\", \"excerpt\": \"A short summary of the article...\", \"references\": [ {\"title\": \"Source 1\", \"link\": \"https://yourdomain.com/source1\"}, {\"title\": \"Source 2\", \"link\": \"https://yourdomain.com/source2\"} ] } return the real https tested domain for your references, not example.com"
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:109
+msgid "Set next schedule to %s"
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:113
+msgid "Schedule for next story is unset"
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:135
+msgid "You are an article generator. Your task is to search the web for the topic and create an article based on the given prompt."
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:136
+msgid "The article should be informative, engaging, and well-structured."
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:138
+msgid "- at least 1000 words long."
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:139
+msgid "- written in a professional tone."
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:140
+msgid "- free of grammatical errors and typos."
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:141
+msgid "- relevant to the given prompt."
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:142
+msgid "- unique and not plagiarized."
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:143
+msgid "- written in English."
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:144
+msgid "The article should not include any of the following recent posts or titles:"
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:146
+msgid "Title: "
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:147
+msgid "Excerpt: "
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:149
+msgid "The article should be divided into sections with appropriate headings and subheadings."
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:150
+msgid "The article should include at least 2 valid reference links."
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:158
+msgid "Include at least "
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:158
+msgid " placeholders for images in the article. insert a placeholder in the following format {img_unsplash:keyword1,keyword2,keyword3} using the most relevant keywords for fetching related images from Unsplash"
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:178
+msgid "OpenAI API returned HTTP %d"
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:190
+msgid "Invalid response from OpenAI API."
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:197
+msgid "Invalid content structure."
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:205
+msgid "Untitled Article"
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:206
+msgid "Content not available."
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:208
+msgid "News"
+msgstr ""
+
+#: includes/class-ai-story-maker-story-generator.php:210
+msgid "generated by:"
+msgstr ""

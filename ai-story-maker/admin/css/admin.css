@@ -1,0 +1,112 @@
+/*
+ * -----------------------------------------------------------------------------
+ * File: admin.css
+ * Path: /Users/ano/Documents/repos/ai-story-maker/ai-story-maker/admin/css/admin.css
+ *
+ * Description:
+ * This stylesheet provides style definitions for the AI Story Maker admin
+ * settings interface. It contains styling for the settings container, forms,
+ * input fields, labels, and specific row states such as newly added prompts
+ * and rows marked for deletion.
+ * -----------------------------------------------------------------------------
+ */
+
+/* Container for AI Story Maker settings */
+.ai-storymaker-settings {
+    padding: 20px;
+    background: #fff;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Header styles within settings */
+.ai-storymaker-settings h2 {
+    border-bottom: 2px solid #0073aa;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+/* Label styling for form fields */
+.ai-storymaker-settings label {
+    font-weight: bold;
+    display: block;
+    margin-top: 15px;
+}
+
+/* Input text fields */
+.ai-storymaker-settings input[type="text"] {
+    width: 90%;
+    padding: 8px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+/* Select field styling */
+.ai-storymaker-settings select {
+    -webkit-appearance: none;
+       -moz-appearance: none;
+            appearance: none;
+    background: #ccc;
+    height: 32px;
+    line-height: 32px;
+    padding: 0 8px;
+    border: 1px solid #ccc;
+}
+
+/* Styling for inline fields grouping */
+.ai-storymaker-settings .inline-fields {
+    display: flex;
+    gap: 10px;
+}
+
+.ai-storymaker-settings .inline-fields input {
+    flex: 1;
+}
+
+/* Submit button styling */
+.ai-storymaker-settings .submit-button {
+
+    margin-top: 20px;
+}
+
+.wp-core-ui .button-primary {
+    display: block;
+    margin: auto;
+}
+#add-prompt {
+    display: block ;
+    margin-right: 0;
+
+}
+
+
+
+/* Style for deleted prompt text */
+.deleted-prompt {
+    text-decoration: line-through;
+    color: red;
+}
+
+/* New row styling */
+.new-prompt-row {
+    background-color: #e0f7fa !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Row marked for deletion */
+.marked-for-deletion {
+    background-color: #ffccbc !important;
+    transition: opacity 0.5s ease, background-color 0.5s ease;
+    opacity: 0.5;
+}
+
+.wp-list-table td[data-field="category"],
+.wp-list-table td[data-field="photos"],
+.wp-list-table td[data-field="active"] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
