@@ -44,28 +44,11 @@ class Admin {
         
         // Hook the enqueue_scripts method to the admin_enqueue_scripts action.
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
-        // $this->enqueue_scripts();
 
-        if ( class_exists( 'Log_Manager' ) ) {
-            $this->log_manager = new Log_Manager();
-        } 
-
-        // Instantiate the page-specific classes.
-        if ( class_exists( 'Prompt_Editor' ) ) {
-            $this->prompt_editor = new Prompt_Editor();
-        } 
-        
-        if ( class_exists( 'API_Keys' ) ) {
-            $this->api_keys = new API_Keys();
-        }
-        
-        if ( class_exists( 'Settings_Page' ) ) {
-            $this->settings_page = new Settings_Page();
-        } 
-        
-
-        
- 
+        $this->log_manager = new Log_Manager();
+        $this->prompt_editor = new Prompt_Editor();
+        $this->api_keys = new API_Keys();
+        $this->settings_page = new Settings_Page();
         // Register the admin menu.
         add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
     }
@@ -161,7 +144,7 @@ class Admin {
         } elseif ( 'prompts' === $active_tab ) {
             $this->prompt_editor->render();
         } elseif ( 'log' === $active_tab ) {
-            $this->log_manager->display_logs_page();
+            $this->log_manager->render_log_table();
         }
     
 	}

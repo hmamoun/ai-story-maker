@@ -1,19 +1,20 @@
 <?php
-/**
- * Plugin Name: AI Story Maker
- * Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
- * Description: AI-powered WordPress plugin that generates engaging stories, articles, and images using Large Language Models.
- * Version: 1.0
- * Author: Hayan Mamoun
- * Author URI: https://exedotcom.ca
- * License: GPLv2 or later
- * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: ai-story-maker
- * Domain Path: /languages
- * Requires PHP: 7.4
- * Requires at least: 5.0
- * Tested up to: 6.7
- */
+/*
+Plugin Name: AI Story Maker
+Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
+Description: AI-powered content generator WordPress plugin
+Version: 0.1.0
+Author: Hayan Mamoun
+Author URI: https://exedotcom.ca
+License:           GPLv2 or later
+License URI:       https://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: ai-story-maker
+Domain Path: /languages
+Requires PHP:      7.4
+Requires at least: 5.6
+Tested up to:      6.7
+*/
+
 namespace AI_Story_Maker;
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -166,7 +167,7 @@ function ai_story_maker_check_schedule() {
         
         if (0 !== $n) {
             // bmark Schedule in the case of no schedule
-            $next_schedule = gmtdate('Y-m-d H:i:s', time() + $n * DAY_IN_SECONDS);
+            $next_schedule = gmdate('Y-m-d H:i:s', time() + $n * DAY_IN_SECONDS);
             wp_schedule_single_event(time() + $n * DAY_IN_SECONDS, 'ai_story_generator_repeating_event');
             // Log the next schedule
             /* translators: %s: next schedule */

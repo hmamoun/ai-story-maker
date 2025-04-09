@@ -40,9 +40,10 @@ class Story_Generator {
     }
 
     /**
-     * Retrieve recent post excerpts.
+     * Retrieve recent post excerpts from a specific category.
      *
      * @param int $number_of_posts
+     * @param string $category
      * @return array
      */
     public function get_recent_posts( $number_of_posts, $category ) {
@@ -68,6 +69,8 @@ class Story_Generator {
     
     /**
      * Generate AI Story using OpenAI API.
+     * Will get the prompts from the database and generate stories based on them.
+     * @return void
      */
     public function generate_ai_stories() {
 
@@ -81,7 +84,7 @@ class Story_Generator {
             $error = __( 'OpenAI API Key is missing.', 'ai-story-maker' );
             $this->log_manager::log( 'error', $error );
             $results['errors'][] = $error;
-            wp_send_json_error( $results );
+            return;
         }
 
         $raw_settings = get_option( 'ai_story_prompts', '' );
@@ -96,6 +99,7 @@ class Story_Generator {
 
         $this->default_settings = isset( $settings['default_settings'] ) ? $settings['default_settings'] : array();
 
+        // Set default values for the settings. to force the structure of the response and insure the response is in the correct format
         $admin_prompt_settings  = __( 'The response must strictly follow this json structure: { "title": "Article Title", "content": "Full article content...", "excerpt": "A short summary of the article...", "references": [ {"title": "Source 1", "link": "https://yourdomain.com/source1"}, {"title": "Source 2", "link": "https://yourdomain.com/source2"} ] } return the real https tested domain for your references, not example.com', 'ai-story-maker' );
 
         foreach ( $settings['prompts'] as &$prompt ) {
@@ -120,7 +124,7 @@ class Story_Generator {
                 // cancel the current schedule
                 wp_clear_scheduled_hook( 'ai_story_generator_repeating_event' );
                 // schedule the next event  
-                $next_schedule = gmtdate( 'Y-m-d H:i:s', time() +  $n * DAY_IN_SECONDS );
+                $next_schedule = gmdate( 'Y-m-d H:i:s', time() +  $n * DAY_IN_SECONDS );
                 wp_schedule_single_event( time() + $n * DAY_IN_SECONDS , 'ai_story_generator_repeating_event' );
                
                 $this->log_manager::log(
@@ -136,9 +140,10 @@ class Story_Generator {
     }
 
 
-
     /**
      * Generate AI Story using OpenAI API.
+     * will generate the story based on the prompt and settings and create a post.
+     * 
      * @param string $prompt_id
      * @param array $prompt
      * @param array $default_settings
@@ -150,11 +155,10 @@ class Story_Generator {
     public function generate_ai_story( $prompt_id, $prompt, $default_settings, $recent_posts, $admin_prompt_settings, $api_key ) {
         $merged_settings = array_merge( $default_settings, $prompt );
         $default_system_content = isset( $merged_settings['system_content'] )
-            ? $merged_settings['system_content']
-            : '';
+            ? $merged_settings['system_content'] : '';
+            // another set of instructions for the AI endpoint
             $default_system_content .= "\n" . __( 'You are an article generator. Your task is to search the web for the topic and create an article based on the given prompt.', 'ai-story-maker' );
             $default_system_content .= "\n" . __( 'The article should be informative, engaging, and well-structured.', 'ai-story-maker' );
-
             $default_system_content .= "\n" . __( '- at least 1000 words long.', 'ai-story-maker' );
             $default_system_content .= "\n" . __( '- written in a professional tone.', 'ai-story-maker' );
             $default_system_content .= "\n" . __( '- free of grammatical errors and typos.', 'ai-story-maker' );
@@ -194,19 +198,20 @@ class Story_Generator {
                 'timeout' => $merged_settings['timeout'] ?? 30,
             ]);
         $status_code = wp_remote_retrieve_response_code( $response );
-
+        // check if response is success
         if ( $status_code !== 200 ) {
             // translators: %d: HTTP status code
             $error_msg = sprintf( __( 'OpenAI API returned HTTP %d', 'ai-story-maker' ), $status_code );
             $this->log_manager->log( 'error', $error_msg );
             wp_send_json_error( array( 'errors' => array( $error_msg ) ) );
         }
+        // check if response is valid
         if ( is_wp_error( $response ) ) {
             $error = $response->get_error_message();
             $this->log_manager->log( 'error', $error );
             wp_send_json_error( array( 'errors' => array( $error ) ) );
         }
-
+        // check if response is empty
         $response_body = json_decode( wp_remote_retrieve_body( $response ), true );
         if ( ! isset( $response_body['choices'][0]['message']['content'] ) ) {
             $error = __( 'Invalid response from OpenAI API.', 'ai-story-maker' );
@@ -291,7 +296,12 @@ class Story_Generator {
         }
 
     }
-
+    /**
+     * Replace image placeholders in the article content with Unsplash images.
+     * 
+     * @param string $article_content The article content with image placeholders.
+     * @return string The article content with image placeholders replaced by Unsplash images.
+     */
     function replace_image_placeholders($article_content) {
         $self = $this; // assign $this to $self
         return preg_replace_callback('/\{img_unsplash:([a-zA-Z0-9,_ ]+)\}/', function ($matches) use ($self) {
@@ -301,6 +311,12 @@ class Story_Generator {
         }, $article_content);
     }
     
+    /**
+     * Fetch an image from Unsplash based on the provided keywords.
+     * 
+     * @param array $keywords The keywords to search for.
+     * @return string The HTML markup for the image or an empty string if no image is found.
+     */
     function fetch_unsplash_image($keywords) {
         $api_key = get_option('unsplash_api_key');
     

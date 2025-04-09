@@ -17,15 +17,15 @@
  * Requires at least: 5.0
  * Tested up to: 6.7
  
-This plugin is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
+	This plugin is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
  */
 namespace AI_Story_Maker;
 
@@ -76,6 +76,8 @@ class Log_Manager {
 	 * @param string      $type       The type of log (e.g. 'success', 'error').
 	 * @param string      $message    The log message.
 	 * @param string|null $request_id An optional request ID.
+	 * 
+	 * @return void
 	 */
 	public static function log( $type, $message, $request_id = null ) {
 		global $wpdb;
@@ -99,8 +101,11 @@ class Log_Manager {
 
 	/**
 	 * Displays the logs page with caching.
+	 * 
+	 * @return void
+	 * 
 	 */
-	public static function display_logs_page() {
+	public static function render_log_table() {
 		global $wpdb;
 		$table_name = esc_sql( $wpdb->prefix . 'ai_storymaker_logs' );
 
@@ -138,6 +143,8 @@ class Log_Manager {
 
 	/**
 	 * Scheduled function to clear old logs.
+	 * 
+	 * @return void
 	 */
 	public static function clear_logs() {
 		global $wpdb;
