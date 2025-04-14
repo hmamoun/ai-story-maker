@@ -114,8 +114,23 @@ if ( ! defined( 'ABSPATH' ) ) {
     You can always check the next scheduled generation time in the <strong>AI Story Maker</strong> tab.
   </p>
 </div>             
-        <button id="make-stories-button" class="button button-primary"><?php esc_html_e( 'Launch Story Generation', 'ai-story-maker' ); ?></button>
-    </div>
+<?php
+$is_generating = get_transient( 'ai_story_generator_running' );
+$button_disabled = $is_generating ? 'disabled' : '';
+$button_text = $is_generating
+    ? __( 'Story generation in progress...', 'ai-story-maker' )
+    : __( 'Launch Story Generation', 'ai-story-maker' );
+?>
+
+<button
+    id="make-stories-button"
+    class="button button-primary"
+    <?php echo $button_disabled; ?>
+>
+    <?php echo esc_html( $button_text ); ?>
+</button>
+
+</div>
 
 
 </div>

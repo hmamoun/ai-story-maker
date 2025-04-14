@@ -61,27 +61,40 @@ if ( ! defined( 'ABSPATH' ) ) {
         </p>
 
         <?php
-        // bmark Schedule to display the next event
-        $next_event = wp_next_scheduled( 'ai_story_generator_repeating_event' );
-        if ( $next_event ) {
-            $time_diff  = $next_event - time();
-            $days       = floor( $time_diff / ( 60 * 60 * 24 ) );
-            $hours      = floor( ( $time_diff % ( 60 * 60 * 24 ) ) / ( 60 * 60 ) );
-            $minutes    = floor( ( $time_diff % ( 60 * 60 ) ) / 60 );
-            $next_event = sprintf( '%dd %dh %dm', $days, $hours, $minutes );
-            ?>
-            <strong>
-                A new story will be automatically generated and added to your site in 
-                <?php echo esc_html( $next_event ); ?>
-            </strong>
-        <?php
-        } else {
-            ?>
-            <strong>
-                <?php esc_html_e( 'No scheduled story generation.', 'ai-story-maker' ); ?>
-            </strong>
-        <?php
-        }
-        ?>
+ $next_event = wp_next_scheduled( 'ai_story_generator_cron_event' );
+ $is_generating = get_transient( 'ai_story_generator_running' );
+ 
+ if ( $next_event ) {
+     $time_diff  = $next_event - time();
+     $days       = floor( $time_diff / ( 60 * 60 * 24 ) );
+     $hours      = floor( ( $time_diff % ( 60 * 60 * 24 ) ) / ( 60 * 60 ) );
+     $minutes    = floor( ( $time_diff % ( 60 * 60 ) ) / 60 );
+ 
+     $formatted_countdown = sprintf( '%dd %dh %dm', $days, $hours, $minutes );
+     $formatted_datetime  = date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $next_event );
+ 
+     ?>
+     <div class="notice notice-info">
+         <strong>
+             🕒 Next AI story generation scheduled in <?php echo esc_html( $formatted_countdown ); ?><br>
+             📅 Scheduled for: <em><?php echo esc_html( $formatted_datetime ); ?></em><br>
+             <?php if ( $is_generating ) : ?>
+                 🔄 <span style="color: #d98500;"><strong>Currently generating stories...</strong></span>
+             <?php else : ?>
+                 ✅ <span style="color: #2f855a;">No generation in progress.</span>
+             <?php endif; ?>
+         </strong>
+     </div>
+     <?php
+ } else {
+     ?>
+     <div class="notice notice-warning">
+         <strong>
+             <?php esc_html_e( 'No scheduled story generation found.', 'ai-story-maker' ); ?>
+         </strong>
+     </div>
+     <?php
+ }
+ ?>
     </div>
 </div>

@@ -2,23 +2,25 @@
 /*
 Plugin Name: AI Story Maker
 Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
-Description: AI-powered content generator WordPress plugin
+Description: AI-powered content generator for WordPress — create engaging stories with a single click.
 Version: 0.1.0
 Author: Hayan Mamoun
 Author URI: https://exedotcom.ca
-License:           GPLv2 or later
-License URI:       https://www.gnu.org/licenses/gpl-2.0.html
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: ai-story-maker
 Domain Path: /languages
-Requires PHP:      7.4
-Requires at least: 5.6
-Tested up to:      6.7
+Requires PHP: 7.4
+Requires at least: 5.8
+Tested up to: 6.7
 */
 
 namespace AI_Story_Maker;
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
+use AI_Story_Maker\Story_Generator;
+use AI_Story_Maker\Log_Manager;
 
 class Plugin {
     protected $log_manager;
@@ -106,9 +108,19 @@ class Plugin {
         }
         
         // bmark Schedule on activation
+        // Check if the schedule is already set; if not, set it.
         if ( ! wp_next_scheduled( 'ai_story_generator_repeating_event' ) ) {
-            wp_schedule_event( time(), 'daily', 'ai_story_generator_repeating_event' );
+            $n = absint(get_option('opt_ai_story_repeat_interval_days'));
+            if (0 !== $n) {
+                // Schedule the event
+                $next_schedule = gmdate('Y-m-d H:i:s', time() + $n * DAY_IN_SECONDS);
+                wp_schedule_event(time() + $n * DAY_IN_SECONDS, 'daily', 'ai_story_generator_repeating_event');
+                // Log the next schedule
+                /* translators: %s: next schedule */
+                Log_Manager::log('info', sprintf(__('Set next schedule to %s' , 'ai-story-maker'), $next_schedule));
+            }
         }
+
     }
 
     /**
@@ -122,58 +134,47 @@ class Plugin {
 // Instantiate the main plugin class.
 new Plugin();
 
+
+
 // Register activation hook using the Plugin's static method.
 register_activation_hook( __FILE__, array( 'AI_Story_Maker\Plugin', 'activate' ) );
 
 // Register deactivation hook to clear scheduled events.
 register_deactivation_hook( __FILE__, array( 'AI_Story_Maker\Plugin', 'deactivate' ) );
 
+// add_action('init', function () {
+//     $generator = new \AI_Story_Maker\Story_Generator();
+//     $generator->check_schedule();
+// });
+
+add_action('ai_story_generator_cron_event', function () {
+    $generator = new \AI_Story_Maker\Story_Generator();
+    $generator->generate_ai_stories_with_lock();
+});
 
 /**
  * AJAX action to generate an AI story.
  */
 add_action( 'wp_ajax_generate_ai_stories', function() {
-    // Verify nonce and user capabilities.
     if ( ! check_ajax_referer( 'generate_story_nonce', 'nonce', false ) ) {
         wp_send_json_error( [ 'message' => 'Security check failed.' ] );
     }
-    // Instantiate your generator class and generate the story.
-    $story_generator = new Story_Generator();
-    $results = $story_generator->generate_ai_stories();
-    if ( ! empty( $results['errors'] ) ) {
-        wp_send_json_error( $results['errors'] );
-    } else {
-        wp_send_json_success( $results['successes'] );
+
+    if ( ! current_user_can( 'edit_posts' ) ) {
+        wp_send_json_error( [ 'message' => 'You do not have permission to perform this action.' ] );
+    }
+
+    try {
+        $story_generator = new \AI_Story_Maker\Story_Generator();
+        $results = $story_generator->generate_ai_stories_with_lock( true ); // ✅ force = true
+
+        if ( ! empty( $results['errors'] ) ) {
+            wp_send_json_error( $results['errors'] );
+        } else {
+            wp_send_json_success( $results['successes'] );
+        }
+
+    } catch ( \Throwable $e ) {
+        wp_send_json_error( [ 'message' => 'Fatal error: ' . $e->getMessage() ] );
     }
 });
-function ai_story_maker_check_schedule() {
-    $log_manager = new Log_Manager();
-    $next_event = wp_next_scheduled('ai_story_generator_repeating_event');
-    
-    if ($next_event) {
-        $time_diff = $next_event - time();
-        
-        if ($time_diff < -5) {
-            // bmark Schedule execute
-            $story_generator = new Story_Generator();
-            $story_generator->generate_ai_stories();
-            // Log the event
-            $log_manager::log('info', 'Generated stories schedule.');
-            // $ai_story_maker_log_manager::log('info', 'Generated stories schedule.');
-        }
-    } else {
-        // Check if the schedule is set; if not, set it.
-        $n = absint(get_option('opt_ai_story_repeat_interval_days'));
-        
-        if (0 !== $n) {
-            // bmark Schedule in the case of no schedule
-            $next_schedule = gmdate('Y-m-d H:i:s', time() + $n * DAY_IN_SECONDS);
-            wp_schedule_single_event(time() + $n * DAY_IN_SECONDS, 'ai_story_generator_repeating_event');
-            // Log the next schedule
-            /* translators: %s: next schedule */
-            $log_manager::log('info', sprintf(__('Set next schedule to %s' , 'ai-story-maker'), $next_schedule));
-
-        } 
-    }
-}          
-ai_story_maker_check_schedule(); 

@@ -86,10 +86,15 @@ class Settings_Page {
 				if ( sanitize_text_field( wp_unslash( $_POST['opt_ai_story_repeat_interval_days'] ) ) == 0 ) {
 					wp_clear_scheduled_hook( 'ai_story_generator_repeating_event' );
 				} 
+
 				update_option( 'opt_ai_story_repeat_interval_days', sanitize_text_field( wp_unslash( $_POST['opt_ai_story_repeat_interval_days'] ) ) );
 				if (  $n != $interval ) {
 					wp_clear_scheduled_hook( 'ai_story_generator_repeating_event' );
-					ai_story_maker_check_schedule(); 
+					$generator = new Story_Generator();
+					$generator->reschedule_cron_event();
+					Log_Manager::log('info', 'Schedule changed via admin. Running updated check.');
+					
+					
 				}
 			}
 			if ( isset( $_POST['opt_ai_story_auther'] ) ) {

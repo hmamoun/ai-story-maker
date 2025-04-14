@@ -49,22 +49,35 @@ class Story_Generator {
     public function get_recent_posts( $number_of_posts, $category ) {
         $category_id = get_cat_ID( $category ) ?: 0;
         $number_of_posts = absint( $number_of_posts );
+    
         $posts = get_posts( [
             'numberposts' => $number_of_posts,
             'post_status' => 'publish',
             'category'    => $category_id,
         ] );
+    
         $results = [];
+    
         foreach ( $posts as $post ) {
+            // Directly using $post->post_content avoids global WP dependency issues
+            $content = $post->post_content;
+    
+            $excerpt = '';
+            if (!empty($content)) {
+                $excerpt = wp_trim_words( strip_shortcodes( wp_strip_all_tags( $content ) ), 55 );
+            }
+    
             $results[] = [
                 'title'   => get_the_title( $post->ID ),
-                'excerpt' => get_the_excerpt( $post->ID ),
+                'excerpt' => $excerpt,
             ];
         }
+    
         wp_reset_postdata();
+    
         return $results;
     }
-
+    
 
     
     /**
@@ -156,24 +169,28 @@ class Story_Generator {
         $merged_settings = array_merge( $default_settings, $prompt );
         $default_system_content = isset( $merged_settings['system_content'] )
             ? $merged_settings['system_content'] : '';
-            // another set of instructions for the AI endpoint
-            $default_system_content .= "\n" . __( 'You are an article generator. Your task is to search the web for the topic and create an article based on the given prompt.', 'ai-story-maker' );
-            $default_system_content .= "\n" . __( 'The article should be informative, engaging, and well-structured.', 'ai-story-maker' );
-            $default_system_content .= "\n" . __( '- at least 1000 words long.', 'ai-story-maker' );
-            $default_system_content .= "\n" . __( '- written in a professional tone.', 'ai-story-maker' );
-            $default_system_content .= "\n" . __( '- free of grammatical errors and typos.', 'ai-story-maker' );
-            $default_system_content .= "\n" . __( '- relevant to the given prompt.', 'ai-story-maker' );
-            $default_system_content .= "\n" . __( '- unique and not plagiarized.', 'ai-story-maker' );
-            $default_system_content .= "\n" . __( '- written in English.', 'ai-story-maker' );
-            $default_system_content .= "\n" . __( 'The article should not include any of the following recent posts or titles:', 'ai-story-maker' );
+            $default_system_content .= "\n" . __( 'You are an article generator tasked with researching a topic online and creating an article based on the provided prompt.', 'ai-story-maker' );
+            $default_system_content .= "\n" . __( 'The article should be:', 'ai-story-maker' );
+            $default_system_content .= "\n" . __( '- At least 1000 words.', 'ai-story-maker' );
+            $default_system_content .= "\n" . __( '- Written in a professional, engaging, and informative tone.', 'ai-story-maker' );
+            $default_system_content .= "\n" . __( '- Free of grammatical errors and typos.', 'ai-story-maker' );
+            $default_system_content .= "\n" . __( '- Relevant, original, and not plagiarized.', 'ai-story-maker' );
+            $default_system_content .= "\n" . __( '- Composed in clear, semantic HTML format with:', 'ai-story-maker' );
+            $default_system_content .= "\n" . __( '  - Main headings using <h2> tags.', 'ai-story-maker' );
+            $default_system_content .= "\n" . __( '  - Subheadings using <h3> tags.', 'ai-story-maker' );
+            $default_system_content .= "\n" . __( '  - Lists using standard HTML <ul> or <ol> tags.', 'ai-story-maker' );
+            $default_system_content .= "\n" . __( '  - Bold text where emphasis is required using <strong> tags.', 'ai-story-maker' );
+            $default_system_content .= "\n" . __( 'The article should NOT include Markdown syntax (such as #, *, -, etc.).', 'ai-story-maker' );
+            $default_system_content .= "\n" . __( 'Exclude references to the following recent posts:', 'ai-story-maker' );
+            
             foreach ( $recent_posts as $post ) {
                 $default_system_content .= "\n" . __( 'Title: ', 'ai-story-maker' ) . $post['title'];
                 $default_system_content .= "\n" . __( 'Excerpt: ', 'ai-story-maker' ) . $post['excerpt'];
             }
-            $default_system_content .= "\n" . __( 'The article should be divided into sections with appropriate headings and subheadings.', 'ai-story-maker' );
-            $default_system_content .= "\n" . __( 'The article should include at least 2 valid reference links.', 'ai-story-maker' );
-
-
+            
+            $default_system_content .= "\n" . __( 'Organize the article clearly into sections with meaningful headings and subheadings.', 'ai-story-maker' );
+            $default_system_content .= "\n" . __( 'Include at least two valid external reference links formatted as clickable HTML <a> tags.', 'ai-story-maker' );
+            
 
             $merged_settings['system_content'] = $default_system_content . "\n" . $admin_prompt_settings;
 
@@ -350,6 +367,64 @@ class Story_Generator {
         return ''; // Return empty if no images found
     }
 
+    public function check_schedule() {
+        $next_event = wp_next_scheduled('ai_story_generator_cron_event');
+    
+        if ( ! $next_event ) {
+            $n = absint(get_option('opt_ai_story_repeat_interval_days'));
+            if ($n !== 0) {
+                $run_at = time() + $n * DAY_IN_SECONDS;
+                wp_schedule_single_event($run_at, 'ai_story_generator_cron_event');
+                Log_Manager::log('info', 'Scheduled next AI story generation at: ' . gmdate('Y-m-d H:i:s', $run_at));
+            }
+        }
+    }
+    /**
+     * Generate AI stories with a lock to prevent concurrent executions.
+     * 
+     */
+    public function generate_ai_stories_with_lock( $force = false ) {
+        $lock_key = 'ai_story_generator_running';
+    
+        if ( ! $force && get_transient($lock_key) ) {
+            Log_Manager::log('info', 'Story generation skipped due to active lock.');
+            return;
+        }
+    
+        set_transient($lock_key, true, 10 * MINUTE_IN_SECONDS);
+    
+        try {
+            $this->generate_ai_stories();
+            Log_Manager::log('info', 'Stories successfully generated.');
+        } catch ( \Throwable $e ) {
+            Log_Manager::log('error', 'Error generating stories: ' . $e->getMessage());
+        }
+    
+        delete_transient($lock_key);
+    
+        // Always schedule the next run after execution
+        $n = absint(get_option('opt_ai_story_repeat_interval_days'));
+        if ($n !== 0) {
+            $next_schedule = time() + $n * DAY_IN_SECONDS;
+            wp_schedule_single_event($next_schedule, 'ai_story_generator_cron_event');
+            Log_Manager::log('info', 'Rescheduled story generation at: ' . gmdate('Y-m-d H:i:s', $next_schedule));
+        }
+    }
 
+    public function reschedule_cron_event() {
+        $timestamp = wp_next_scheduled( 'ai_story_generator_cron_event' );
+        if ( $timestamp ) {
+            wp_unschedule_event( $timestamp, 'ai_story_generator_cron_event' );
+        }
+    
+        $n = absint(get_option('opt_ai_story_repeat_interval_days'));
+        if ($n !== 0) {
+            $run_at = time() + $n * DAY_IN_SECONDS;
+            wp_schedule_single_event( $run_at, 'ai_story_generator_cron_event' );
+            Log_Manager::log('info', 'Rescheduled cron event: ' . gmdate('Y-m-d H:i:s', $run_at));
+        }
+    }
+    
+    
 
 }

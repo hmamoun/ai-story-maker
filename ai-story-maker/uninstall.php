@@ -5,7 +5,9 @@
  * This script is executed when the plugin is uninstalled.
  * It removes all plugin options and the custom database table.
  */
- if (!defined('ABSPATH')) exit;
+if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
+    exit;
+}
 
  // remove plugin options
 // delete multiple options
