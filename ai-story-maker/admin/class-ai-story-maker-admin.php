@@ -16,7 +16,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-namespace AI_Story_Maker;
+namespace exedotcom\aistorymaker;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -45,7 +45,7 @@ class Admin {
         // Hook the enqueue_scripts method to the admin_enqueue_scripts action.
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 
-        $this->log_manager = new Log_Manager();
+        $this->log_manager = new AISTMA_Log_Manager();
         $this->prompt_editor = new Prompt_Editor();
         $this->api_keys = new API_Keys();
         $this->settings_page = new Settings_Page();

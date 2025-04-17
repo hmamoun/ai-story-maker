@@ -27,7 +27,7 @@
 	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 	GNU General Public License for more details.
  */
-namespace AI_Story_Maker;
+namespace exedotcom\aistorymaker;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -38,7 +38,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Provides methods to manage and validate plugin logs.
  */
-class Log_Manager {
+class AISTMA_Log_Manager {
 
 
 
@@ -176,5 +176,5 @@ class Log_Manager {
 }
 
 // Hook the log cleanup to our class method.
-add_action( 'schd_ai_story_maker_clear_log', [ 'AI_Story_Maker\Log_Manager', 'clear_logs' ] );
+add_action( 'schd_ai_story_maker_clear_log', [ 'exedotcom\aistorymaker\AISTMA_Log_Manager', 'clear_logs' ] );
 

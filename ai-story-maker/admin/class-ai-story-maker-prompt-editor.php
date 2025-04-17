@@ -15,7 +15,7 @@
  * GNU General Public License for more details.
  */
 
-namespace AI_Story_Maker;
+namespace exedotcom\aistorymaker;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -33,7 +33,7 @@ class Prompt_Editor {
      * Constructor initializes the prompt editor.
      */
     public function __construct() {
-        $this->log_manager = new Log_Manager();
+        $this->log_manager = new AISTMA_Log_Manager();
 
     }
     /**

@@ -18,13 +18,13 @@
  * Requires at least: 5.0
  * Tested up to: 6.7
  */
-namespace AI_Story_Maker;
+namespace exedotcom\aistorymaker;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-class Story_Generator {
+class AISTMA_Story_Generator {
 
     private $api_key;
     private $default_settings;
@@ -34,7 +34,7 @@ class Story_Generator {
     public function __construct() {
         // Load the Log_Manager class.
         
-        $this->log_manager = new Log_Manager();
+        $this->log_manager = new AISTMA_Log_Manager();
         // Hook into an action to trigger AI story generation.
         add_action( 'ai_story_generate', [ $this, 'generate_ai_stories' ] );
     }

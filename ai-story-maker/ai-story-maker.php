@@ -15,22 +15,22 @@ Requires at least: 5.8
 Tested up to: 6.7
 */
 
-namespace AI_Story_Maker;
+namespace exedotcom\aistorymaker;
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
-use AI_Story_Maker\Story_Generator;
-use AI_Story_Maker\Log_Manager;
+use exedotcom\aistorymaker\AISTMA_Story_Generator;
+use exedotcom\aistorymaker\AISTMA_Log_Manager;
 
-class Plugin {
-    protected $log_manager;
+class AISTMA_Plugin {
+
     public function __construct() {
 
         add_action( 'init', array( $this, 'wpdocs_load_textdomain') );
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_styles' ) );
         add_filter( 'template_include', array( $this, 'template_include_filter' ) );
         $this->load_dependencies();
-        $this->log_manager = new Log_Manager();
+
     }
 
     /**
@@ -103,6 +103,7 @@ class Plugin {
      * Activation callback to create necessary log tables or other setup.
      */
     public static function activate() {
+        $log_manager = new AISTMA_Log_Manager();
         if ( function_exists( 'ai_storymaker_create_log_table' ) ) {
             ai_storymaker_create_log_table();
         }
@@ -117,7 +118,9 @@ class Plugin {
                 wp_schedule_event(time() + $n * DAY_IN_SECONDS, 'daily', 'ai_story_generator_repeating_event');
                 // Log the next schedule
                 /* translators: %s: next schedule */
-                Log_Manager::log('info', sprintf(__('Set next schedule to %s' , 'ai-story-maker'), $next_schedule));
+
+                $log_manager->log('info', sprintf(__('Set next schedule to %s' , 'ai-story-maker'), $next_schedule));
+
             }
         }
 
@@ -132,23 +135,23 @@ class Plugin {
 }
 
 // Instantiate the main plugin class.
-new Plugin();
+new AISTMA_Plugin();
 
 
 
 // Register activation hook using the Plugin's static method.
-register_activation_hook( __FILE__, array( 'AI_Story_Maker\Plugin', 'activate' ) );
+register_activation_hook( __FILE__, array( 'exedotcom\aistorymaker\AISTMA_Plugin', 'activate' ) );
 
 // Register deactivation hook to clear scheduled events.
-register_deactivation_hook( __FILE__, array( 'AI_Story_Maker\Plugin', 'deactivate' ) );
+register_deactivation_hook( __FILE__, array( 'exedotcom\aistorymaker\AISTMA_Plugin', 'deactivate' ) );
 
-// add_action('init', function () {
-//     $generator = new \AI_Story_Maker\Story_Generator();
-//     $generator->check_schedule();
-// });
+/**
+ * Schedule the event to run every day.
+ */
+
 
 add_action('ai_story_generator_cron_event', function () {
-    $generator = new \AI_Story_Maker\Story_Generator();
+    $generator = new \exedotcom\aistorymaker\AISTMA_Story_Generator();
     $generator->generate_ai_stories_with_lock();
 });
 
@@ -165,7 +168,7 @@ add_action( 'wp_ajax_generate_ai_stories', function() {
     }
 
     try {
-        $story_generator = new \AI_Story_Maker\Story_Generator();
+        $story_generator = new \exedotcom\aistorymaker\AISTMA_Story_Generator();
         $results = $story_generator->generate_ai_stories_with_lock( true ); // ✅ force = true
 
         if ( ! empty( $results['errors'] ) ) {

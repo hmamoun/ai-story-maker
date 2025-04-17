@@ -17,7 +17,7 @@
  * Requires at least: 5.0
  * Tested up to: 6.7
  */
-namespace AI_Story_Maker;
+namespace exedotcom\aistorymaker;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -34,7 +34,7 @@ class Settings_Page {
 	 * Constructor initializes the settings page.
 	 */
 	public function __construct() {
-		$this->log_manager = new Log_Manager();
+		$this->log_manager = new AISTMA_Log_Manager();
 
 	}
 	/**
@@ -90,7 +90,7 @@ class Settings_Page {
 				update_option( 'opt_ai_story_repeat_interval_days', sanitize_text_field( wp_unslash( $_POST['opt_ai_story_repeat_interval_days'] ) ) );
 				if (  $n != $interval ) {
 					wp_clear_scheduled_hook( 'ai_story_generator_repeating_event' );
-					$generator = new Story_Generator();
+					$generator = new AISTMA_Story_Generator();
 					$generator->reschedule_cron_event();
 					Log_Manager::log('info', 'Schedule changed via admin. Running updated check.');
 					
