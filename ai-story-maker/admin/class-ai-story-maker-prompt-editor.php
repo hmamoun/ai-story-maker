@@ -22,18 +22,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class Prompt_Editor
+ * Class AISTMA_prompt_editor
  *
  * Handles the admin prompt editor page for managing story prompts.
  */
-class Prompt_Editor {
-    protected $log_manager;
+class AISTMA_prompt_editor {
+    protected $aistma_log_manager;
 
     /**
      * Constructor initializes the prompt editor.
      */
     public function __construct() {
-        $this->log_manager = new AISTMA_Log_Manager();
+        $this->aistma_log_manager = new AISTMA_Log_Manager();
 
     }
     /**
@@ -51,7 +51,7 @@ class Prompt_Editor {
                 . esc_html__( 'Prompts saved successfully!', 'ai-story-maker' ) 
                 . '</p></div>';
 
-            $this->log_manager->log( 'info', 'Prompts saved successfully.' );
+            $this->aistma_log_manager->log( 'info', 'Prompts saved successfully.' );
         }
 
         // Gather data for the view.
@@ -78,6 +78,6 @@ class Prompt_Editor {
         $data = compact( 'prompts', 'default_settings', 'categories' );
 
         // Load the view template.
-        include plugin_dir_path( __FILE__ ) . 'templates/prompt-editor-template.php';
+        include AI_STORY_MAKER_PATH . 'admin/templates/prompt-editor-template.php';
     }
 }

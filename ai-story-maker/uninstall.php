@@ -30,4 +30,4 @@ $table_name = $wpdb->prefix . 'ai_storymaker_logs';
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery , WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
 $wpdb->query( $wpdb->prepare( "DROP TABLE IF EXISTS `%s`", $table_name ));
 // bmark Schedule on uninstall
-wp_clear_scheduled_hook( 'ai_story_generator_repeating_event' );
+wp_clear_scheduled_hook( 'aistima_generate_story_event' );

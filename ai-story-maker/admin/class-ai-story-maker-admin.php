@@ -27,82 +27,63 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Handles the admin area and settings.
  */
 class Admin {
-    protected $prompt_editor;
-    protected $api_keys;
-    protected $settings_page;
-    protected $log_manager;
+    protected $aistma_prompt_editor;
+    protected $aistma_api_keys;
+    protected $aistma_settings_page;
+    protected $aistma_log_manager;
 
     /**
      * Constructor registers the admin menu.
      */
     public function __construct() {
-
-        // Load the additional class files.
-
-
-        $this->load_dependencies();
-        
-        // Hook the enqueue_scripts method to the admin_enqueue_scripts action.
-        add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
-
-        $this->log_manager = new AISTMA_Log_Manager();
-        $this->prompt_editor = new Prompt_Editor();
-        $this->api_keys = new API_Keys();
-        $this->settings_page = new Settings_Page();
-        // Register the admin menu.
-        add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
-    }
-    /**
-     * Loads required dependency files for admin pages.
-     */
-    private function load_dependencies() {
+        // call the public function aistma_load_dependencies($files = []) in AISTMA_Plugin
         $files = [
-            'class-ai-story-maker-prompt-editor.php',
-            'class-ai-story-maker-api-keys.php',
-            'class-ai-story-maker-settings-page.php',
-            '../includes/class-ai-story-maker-log-management.php',
-        ];
-    
-        foreach ( $files as $file ) {
-            $path = plugin_dir_path( __FILE__ ) . $file;
-            if ( file_exists( $path ) ) {
-                include_once $path;
-            } else {
-                $this->error_log->log( "Missing dependency file: $path" );
-            }
-        }
+                    'admin/class-ai-story-maker-prompt-editor.php',
+                    'admin/class-ai-story-maker-api-keys.php',
+                    'admin/class-ai-story-maker-settings-page.php',
+                    'includes/class-ai-story-maker-log-management.php',
+                ];
+        AISTMA_Plugin::aistma_load_dependencies($files);
+        add_action( 'admin_enqueue_scripts', array( $this, 'aistma_admin_enqueue_scripts' ) );
+        $this->aistma_log_manager = new AISTMA_Log_Manager();
+        $this->aistma_prompt_editor = new AISTMA_prompt_editor();
+        $this->aistma_api_keys = new AISTMA_API_Keys();
+        $this->aistma_settings_page = new Settings_Page();
+        // Register the admin menu.
+        add_action( 'admin_menu', array( $this, 'aistma_add_admin_menu' ) );
     }
+
 
     /**
      * enqueue scripts and styles
      * 
      */
-    public function enqueue_scripts() {
+    public function aistma_admin_enqueue_scripts() {
         wp_enqueue_script(
             'ai-story-maker-admin',
-            plugin_dir_url( __FILE__ ) . 'js/admin.js',
+            AI_STORY_MAKER_URL . 'admin/js/admin.js',
             array( 'jquery' ),
-            filemtime( plugin_dir_path( __FILE__ ) . 'js/admin.js' ),
+            filemtime( AI_STORY_MAKER_PATH . 'admin/js/admin.js' ),
             true
         );
         wp_enqueue_style(
             'ai-story-maker-admin',
-            plugin_dir_url( __FILE__ ) . 'css/admin.css',
+            AI_STORY_MAKER_URL . 'admin/css/admin.css',
             array(),
-            filemtime( plugin_dir_path( __FILE__ ) . 'css/admin.css' )
+            filemtime( AI_STORY_MAKER_PATH . 'admin/css/admin.css' )
         );
     }
     /**
      * Registers the main and submenu pages in the admin area.
      */
-    public function add_admin_menu() {
+    public function aistma_add_admin_menu() {
         // Main plugin settings page.
         add_menu_page(
             __( 'AI Story Maker Settings', 'ai-story-maker' ), // Page title.
             __( 'AI Story Maker', 'ai-story-maker' ),             // Menu title.
             'manage_options',                                  // Capability.
             'story-maker-settings',                            // Menu slug.
-            array( $this, 'render_main_page' ),                // Callback.
+            array( $this, 'aistma_render_main_page' ),                // Callback.
             'dashicons-welcome-widgets-menus', // Icon
             9                                  // Position
         );
@@ -111,7 +92,7 @@ class Admin {
     /**
      * Renders the main admin settings page.
      */
-    public function render_main_page() {
+    public function aistma_render_main_page() {
         $allowed_tabs = [ 'welcome', 'general', 'prompts', 'log' ];
         // Safe: `tab` is used only for read-only navigation, not for processing user-submitted data.
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -138,13 +119,13 @@ class Admin {
 		// Process form submission for saving settings.
 
         if ( 'welcome' === $active_tab ) {
-            include_once plugin_dir_path( __FILE__ ) . 'templates/welcome-tab-template.php';
+            include_once AI_STORY_MAKER_PATH . 'admin/templates/welcome-tab-template.php';
         } elseif ( 'general' === $active_tab ) {
-            $this->settings_page->render();
+            $this->aistma_settings_page->render();
         } elseif ( 'prompts' === $active_tab ) {
-            $this->prompt_editor->render();
+            $this->aistma_prompt_editor->render();
         } elseif ( 'log' === $active_tab ) {
-            $this->log_manager->render_log_table();
+            $this->aistma_log_manager->render_log_table();
         }
     
 	}

@@ -61,7 +61,7 @@ if ( ! defined( 'ABSPATH' ) ) {
         </p>
 
         <?php
- $next_event = wp_next_scheduled( 'ai_story_generator_cron_event' );
+ $next_event = wp_next_scheduled( 'aistima_generate_story_event');
  $is_generating = get_transient( 'ai_story_generator_running' );
  
  if ( $next_event ) {

@@ -38,7 +38,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Provides methods to manage and validate external API keys.
  */
-class API_Keys {
+class AISTMA_API_Keys {
 
     /**
      * Validates the Unsplash API key.

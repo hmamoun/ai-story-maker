@@ -23,79 +23,72 @@ namespace exedotcom\aistorymaker;
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
-
+use exedotcom\aistorymaker\AISTMA_Log_Manager;
 class AISTMA_Story_Generator {
 
     private $api_key;
     private $default_settings;
-    protected $log_manager;
+    protected $aistma_log_manager;
 
 
     public function __construct() {
         // Load the Log_Manager class.
         
-        $this->log_manager = new AISTMA_Log_Manager();
+        $this->aistma_log_manager = new AISTMA_Log_Manager();
         // Hook into an action to trigger AI story generation.
         add_action( 'ai_story_generate', [ $this, 'generate_ai_stories' ] );
     }
 
     /**
-     * Retrieve recent post excerpts from a specific category.
-     *
-     * @param int $number_of_posts
-     * @param string $category
-     * @return array
+     * Generate AI stories with a lock to prevent concurrent executions.
+     * 
      */
-    public function get_recent_posts( $number_of_posts, $category ) {
-        $category_id = get_cat_ID( $category ) ?: 0;
-        $number_of_posts = absint( $number_of_posts );
+    public static function generate_ai_stories_with_lock( $force = false ) {
+
+        $lock_key = 'ai_story_generator_running';
     
-        $posts = get_posts( [
-            'numberposts' => $number_of_posts,
-            'post_status' => 'publish',
-            'category'    => $category_id,
-        ] );
-    
-        $results = [];
-    
-        foreach ( $posts as $post ) {
-            // Directly using $post->post_content avoids global WP dependency issues
-            $content = $post->post_content;
-    
-            $excerpt = '';
-            if (!empty($content)) {
-                $excerpt = wp_trim_words( strip_shortcodes( wp_strip_all_tags( $content ) ), 55 );
-            }
-    
-            $results[] = [
-                'title'   => get_the_title( $post->ID ),
-                'excerpt' => $excerpt,
-            ];
+        if ( ! $force && get_transient( $lock_key ) ) {
+            $instance = new self();
+            $instance->aistma_log_manager->log('info', 'Story generation skipped due to active lock.');
+            return;
         }
     
-        wp_reset_postdata();
+        set_transient( $lock_key, true, 10 * MINUTE_IN_SECONDS );
     
-        return $results;
+        $instance = new self();
+        try {
+            $instance->generate_ai_stories();
+            $instance->aistma_log_manager->log('info', 'Stories successfully generated.');
+        } catch ( \Throwable $e ) {
+            $instance->aistma_log_manager->log('error', 'Error generating stories: ' . $e->getMessage());
+        } finally {
+            // Always delete the lock, even if an error occurs
+            delete_transient( $lock_key );
+        }
+    
+        // Always schedule the next run after execution
+        $n = absint( get_option( 'opt_ai_story_repeat_interval_days' ) );
+        if ( $n !== 0 ) {
+            $next_schedule = time() + $n * DAY_IN_SECONDS;
+            wp_schedule_single_event( $next_schedule, 'aistima_generate_story_event' );
+            $instance->aistma_log_manager->log('info', 'Rescheduled story generation at: ' . gmdate('Y-m-d H:i:s', $next_schedule));
+        }
     }
-    
-
-    
     /**
      * Generate AI Story using OpenAI API.
-     * Will get the prompts from the database and generate stories based on them.
+     * Will get the saved parameters for generating stories, loops through the prompts, and calls the generate_ai_story function.
      * @return void
      */
     public function generate_ai_stories() {
-
         $results = array(
             'errors'    => array(),
             'successes' => array(),
         );
-
+        // Check if the OpenAI API key is set and is valid
         $this->api_key = get_option( 'openai_api_key' );
         if ( ! $this->api_key ) {
             $error = __( 'OpenAI API Key is missing.', 'ai-story-maker' );
-            $this->log_manager::log( 'error', $error );
+            $this->aistma_log_manager::log( 'error', $error );
             $results['errors'][] = $error;
             return;
         }
@@ -103,9 +96,10 @@ class AISTMA_Story_Generator {
         $raw_settings = get_option( 'ai_story_prompts', '' );
         $settings     = json_decode( $raw_settings, true );
 
+        // Check if the settings are valid
         if ( json_last_error() !== JSON_ERROR_NONE || empty( $settings['prompts'] ) ) {
             $error = __( 'Invalid JSON format or no prompts found.', 'ai-story-maker' );
-            $this->log_manager::log( 'error', $error );
+            $this->aistma_log_manager::log( 'error', $error );
             $results['errors'][] = $error;
             wp_send_json_error( $results );
         }
@@ -125,34 +119,41 @@ class AISTMA_Story_Generator {
             if ( ! isset( $prompt['prompt_id'] ) || empty( $prompt['prompt_id'] ) ) {
                 continue;
             }
-            $recent_posts = $this->get_recent_posts( 20 , $prompt['category'] );
+            $recent_posts = $this->aistma_get_recent_posts( 20 , $prompt['category'] );
 
             // Generate the AI story immediately if needed (uncomment to run).
-            self::generate_ai_story( $prompt['prompt_id'], $prompt, $this->default_settings, $recent_posts, $admin_prompt_settings, $this->api_key );
+            try {
+                $this->generate_ai_story( $prompt['prompt_id'], $prompt, $this->default_settings, $recent_posts, $admin_prompt_settings, $this->api_key );
+                $results['successes'][] = __( 'AI story generated successfully.', 'ai-story-maker' );
+            } catch ( \Exception $e ) {
+                $error = __( 'Error generating AI story: ', 'ai-story-maker' ) . $e->getMessage();
+                $this->aistma_log_manager::log( 'error', $error );
+                $results['errors'][] = $error;
+                
+            }
+            //self::generate_ai_story( $prompt['prompt_id'], $prompt, $this->default_settings, $recent_posts, $admin_prompt_settings, $this->api_key );
         }
 
         // bmark Schedule after generate
         $n = absint(get_option( 'opt_ai_story_repeat_interval_days' ));
         if ( 0 !== $n ) {
                 // cancel the current schedule
-                wp_clear_scheduled_hook( 'ai_story_generator_repeating_event' );
+                wp_clear_scheduled_hook( 'aistima_generate_story_event' );
                 // schedule the next event  
                 $next_schedule = gmdate( 'Y-m-d H:i:s', time() +  $n * DAY_IN_SECONDS );
-                wp_schedule_single_event( time() + $n * DAY_IN_SECONDS , 'ai_story_generator_repeating_event' );
+                wp_schedule_single_event( time() + $n * DAY_IN_SECONDS , 'aistima_generate_story_event' );
                
-                $this->log_manager::log(
+                $this->aistma_log_manager::log(
 					'info',
                     // translators: %s: Date and time 
 					sprintf( __( 'Set next schedule to %s', 'ai-story-maker' ), $next_schedule )
 				);
 
         } else {
-            $this->log_manager::log( 'info', __( 'Schedule for next story is unset', 'ai-story-maker' ) );
-            wp_clear_scheduled_hook( 'ai_story_generator_repeating_event' );
+            $this->aistma_log_manager::log( 'info', __( 'Schedule for next story is unset', 'ai-story-maker' ) );
+            wp_clear_scheduled_hook( 'aistima_generate_story_event' );
         }
     }
-
-
     /**
      * Generate AI Story using OpenAI API.
      * will generate the story based on the prompt and settings and create a post.
@@ -219,27 +220,29 @@ class AISTMA_Story_Generator {
         if ( $status_code !== 200 ) {
             // translators: %d: HTTP status code
             $error_msg = sprintf( __( 'OpenAI API returned HTTP %d', 'ai-story-maker' ), $status_code );
-            $this->log_manager->log( 'error', $error_msg );
+            $this->aistma_log_manager->log( 'error', $error_msg );
+
             wp_send_json_error( array( 'errors' => array( $error_msg ) ) );
         }
         // check if response is valid
         if ( is_wp_error( $response ) ) {
             $error = $response->get_error_message();
-            $this->log_manager->log( 'error', $error );
+            $this->aistma_log_manager->log( 'error', $error );
+
             wp_send_json_error( array( 'errors' => array( $error ) ) );
         }
         // check if response is empty
         $response_body = json_decode( wp_remote_retrieve_body( $response ), true );
         if ( ! isset( $response_body['choices'][0]['message']['content'] ) ) {
             $error = __( 'Invalid response from OpenAI API.', 'ai-story-maker' );
-            $this->log_manager->log( 'error', $error );
+            $this->aistma_log_manager->log( 'error', $error );
             wp_send_json_error( array( 'errors' => array( $error ) ) );
         }
 
         $parsed_content = json_decode( $response_body['choices'][0]['message']['content'], true );
         if ( ! isset( $parsed_content['title'], $parsed_content['content'] ) ) {
             $error = __( 'Invalid content structure.', 'ai-story-maker' );
-            $this->log_manager->log( 'error', $error );
+            $this->aistma_log_manager->log( 'error', $error );
             wp_send_json_error( array( 'errors' => array( $error ) ) );
         }
 
@@ -293,7 +296,7 @@ class AISTMA_Story_Generator {
         // check for errors
         if ( is_wp_error( $post_id ) ) {
             $error = $post_id->get_error_message();
-            $this->log_manager::log( 'error', $error );
+            $this->aistma_log_manager::log( 'error', $error );
             wp_send_json_error( array( 'errors' => array( $error ) ) );
         }
 
@@ -301,18 +304,53 @@ class AISTMA_Story_Generator {
             update_post_meta($post_id, 'ai_story_maker_sources', isset($parsed_content['references']) && is_array($parsed_content['references']) ? json_encode($parsed_content['references']) : json_encode([]));
             update_post_meta($post_id, 'ai_story_maker_total_tokens', $total_tokens ?? 'N/A');
             update_post_meta($post_id, 'ai_story_maker_request_id', $request_id ?? 'N/A');
-            $this->log_manager::log('success', 'AI-generated news article created: ' . get_permalink($post_id), $request_id);
+            $this->aistma_log_manager::log('success', 'AI-generated news article created: ' . get_permalink($post_id), $request_id);
 
         }
 
        // check for errors
         if ( is_wp_error( $post_id ) ) {
             $error = $post_id->get_error_message();
-            $this->log_manager::log( 'error', $error );
+            $this->aistma_log_manager::log( 'error', $error );
             wp_send_json_error( array( 'errors' => array( $error ) ) );
         }
 
     }
+
+    /**
+     * Retrieve recent post excerpts from a specific category.
+     *
+     * @param int $number_of_posts
+     * @param string $category
+     * @return array
+     */
+    public function aistma_get_recent_posts( $number_of_posts, $category ) {
+        $category_id = get_cat_ID( $category ) ?: 0;
+        $number_of_posts = absint( $number_of_posts );
+    
+        $posts = get_posts( [
+            'numberposts' => $number_of_posts,
+            'post_status' => 'publish',
+            'category'    => $category_id,
+        ] );
+    
+        $results = [];
+    
+        foreach ( $posts as $post ) {
+            $content = $post->post_content;
+            $excerpt = '';
+            if (!empty($content)) {
+                $excerpt = wp_trim_words( strip_shortcodes( wp_strip_all_tags( $content ) ), 55 );
+            }
+            $results[] = [
+                'title'   => get_the_title( $post->ID ),
+                'excerpt' => $excerpt,
+            ];
+        }
+        wp_reset_postdata();
+        return $results;
+    }
+
     /**
      * Replace image placeholders in the article content with Unsplash images.
      * 
@@ -342,13 +380,13 @@ class AISTMA_Story_Generator {
         $response = wp_remote_get($url);
     
         if (is_wp_error($response)) {
-            $this->log_manager::log( 'error', 'Error fetching Unsplash image: ' . $response->get_error_message());
+            $this->aistma_log_manager::log( 'error', 'Error fetching Unsplash image: ' . $response->get_error_message());
             return ''; 
         }
         $body = wp_remote_retrieve_body($response);
         $data = json_decode($body, true);
         if (empty($data['results'])) {
-            $this->log_manager::log( 'error', $data['errors'][0]);
+            $this->aistma_log_manager::log( 'error', $data['errors'][0]);
             return ''; 
         }
         $image_index = array_rand($data['results']); 
@@ -367,64 +405,42 @@ class AISTMA_Story_Generator {
         return ''; // Return empty if no images found
     }
 
+    /**
+     * Check if the schedule is set for the next event.
+     * 
+     * @return void
+     */
     public function check_schedule() {
-        $next_event = wp_next_scheduled('ai_story_generator_cron_event');
+        $next_event = wp_next_scheduled('aistima_generate_story_event');
     
         if ( ! $next_event ) {
             $n = absint(get_option('opt_ai_story_repeat_interval_days'));
             if ($n !== 0) {
                 $run_at = time() + $n * DAY_IN_SECONDS;
-                wp_schedule_single_event($run_at, 'ai_story_generator_cron_event');
-                Log_Manager::log('info', 'Scheduled next AI story generation at: ' . gmdate('Y-m-d H:i:s', $run_at));
+                wp_schedule_single_event($run_at, 'aistima_generate_story_event');
+                $this->aistma_log_manager->log('info', 'Scheduled next AI story generation at: ' . gmdate('Y-m-d H:i:s', $run_at));
             }
         }
     }
-    /**
-     * Generate AI stories with a lock to prevent concurrent executions.
-     * 
-     */
-    public function generate_ai_stories_with_lock( $force = false ) {
-        $lock_key = 'ai_story_generator_running';
-    
-        if ( ! $force && get_transient($lock_key) ) {
-            Log_Manager::log('info', 'Story generation skipped due to active lock.');
-            return;
-        }
-    
-        set_transient($lock_key, true, 10 * MINUTE_IN_SECONDS);
-    
-        try {
-            $this->generate_ai_stories();
-            Log_Manager::log('info', 'Stories successfully generated.');
-        } catch ( \Throwable $e ) {
-            Log_Manager::log('error', 'Error generating stories: ' . $e->getMessage());
-        }
-    
-        delete_transient($lock_key);
-    
-        // Always schedule the next run after execution
-        $n = absint(get_option('opt_ai_story_repeat_interval_days'));
-        if ($n !== 0) {
-            $next_schedule = time() + $n * DAY_IN_SECONDS;
-            wp_schedule_single_event($next_schedule, 'ai_story_generator_cron_event');
-            Log_Manager::log('info', 'Rescheduled story generation at: ' . gmdate('Y-m-d H:i:s', $next_schedule));
-        }
-    }
 
+    /**
+     * Reschedule the cron event for AI story generation.
+     * 
+     * @return void
+     */
     public function reschedule_cron_event() {
-        $timestamp = wp_next_scheduled( 'ai_story_generator_cron_event' );
+        $timestamp = wp_next_scheduled( 'aistima_generate_story_event' );
         if ( $timestamp ) {
-            wp_unschedule_event( $timestamp, 'ai_story_generator_cron_event' );
+            wp_unschedule_event( $timestamp, 'aistima_generate_story_event' );
         }
     
         $n = absint(get_option('opt_ai_story_repeat_interval_days'));
         if ($n !== 0) {
             $run_at = time() + $n * DAY_IN_SECONDS;
-            wp_schedule_single_event( $run_at, 'ai_story_generator_cron_event' );
-            Log_Manager::log('info', 'Rescheduled cron event: ' . gmdate('Y-m-d H:i:s', $run_at));
+            wp_schedule_single_event( $run_at, 'aistima_generate_story_event' );
+            $this->aistma_log_manager->log('info', 'Rescheduled cron event: ' . gmdate('Y-m-d H:i:s', $run_at));
         }
     }
-    
     
 
 }
