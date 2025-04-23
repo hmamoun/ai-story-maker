@@ -22,6 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'AI_STORY_MAKER_PATH', plugin_dir_path( __FILE__ ) );
 define( 'AI_STORY_MAKER_URL', plugin_dir_url( __FILE__ ) );
+
 use exedotcom\aistorymaker\AISTMA_Story_Generator;
 use exedotcom\aistorymaker\AISTMA_Log_Manager;
 /**
@@ -61,9 +62,7 @@ class AISTMA_Plugin {
                 if ( class_exists( 'exedotcom\aistorymaker\AISTMA_Log_Manager' ) ) {
                     $log_manager = new AISTMA_Log_Manager();
                     $log_manager->log( "Missing dependency file: $path" );
-                } else {
-                    error_log( "Missing dependency file: $path" ); // this will be used in case the log manager is not available
-                }
+                } 
             }
         }
     }

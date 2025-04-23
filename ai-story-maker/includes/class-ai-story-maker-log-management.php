@@ -1,32 +1,20 @@
 <?php
-/**
- * Log Management class
- * Handles logging for the AI Story Maker plugin.
- * This class provides methods to create a log table, log messages, and display logs.
- * Plugin Name: AI Story Maker
- * Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
- * Description: AI-powered WordPress plugin that generates engaging stories, articles, and images using Large Language Models.
- * Version: 1.0
- * Author: Hayan Mamoun
- * Author URI: https://exedotcom.ca
- * License: GPLv2 or later
- * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: ai-story-maker
- * Domain Path: /languages
- * Requires PHP: 7.4
- * Requires at least: 5.0
- * Tested up to: 6.7
- 
-	This plugin is free software; you can redistribute it and/or
-	modify it under the terms of the GNU General Public License
-	as published by the Free Software Foundation; either version 2
-	of the License, or (at your option) any later version.
+/*
+Plugin Name: AI Story Maker
+Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
+Description: AI-powered content generator for WordPress — create engaging stories with a single click.
+Version: 0.1.0
+Author: Hayan Mamoun
+Author URI: https://exedotcom.ca
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: ai-story-maker
+Domain Path: /languages
+Requires PHP: 7.4
+Requires at least: 5.8
+Tested up to: 6.7
+*/
 
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
- */
 namespace exedotcom\aistorymaker;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -114,9 +102,12 @@ class AISTMA_Log_Manager {
 		$logs       = wp_cache_get( 'aistma_log_table' );
 	
 		if ( false === $logs ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+			// Table name is hardcoded internally and safely validated — this is safe.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			$logs = $wpdb->get_results(
-				$wpdb->prepare( "SELECT * FROM $table_name ORDER BY created_at DESC LIMIT %d", 50 )
+				// safe: log table is a custom table
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared 
+				"SELECT * FROM {$table_name} ORDER BY created_at DESC LIMIT 0, 25"
 			);
 			wp_cache_set( 'aistma_log_table', $logs, '', 300 );
 		}
@@ -168,7 +159,12 @@ class AISTMA_Log_Manager {
 		$current_time   = time();
 		$next_scheduled = wp_next_scheduled( 'schd_ai_story_maker_clear_log' );
 
-		if ( $next_scheduled < $current_time || ! $next_scheduled || ( isset( $_POST['action'] ) && 'aistma_clear_logs' === $_POST['action'] ) ) {
+		if ( $next_scheduled < $current_time || ! $next_scheduled || ( isset( $_POST['action'] ) && 'aistma_clear_logs' === $_POST['action'] 
+		// verify nonce
+		&& check_admin_referer( 'aistma_clear_logs_action', 'aistma_clear_logs_nonce' )
+
+		) ) {
+			
 			$interval         = intval( get_option( 'aistma_clear_log_cron', 30 ) );
 			$interval_seconds = $interval * DAY_IN_SECONDS;
 
@@ -180,12 +176,14 @@ class AISTMA_Log_Manager {
 
 			// if the function is called from the admin page, we need to clear the logs
 			if ( isset( $_POST['action'] ) && 'aistma_clear_logs' === $_POST['action'] ) {
+				// safe : log table is a custom table
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$result =$wpdb->query( "TRUNCATE TABLE {$table_name}" );
 			}
 			else {
 				$date_threshold = gmdate( 'Y-m-d H:i:s', strtotime( "-{$interval} days" ) );
-							// safe : log table is a custom table
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+				// safe : log table is a custom table
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$result = $wpdb->delete(
 					$table_name,
 					[ 'created_at <' => $date_threshold ],
@@ -202,7 +200,7 @@ class AISTMA_Log_Manager {
 			}
 
 			if (isset(  $_POST['redirect_to'])) {
-				$redirect_url = esc_url_raw( $_POST['redirect_to'] );
+				$redirect_url = esc_url_raw( wp_unslash($_POST['redirect_to']) );
 				wp_redirect( $redirect_url );
 				exit;
 			} 

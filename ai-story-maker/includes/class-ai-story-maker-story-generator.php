@@ -1,23 +1,19 @@
 <?php
-/**
- * Story Generator Class
- * Description: This class handles the generation of AI stories using OpenAI API.
- * It includes methods for fetching recent posts, generating stories, and replacing image placeholders.
- * 
- * Plugin Name: AI Story Maker
- * Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
- * Description: AI-powered WordPress plugin that generates engaging stories, articles, and images using Large Language Models.
- * Version: 1.0
- * Author: Hayan Mamoun
- * Author URI: https://exedotcom.ca
- * License: GPLv2 or later
- * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: ai-story-maker
- * Domain Path: /languages
- * Requires PHP: 7.4
- * Requires at least: 5.0
- * Tested up to: 6.7
- */
+/*
+Plugin Name: AI Story Maker
+Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
+Description: AI-powered content generator for WordPress — create engaging stories with a single click.
+Version: 0.1.0
+Author: Hayan Mamoun
+Author URI: https://exedotcom.ca
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: ai-story-maker
+Domain Path: /languages
+Requires PHP: 7.4
+Requires at least: 5.8
+Tested up to: 6.7
+*/
 namespace exedotcom\aistorymaker;
 
 if ( ! defined( 'ABSPATH' ) ) {

@@ -1,31 +1,19 @@
 <?php
-/**
- * Short code to display AI-generated stories as scrolling bar at the buttom of the page.
- * 
- * Plugin Name: AI Story Maker
- * Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
- * Description: AI-powered WordPress plugin that generates engaging stories, articles, and images using Large Language Models.
- * Version: 1.0
- * Author: Hayan Mamoun
- * Author URI: https://exedotcom.ca
- * License: GPLv2 or later
- * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: ai-story-maker
- * Domain Path: /languages
- * Requires PHP: 7.4
- * Requires at least: 5.0
- * Tested up to: 6.7
-
-This plugin is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
- */
+/*
+Plugin Name: AI Story Maker
+Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
+Description: AI-powered content generator for WordPress — create engaging stories with a single click.
+Version: 0.1.0
+Author: Hayan Mamoun
+Author URI: https://exedotcom.ca
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: ai-story-maker
+Domain Path: /languages
+Requires PHP: 7.4
+Requires at least: 5.8
+Tested up to: 6.7
+*/
 if (!defined('ABSPATH')) exit;
 function aistma_scrolling_bar() {
     $query = new WP_Query([
@@ -55,10 +43,10 @@ function aistma_scrolling_bar() {
 add_shortcode('aistma_scroller', 'aistma_scrolling_bar');
     
     function aistma_enqueue_style() {
-        $css_url = plugin_dir_url(__FILE__) . '../public/css/aistma-style.css';
+        $css_url = AI_STORY_MAKER_URL. 'public/css/aistma-style.css';
         wp_enqueue_style('aistma-story-scroller', $css_url,
         [],
-        filemtime(plugin_dir_path(__FILE__) . '../public/css/aistma-style.css') // Versioning
+        filemtime(AI_STORY_MAKER_PATH . 'public/css/aistma-style.css') // Versioning
     );
     }
     add_action('wp_enqueue_scripts', 'aistma_enqueue_style',99);

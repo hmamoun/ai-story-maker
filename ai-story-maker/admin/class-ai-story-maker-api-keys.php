@@ -1,32 +1,19 @@
 <?php
 /*
- * AI Story Maker API Keys Class
- * description: This class provides methods to validate API keys for Unsplash and OpenAI.
-    * It includes functions to check the format of the keys and make test API calls to verify their validity.
- * Plugin Name: AI Story Maker
- * Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
- * Description: AI-powered WordPress plugin that generates engaging stories, articles, and images using Large Language Models.
- * Version: 1.0
- * Author: Hayan Mamoun
- * Author URI: https://exedotcom.ca
- * License: GPLv2 or later
- * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: ai-story-maker
- * Domain Path: /languages
- * Requires PHP: 7.4
- * Requires at least: 5.0
- * Tested up to: 6.7
-
- * This plugin is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- */
+Plugin Name: AI Story Maker
+Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
+Description: AI-powered content generator for WordPress — create engaging stories with a single click.
+Version: 0.1.0
+Author: Hayan Mamoun
+Author URI: https://exedotcom.ca
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: ai-story-maker
+Domain Path: /languages
+Requires PHP: 7.4
+Requires at least: 5.8
+Tested up to: 6.7
+*/
 namespace exedotcom\aistorymaker;
 
 if ( ! defined( 'ABSPATH' ) ) {

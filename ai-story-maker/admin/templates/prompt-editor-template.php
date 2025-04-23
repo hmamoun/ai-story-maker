@@ -1,22 +1,19 @@
 <?php
-/**
- * Plugin Name: AI Story Maker
- * prompt-editor-template.php
- * 
- * Description: included in the admin area for the prompt editor.
- * 
- * Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
- * Version: 1.0
- * Author: Hayan Mamoun
- * Author URI: https://exedotcom.ca
- * License: GPLv2 or later
- * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: ai-story-maker
- * Domain Path: /languages
- * Requires PHP: 7.4
- * Requires at least: 5.0
- * Tested up to: 6.7
- */
+/*
+Plugin Name: AI Story Maker
+Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
+Description: AI-powered content generator for WordPress — create engaging stories with a single click.
+Version: 0.1.0
+Author: Hayan Mamoun
+Author URI: https://exedotcom.ca
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: ai-story-maker
+Domain Path: /languages
+Requires PHP: 7.4
+Requires at least: 5.8
+Tested up to: 6.7
+*/
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
@@ -125,7 +122,7 @@ $button_text = $is_generating
 <button
     id="make-stories-button"
     class="button button-primary"
-    <?php echo $button_disabled; ?>
+    <?php echo esc_html($button_disabled); ?>
 >
     <?php echo esc_html( $button_text ); ?>
 </button>
