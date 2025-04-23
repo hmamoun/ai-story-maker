@@ -39,15 +39,15 @@ class AISTMA_prompt_editor {
     /**
      * Renders the Prompt Editor admin page.
      */
-    public function render() {
+    public function aistma_prompt_editor_render() {
         // Process form submission (business logic stays in the class)
         if ( isset( $_SERVER['REQUEST_METHOD'] ) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset( $_POST['save_prompts_v2'] ) ) {
             check_admin_referer( 'save_story_prompts', 'story_prompts_nonce' );
             $raw_prompts_input = isset( $_POST['prompts'] ) ? sanitize_textarea_field( wp_unslash( $_POST['prompts'] ) ) : '';
             $updated_prompts   = $raw_prompts_input ? json_decode( $raw_prompts_input, true ) : [];
-            update_option( 'ai_story_prompts', json_encode( $updated_prompts, JSON_PRETTY_PRINT ) );
 
-            echo '<div id="ai-story-maker-messages" class="notice notice-info"><p>✅ ' 
+            update_option( 'aistma_prompts', json_encode( $updated_prompts, JSON_PRETTY_PRINT ) );
+            echo '<div id="aistma-notice" class="notice notice-info"><p>✅ ' 
                 . esc_html__( 'Prompts saved successfully!', 'ai-story-maker' ) 
                 . '</p></div>';
 
@@ -55,7 +55,7 @@ class AISTMA_prompt_editor {
         }
 
         // Gather data for the view.
-        $raw_json         = get_option( 'ai_story_prompts', '{}' );
+        $raw_json         = get_option( 'aistma_prompts', '{}' );
         $settings         = json_decode( $raw_json, true );
         $prompts          = isset( $settings['prompts'] ) ? $settings['prompts'] : [];
         $default_settings = isset( $settings['default_settings'] ) ? $settings['default_settings'] : [];

@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 ?>
 <div class="wrap">
-    <div class="ai-storymaker-settings">
+    <div class="aistma-style-settings">
     <h2>AI Story Settings</h2>
   <p>
     Use the this part to choselect a default AI model (e.g., GPT-4) and define the <strong>Instructions</strong> a set of instructions that will apply to all prompts. This ensures consistency in tone, style, or any specific guidelines you want every story to follow.
@@ -34,15 +34,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 
         <?php wp_nonce_field( 'save_story_prompts', 'story_prompts_nonce' ); ?>
 
-            <div class="setting-item">
+            <div>
                 <label for="model"><?php esc_html_e( 'Model', 'ai-story-maker' ); ?></label>
                 <select name="model" id="model">
                     <option value="gpt-4o-mini" <?php selected( $data['default_settings']['model'] ?? '', 'gpt-4o-mini' ); ?>>GPT-4o Mini</option>
                     <option value="gpt-4o" <?php selected( $data['default_settings']['model'] ?? '', 'gpt-4o' ); ?>>GPT-4o</option>
-                    <option value="gpt-4o-large" <?php selected( $data['default_settings']['model'] ?? '', 'gpt-4o-large' ); ?>>GPT-4o Large</option>
+                    
                 </select>
             </div>
-            <div class="setting-item">
+            <div>
                 <label for="system_content"><?php esc_html_e( 'General Instructions', 'ai-story-maker' ); ?></label>
                 <textarea name="system_content" id="system_content" rows="5" style="width: 100%;"><?php echo esc_textarea( $data['default_settings']['system_content'] ?? '' ); ?></textarea>
             </div>
@@ -115,7 +115,7 @@ if ( ! defined( 'ABSPATH' ) ) {
   </p>
 </div>             
 <?php
-$is_generating = get_transient( 'ai_story_generator_running' );
+$is_generating = get_transient( 'aistma_generating_lock' );
 $button_disabled = $is_generating ? 'disabled' : '';
 $button_text = $is_generating
     ? __( 'Story generation in progress...', 'ai-story-maker' )

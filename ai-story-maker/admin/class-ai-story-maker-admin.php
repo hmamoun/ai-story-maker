@@ -26,7 +26,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * 
  * Handles the admin area and settings.
  */
-class Admin {
+class AISTMA_Admin {
     protected $aistma_prompt_editor;
     protected $aistma_api_keys;
     protected $aistma_settings_page;
@@ -48,7 +48,7 @@ class Admin {
         $this->aistma_log_manager = new AISTMA_Log_Manager();
         $this->aistma_prompt_editor = new AISTMA_prompt_editor();
         $this->aistma_api_keys = new AISTMA_API_Keys();
-        $this->aistma_settings_page = new Settings_Page();
+        $this->aistma_settings_page = new AISTMA_Settings_Page();
         // Register the admin menu.
         add_action( 'admin_menu', array( $this, 'aistma_add_admin_menu' ) );
     }
@@ -60,14 +60,14 @@ class Admin {
      */
     public function aistma_admin_enqueue_scripts() {
         wp_enqueue_script(
-            'ai-story-maker-admin',
+            'aistma-admin-js',
             AI_STORY_MAKER_URL . 'admin/js/admin.js',
             array( 'jquery' ),
             filemtime( AI_STORY_MAKER_PATH . 'admin/js/admin.js' ),
             true
         );
         wp_enqueue_style(
-            'ai-story-maker-admin',
+            'aistma-admin-css',
             AI_STORY_MAKER_URL . 'admin/css/admin.css',
             array(),
             filemtime( AI_STORY_MAKER_PATH . 'admin/css/admin.css' )
@@ -82,7 +82,7 @@ class Admin {
             __( 'AI Story Maker Settings', 'ai-story-maker' ), // Page title.
             __( 'AI Story Maker', 'ai-story-maker' ),             // Menu title.
             'manage_options',                                  // Capability.
-            'story-maker-settings',                            // Menu slug.
+            'aistma-settings',                            // Menu slug.
             array( $this, 'aistma_render_main_page' ),                // Callback.
             'dashicons-welcome-widgets-menus', // Icon
             9                                  // Position
@@ -99,18 +99,18 @@ class Admin {
         $active_tab = isset( $_GET['tab'] ) && in_array( $_GET['tab'], $allowed_tabs, true ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'welcome';
             
         ?>
-        <div id="ai-story-maker-messages" class="notice notice-info hidden"></div>
+        <div id="aistma-notice" class="notice notice-info hidden"></div>
 		<h2 class="nav-tab-wrapper">
-            <a href="?page=story-maker-settings&tab=welcome" class="nav-tab <?php echo ( $active_tab === 'welcome' ) ? 'nav-tab-active' : ''; ?>">
+            <a href="?page=aistma-settings&tab=welcome" class="nav-tab <?php echo ( $active_tab === 'welcome' ) ? 'nav-tab-active' : ''; ?>">
 				<?php esc_html_e( 'AI Story Maker', 'ai-story-maker' ); ?>
 			</a>           
-			<a href="?page=story-maker-settings&tab=general" class="nav-tab <?php echo ( $active_tab === 'general' ) ? 'nav-tab-active' : ''; ?>">
+			<a href="?page=aistma-settings&tab=general" class="nav-tab <?php echo ( $active_tab === 'general' ) ? 'nav-tab-active' : ''; ?>">
 				<?php esc_html_e( 'General Settings', 'ai-story-maker' ); ?>
 			</a>
-			<a href="?page=story-maker-settings&tab=prompts" class="nav-tab <?php echo ( $active_tab === 'prompts' ) ? 'nav-tab-active' : ''; ?>">
+			<a href="?page=aistma-settings&tab=prompts" class="nav-tab <?php echo ( $active_tab === 'prompts' ) ? 'nav-tab-active' : ''; ?>">
 				<?php esc_html_e( 'Prompts', 'ai-story-maker' ); ?>
 			</a>
-            <a href="?page=story-maker-settings&tab=log" class="nav-tab <?php echo ( $active_tab === 'log' ) ? 'nav-tab-active' : ''; ?>">
+            <a href="?page=aistma-settings&tab=log" class="nav-tab <?php echo ( $active_tab === 'log' ) ? 'nav-tab-active' : ''; ?>">
 				<?php esc_html_e( 'log', 'ai-story-maker' ); ?>
 			</a>
 		</h2>
@@ -121,11 +121,11 @@ class Admin {
         if ( 'welcome' === $active_tab ) {
             include_once AI_STORY_MAKER_PATH . 'admin/templates/welcome-tab-template.php';
         } elseif ( 'general' === $active_tab ) {
-            $this->aistma_settings_page->render();
+            $this->aistma_settings_page->aistma_setting_page_render();
         } elseif ( 'prompts' === $active_tab ) {
-            $this->aistma_prompt_editor->render();
+            $this->aistma_prompt_editor->aistma_prompt_editor_render();
         } elseif ( 'log' === $active_tab ) {
-            $this->aistma_log_manager->render_log_table();
+            $this->aistma_log_manager->aistma_log_table_render();
         }
     
 	}
@@ -134,4 +134,4 @@ class Admin {
 }
 
 // Instantiate the Admin class.
-new Admin();
+new AISTMA_Admin();

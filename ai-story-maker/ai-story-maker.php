@@ -24,9 +24,13 @@ define( 'AI_STORY_MAKER_PATH', plugin_dir_path( __FILE__ ) );
 define( 'AI_STORY_MAKER_URL', plugin_dir_url( __FILE__ ) );
 use exedotcom\aistorymaker\AISTMA_Story_Generator;
 use exedotcom\aistorymaker\AISTMA_Log_Manager;
-
+/**
+ * Main plugin class.
+ */
 class AISTMA_Plugin {
-
+    /**
+     * Constructor initializes the plugin.
+     */
     public function __construct() {
         add_action( 'init', array( $this, 'aistma_load_plugin_textdomain') );
         add_action( 'admin_enqueue_scripts', array( $this, 'aistma_enqueue_admin_styles' ) );
@@ -34,13 +38,20 @@ class AISTMA_Plugin {
         $this->aistma_load_dependencies([
             'admin/class-ai-story-maker-admin.php',
             'includes/class-ai-story-maker-story-generator.php',
-            'includes/story-scroller.php',
+            'includes/shortcode-story-scroller.php',
             'includes/class-ai-story-maker-log-management.php'
         ]
         );
+        add_action( 'admin_post_aistma_clear_logs', [AISTMA_Log_Manager::class, 'aistma_clear_logs'] );
 
     }
 
+    /**
+     * Load plugin dependencies.
+     *
+     * @param array $files Array of file paths to include.
+     * @return void
+     */
     public static function aistma_load_dependencies($files = []) {
         foreach ( $files as $file ) {
             $path = AI_STORY_MAKER_PATH . $file;
@@ -71,7 +82,7 @@ class AISTMA_Plugin {
      * @param string $hook The current admin page hook.
      */
     public function aistma_enqueue_admin_styles( $hook ) {
-        if ( $hook !== 'toplevel_page_story-maker-settings' ) {
+        if ( $hook !== 'toplevel_page_aistma-settings' ) {
             return;
         }
         wp_enqueue_style(
@@ -107,18 +118,18 @@ class AISTMA_Plugin {
      */
     public static function aistma_activate() {
         $aistma_log_manager = new AISTMA_Log_Manager();
-        if ( function_exists( 'ai_storymaker_create_log_table' ) ) {
-            ai_storymaker_create_log_table();
+        if ( function_exists( 'ai_storymaker_aistma_create_log_table' ) ) {
+            ai_storymaker_aistma_create_log_table();
         }
         
         // bmark Schedule on activation
         // Check if the schedule is already set; if not, set it.
-        if ( ! wp_next_scheduled( 'aistima_generate_story_event' ) ) {
-            $n = absint(get_option('opt_ai_story_repeat_interval_days'));
+        if ( ! wp_next_scheduled( 'aistma_generate_story_event' ) ) {
+            $n = absint(get_option('aistma_generate_story_cron'));
             if (0 !== $n) {
                 // Schedule the event
                 $next_schedule = gmdate('Y-m-d H:i:s', time() + $n * DAY_IN_SECONDS);
-                wp_schedule_event(time() + $n * DAY_IN_SECONDS, 'daily', 'aistima_generate_story_event');
+                wp_schedule_event(time() + $n * DAY_IN_SECONDS, 'daily', 'aistma_generate_story_event');
                 // Log the next schedule
                 /* translators: %s: next schedule */
 
@@ -134,9 +145,9 @@ class AISTMA_Plugin {
      */
     public static function aistma_deactivate() {
         // Clear the scheduled event
-        wp_clear_scheduled_hook( 'aistima_generate_story_event' );
+        wp_clear_scheduled_hook( 'aistma_generate_story_event' );
         // Clear the transient to stop the generation process
-        delete_transient( 'ai_story_generator_running' );
+        delete_transient( 'aistma_generating_lock' );
     }
 }
 
@@ -186,8 +197,13 @@ if ( defined( 'WP_ENV' ) && WP_ENV === 'exedotcom-development' ) {
     define('ALTERNATE_WP_CRON', true);
 }
 // Register cron callback — MUST be global, not inside constructor
-add_action( 'aistima_generate_story_event', __NAMESPACE__ . '\\aistma_handle_generate_story_event' );
+add_action( 'aistma_generate_story_event', __NAMESPACE__ . '\\aistma_handle_generate_story_event' );
 
+/**
+ * Function to handle the scheduled event for generating stories.
+ *
+ * @return void
+ */
 function aistma_handle_generate_story_event() {
     $generator = new AISTMA_Story_Generator();
     $generator->generate_ai_stories_with_lock();

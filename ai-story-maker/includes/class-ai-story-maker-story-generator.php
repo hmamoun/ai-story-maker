@@ -45,7 +45,7 @@ class AISTMA_Story_Generator {
      */
     public static function generate_ai_stories_with_lock( $force = false ) {
 
-        $lock_key = 'ai_story_generator_running';
+        $lock_key = 'aistma_generating_lock';
     
         if ( ! $force && get_transient( $lock_key ) ) {
             $instance = new self();
@@ -67,10 +67,10 @@ class AISTMA_Story_Generator {
         }
     
         // Always schedule the next run after execution
-        $n = absint( get_option( 'opt_ai_story_repeat_interval_days' ) );
+        $n = absint( get_option( 'aistma_generate_story_cron' ) );
         if ( $n !== 0 ) {
             $next_schedule = time() + $n * DAY_IN_SECONDS;
-            wp_schedule_single_event( $next_schedule, 'aistima_generate_story_event' );
+            wp_schedule_single_event( $next_schedule, 'aistma_generate_story_event' );
             $instance->aistma_log_manager->log('info', 'Rescheduled story generation at: ' . gmdate('Y-m-d H:i:s', $next_schedule));
         }
     }
@@ -85,7 +85,7 @@ class AISTMA_Story_Generator {
             'successes' => array(),
         );
         // Check if the OpenAI API key is set and is valid
-        $this->api_key = get_option( 'openai_api_key' );
+        $this->api_key = get_option( 'aistma_openai_api_key' );
         if ( ! $this->api_key ) {
             $error = __( 'OpenAI API Key is missing.', 'ai-story-maker' );
             $this->aistma_log_manager::log( 'error', $error );
@@ -93,7 +93,7 @@ class AISTMA_Story_Generator {
             return;
         }
 
-        $raw_settings = get_option( 'ai_story_prompts', '' );
+        $raw_settings = get_option( 'aistma_prompts', '' );
         $settings     = json_decode( $raw_settings, true );
 
         // Check if the settings are valid
@@ -135,13 +135,13 @@ class AISTMA_Story_Generator {
         }
 
         // bmark Schedule after generate
-        $n = absint(get_option( 'opt_ai_story_repeat_interval_days' ));
+        $n = absint(get_option( 'aistma_generate_story_cron' ));
         if ( 0 !== $n ) {
                 // cancel the current schedule
-                wp_clear_scheduled_hook( 'aistima_generate_story_event' );
+                wp_clear_scheduled_hook( 'aistma_generate_story_event' );
                 // schedule the next event  
                 $next_schedule = gmdate( 'Y-m-d H:i:s', time() +  $n * DAY_IN_SECONDS );
-                wp_schedule_single_event( time() + $n * DAY_IN_SECONDS , 'aistima_generate_story_event' );
+                wp_schedule_single_event( time() + $n * DAY_IN_SECONDS , 'aistma_generate_story_event' );
                
                 $this->aistma_log_manager::log(
 					'info',
@@ -151,7 +151,7 @@ class AISTMA_Story_Generator {
 
         } else {
             $this->aistma_log_manager::log( 'info', __( 'Schedule for next story is unset', 'ai-story-maker' ) );
-            wp_clear_scheduled_hook( 'aistima_generate_story_event' );
+            wp_clear_scheduled_hook( 'aistma_generate_story_event' );
         }
     }
     /**
@@ -171,10 +171,10 @@ class AISTMA_Story_Generator {
         $default_system_content = isset( $merged_settings['system_content'] )
             ? $merged_settings['system_content'] : '';
             $default_system_content .= "\n" . __( 'You are an article generator tasked with researching a topic online and creating an article based on the provided prompt.', 'ai-story-maker' );
-            $default_system_content .= "\n" . __( 'The article should be:', 'ai-story-maker' );
-            $default_system_content .= "\n" . __( '- At least 1000 words.', 'ai-story-maker' );
-            $default_system_content .= "\n" . __( '- Written in a professional, engaging, and informative tone.', 'ai-story-maker' );
-            $default_system_content .= "\n" . __( '- Free of grammatical errors and typos.', 'ai-story-maker' );
+            // $default_system_content .= "\n" . __( 'The article should be:', 'ai-story-maker' );
+            // $default_system_content .= "\n" . __( '- At least 1000 words.', 'ai-story-maker' );
+            // $default_system_content .= "\n" . __( '- Written in a professional, engaging, and informative tone.', 'ai-story-maker' );
+            // $default_system_content .= "\n" . __( '- Free of grammatical errors and typos.', 'ai-story-maker' );
             $default_system_content .= "\n" . __( '- Relevant, original, and not plagiarized.', 'ai-story-maker' );
             $default_system_content .= "\n" . __( '- Composed in clear, semantic HTML format with:', 'ai-story-maker' );
             $default_system_content .= "\n" . __( '  - Main headings using <h2> tags.', 'ai-story-maker' );
@@ -373,7 +373,7 @@ class AISTMA_Story_Generator {
      * @return string The HTML markup for the image or an empty string if no image is found.
      */
     function fetch_unsplash_image($keywords) {
-        $api_key = get_option('unsplash_api_key');
+        $api_key = get_option('aistma_unsplash_api_key');
     
         $query = implode(',', $keywords);
         $url = "https://api.unsplash.com/search/photos?query=" . urlencode($query) . "&client_id=" . $api_key . "&per_page=30&orientation=landscape&quantity=100";
@@ -411,13 +411,13 @@ class AISTMA_Story_Generator {
      * @return void
      */
     public function check_schedule() {
-        $next_event = wp_next_scheduled('aistima_generate_story_event');
+        $next_event = wp_next_scheduled('aistma_generate_story_event');
     
         if ( ! $next_event ) {
-            $n = absint(get_option('opt_ai_story_repeat_interval_days'));
+            $n = absint(get_option('aistma_generate_story_cron'));
             if ($n !== 0) {
                 $run_at = time() + $n * DAY_IN_SECONDS;
-                wp_schedule_single_event($run_at, 'aistima_generate_story_event');
+                wp_schedule_single_event($run_at, 'aistma_generate_story_event');
                 $this->aistma_log_manager->log('info', 'Scheduled next AI story generation at: ' . gmdate('Y-m-d H:i:s', $run_at));
             }
         }
@@ -429,15 +429,15 @@ class AISTMA_Story_Generator {
      * @return void
      */
     public function reschedule_cron_event() {
-        $timestamp = wp_next_scheduled( 'aistima_generate_story_event' );
+        $timestamp = wp_next_scheduled( 'aistma_generate_story_event' );
         if ( $timestamp ) {
-            wp_unschedule_event( $timestamp, 'aistima_generate_story_event' );
+            wp_unschedule_event( $timestamp, 'aistma_generate_story_event' );
         }
     
-        $n = absint(get_option('opt_ai_story_repeat_interval_days'));
+        $n = absint(get_option('aistma_generate_story_cron'));
         if ($n !== 0) {
             $run_at = time() + $n * DAY_IN_SECONDS;
-            wp_schedule_single_event( $run_at, 'aistima_generate_story_event' );
+            wp_schedule_single_event( $run_at, 'aistma_generate_story_event' );
             $this->aistma_log_manager->log('info', 'Rescheduled cron event: ' . gmdate('Y-m-d H:i:s', $run_at));
         }
     }

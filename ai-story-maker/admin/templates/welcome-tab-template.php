@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 ?>
 <div class="wrap">
-    <div class="ai-storymaker-settings">
+    <div class="aistma-style-settings">
         <h2>AI Story Maker</h2>
         <p>
             AI Story Maker uses OpenAI's LLMs to automatically create engaging stories for your WordPress site.
@@ -61,8 +61,8 @@ if ( ! defined( 'ABSPATH' ) ) {
         </p>
 
         <?php
- $next_event = wp_next_scheduled( 'aistima_generate_story_event');
- $is_generating = get_transient( 'ai_story_generator_running' );
+ $next_event = wp_next_scheduled( 'aistma_generate_story_event');
+ $is_generating = get_transient( 'aistma_generating_lock' );
  
  if ( $next_event ) {
      $time_diff  = $next_event - time();

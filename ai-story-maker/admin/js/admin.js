@@ -159,12 +159,12 @@ document.getElementById("make-stories-button").addEventListener("click", functio
         })
         .then(data => {
             if (data.success) {
-                const messageDiv = document.getElementById("ai-story-maker-messages");
+                const messageDiv = document.getElementById("aistma-notice");
                 messageDiv.className = "notice notice-success visible";
                 messageDiv.innerText = "Story generated successfully!";
 
             } else {
-                const messageDiv = document.getElementById("ai-story-maker-messages");
+                const messageDiv = document.getElementById("aistma-notice");
                 messageDiv.className = "notice notice-error visible";
                 messageDiv.innerText = "Error generating stories please check the logs!";
             }

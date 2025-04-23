@@ -1,11 +1,11 @@
 /*
-story-style.css
+aistma-style.css
 This CSS file is used to style the AI Story Maker application.
 It includes styles for the story scroller, story items, and the overall layout of the story page.
 The styles are designed to create a clean and modern look for the application,
 with a focus on readability and user experience.
 */
-.story-scroller {
+.aistma-story-scroller {
     width: 100%;
     background: #000;
     color: #fff;
@@ -17,7 +17,7 @@ with a focus on readability and user experience.
     z-index: 1000;
 }
 
-.story-items {
+.aistma-story-items {
     display: flex;
     gap: 20px;
     white-space: nowrap;

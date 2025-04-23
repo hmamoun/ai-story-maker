@@ -27,7 +27,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
  */
 if (!defined('ABSPATH')) exit;
-function story_scrolling_bar() {
+function aistma_scrolling_bar() {
     $query = new WP_Query([
         'post_type'      => 'post',
         'posts_per_page' => 5, // Change as needed
@@ -36,8 +36,8 @@ function story_scrolling_bar() {
     ]);
     if ($query->have_posts()) {
         ob_start();
-        echo '<div class="story-scroller">';
-        echo '<div class="story-items">';
+        echo '<div class="aistma-story-scroller">';
+        echo '<div class="aistma-story-items">';
         while ($query->have_posts()) {
             $query->the_post();
             echo '<div class="story-item"><a href="' . esc_url(get_permalink()) . '">' . esc_html(get_the_title()) . '</a></div>';
@@ -52,15 +52,14 @@ function story_scrolling_bar() {
     return '<p>No news available.</p>';
     
 }
-add_shortcode('story_scroller', 'story_scrolling_bar');
-
+add_shortcode('aistma_scroller', 'aistma_scrolling_bar');
     
-    function story_scroller_styles() {
-        $css_url = plugin_dir_url(__FILE__) . '../public/css/story-style.css';
-        wp_enqueue_style('story-scroller', $css_url,
+    function aistma_enqueue_style() {
+        $css_url = plugin_dir_url(__FILE__) . '../public/css/aistma-style.css';
+        wp_enqueue_style('aistma-story-scroller', $css_url,
         [],
-        filemtime(plugin_dir_path(__FILE__) . '../public/css/story-style.css') // Versioning
+        filemtime(plugin_dir_path(__FILE__) . '../public/css/aistma-style.css') // Versioning
     );
     }
-    add_action('wp_enqueue_scripts', 'story_scroller_styles',99);
+    add_action('wp_enqueue_scripts', 'aistma_enqueue_style',99);
     

@@ -46,7 +46,7 @@ class AISTMA_API_Keys {
      * @param string $api_key The Unsplash API key.
      * @return bool True if the key is valid, false otherwise.
      */
-    public static function validate_unsplash_api_key( $api_key ) {
+    public static function aistma_validate_aistma_unsplash_api_key( $api_key ) {
         // Sanitize input.
         $api_key = sanitize_text_field( wp_unslash( $api_key ) );
 
@@ -73,7 +73,7 @@ class AISTMA_API_Keys {
      * @param string $api_key The OpenAI API key.
      * @return bool True if the key is valid, false otherwise.
      */
-    public static function validate_openai_api_key( $api_key ) {
+    public static function aistma_validate_aistma_openai_api_key( $api_key ) {
         // Sanitize input.
         $api_key = sanitize_text_field( wp_unslash( $api_key ) );
 

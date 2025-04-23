@@ -47,15 +47,15 @@ class AISTMA_Log_Manager {
 	 */
 	public function __construct() {
 		// add_action( 'admin_menu', [ $this, 'add_logs_page' ] );
-		add_action( 'admin_init', [ __CLASS__, 'create_log_table' ] );
+		add_action( 'admin_init', [ __CLASS__, 'aistma_create_log_table' ] );
 	}	
 
 	/**
 	 * Creates the log table if it doesn't exist.
 	 */
-	public static function create_log_table() {
+	public static function aistma_create_log_table() {
 		global $wpdb;
-		$table_name      = $wpdb->prefix . 'ai_storymaker_logs';
+		$table_name      = $wpdb->prefix . 'aistma_log_table';
 		$charset_collate = $wpdb->get_charset_collate();
 
 		$sql = "CREATE TABLE IF NOT EXISTS $table_name (
@@ -78,10 +78,11 @@ class AISTMA_Log_Manager {
 	 * @param string|null $request_id An optional request ID.
 	 * 
 	 * @return void
+	 * the function has a short name not to overload the code
 	 */
 	public static function log( $type, $message, $request_id = null ) {
 		global $wpdb;
-		$table_name = $wpdb->prefix . 'ai_storymaker_logs';
+		$table_name = $wpdb->prefix . 'aistma_log_table';
 		// safe: log goes to a custom table
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$wpdb->insert(
@@ -95,8 +96,9 @@ class AISTMA_Log_Manager {
 			[ '%s', '%s', '%s', '%s' ]
 		);
 
+
 		// Clear cache after inserting a new log.
-		wp_cache_delete( 'ai_storymaker_logs' );
+		wp_cache_delete( 'aistma_log_table' );
 	}
 
 	/**
@@ -105,27 +107,41 @@ class AISTMA_Log_Manager {
 	 * @return void
 	 * 
 	 */
-	public static function render_log_table() {
+	public static function aistma_log_table_render() {
 		global $wpdb;
-		$table_name = esc_sql( $wpdb->prefix . 'ai_storymaker_logs' );
-
-		// Check cache before querying the database.
-		$logs = wp_cache_get( 'ai_storymaker_logs' );
+	
+		$table_name = esc_sql( $wpdb->prefix . 'aistma_log_table' );
+		$logs       = wp_cache_get( 'aistma_log_table' );
+	
 		if ( false === $logs ) {
-			// safe: i prefer not to user caching here
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 			$logs = $wpdb->get_results(
-				// sage: log table is a custom table
-				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$wpdb->prepare( "SELECT * FROM $table_name ORDER BY created_at DESC LIMIT %d", 50 )
 			);
-			wp_cache_set( 'ai_storymaker_logs', $logs, '', 300 ); // Cache for 5 minutes.
+			wp_cache_set( 'aistma_log_table', $logs, '', 300 );
 		}
-
-		echo '
-		<div class="wrap"><div class="ai-storymaker-settings"><h2>AI Story Maker Logs</h2>';
-		echo '<table class="widefat"><thead><tr><th>ID</th><th>Type</th><th>Message</th><th>Request ID</th><th>Timestamp</th></tr></thead><tbody>';
-
+	
+		// Render UI
+		echo '<div class="wrap"><div class="aistma-style-settings">';
+		echo '<h2>' . esc_html__( 'AI Story Maker Logs', 'ai-story-maker' ) . '</h2>';
+	
+		// Clear Logs Button
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" style="margin-bottom: 20px;">';
+		wp_nonce_field( 'aistma_clear_logs_action', 'aistma_clear_logs_nonce' );
+		echo '<input type="hidden" name="redirect_to" value="' .  esc_url( admin_url( 'admin.php?page=aistma-settings&tab=log' ) ) . '">';
+		echo '<input type="hidden" name="action" value="aistma_clear_logs">';
+		echo '<input type="submit" class="button button-secondary" value="' . esc_attr__( 'Clear Logs', 'ai-story-maker' ) . '">';
+		echo '</form>';
+	
+		// Logs Table
+		echo '<table class="widefat"><thead><tr>
+				<th>' . esc_html__( 'ID', 'ai-story-maker' ) . '</th>
+				<th>' . esc_html__( 'Type', 'ai-story-maker' ) . '</th>
+				<th>' . esc_html__( 'Message', 'ai-story-maker' ) . '</th>
+				<th>' . esc_html__( 'Request ID', 'ai-story-maker' ) . '</th>
+				<th>' . esc_html__( 'Timestamp', 'ai-story-maker' ) . '</th>
+			</tr></thead><tbody>';
+	
 		if ( ! empty( $logs ) ) {
 			foreach ( $logs as $log ) {
 				echo '<tr>';
@@ -137,44 +153,65 @@ class AISTMA_Log_Manager {
 				echo '</tr>';
 			}
 		}
-
+	
 		echo '</tbody></table></div></div>';
 	}
+	
 
 	/**
 	 * Scheduled function to clear old logs.
 	 * 
 	 * @return void
 	 */
-	public static function clear_logs() {
+	public static function aistma_clear_logs() {
 		global $wpdb;
 		$current_time   = time();
 		$next_scheduled = wp_next_scheduled( 'schd_ai_story_maker_clear_log' );
 
-		if ( $next_scheduled < $current_time || ! $next_scheduled ) {
-			$interval         = intval( get_option( 'opt_ai_storymaker_clear_log', 30 ) );
+		if ( $next_scheduled < $current_time || ! $next_scheduled || ( isset( $_POST['action'] ) && 'aistma_clear_logs' === $_POST['action'] ) ) {
+			$interval         = intval( get_option( 'aistma_clear_log_cron', 30 ) );
 			$interval_seconds = $interval * DAY_IN_SECONDS;
 
 			// Clear previous schedule and set up the next one.
 			wp_clear_scheduled_hook( 'schd_ai_story_maker_clear_log' );
 			wp_schedule_single_event( time() + $interval_seconds, 'schd_ai_story_maker_clear_log' );
 
-			$table_name     = esc_sql( $wpdb->prefix . 'ai_storymaker_logs' );
-			$date_threshold = gmdate( 'Y-m-d H:i:s', strtotime( "-{$interval} days" ) );
-			// safe : log table is a custom table
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-			$wpdb->delete(
-				$table_name,
-				[ 'created_at <' => $date_threshold ],
-				[ '%s' ]
-			);
+			$table_name     = esc_sql( $wpdb->prefix . 'aistma_log_table' );
 
-			// Log the cleanup event.
-			self::log( 'success', 'Log cleaned, next run after: ' . gmdate( 'Y-m-d H:i:s', time() + $interval_seconds ) );
+			// if the function is called from the admin page, we need to clear the logs
+			if ( isset( $_POST['action'] ) && 'aistma_clear_logs' === $_POST['action'] ) {
+				$result =$wpdb->query( "TRUNCATE TABLE {$table_name}" );
+			}
+			else {
+				$date_threshold = gmdate( 'Y-m-d H:i:s', strtotime( "-{$interval} days" ) );
+							// safe : log table is a custom table
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+				$result = $wpdb->delete(
+					$table_name,
+					[ 'created_at <' => $date_threshold ],
+					[ '%s' ]
+				);
+
+			}
+			if ( $result ) {
+				// Log the cleanup event.
+				self::log( 'success', 'Log cleaned, next run after: ' . gmdate( 'Y-m-d H:i:s', time() + $interval_seconds ) );
+			} else {
+				// Log the error event.
+				self::log( 'error', 'Failed to clean logs.' );
+			}
+
+			if (isset(  $_POST['redirect_to'])) {
+				$redirect_url = esc_url_raw( $_POST['redirect_to'] );
+				wp_redirect( $redirect_url );
+				exit;
+			} 
+
+
 		}
 	}
 }
 
 // Hook the log cleanup to our class method.
-add_action( 'schd_ai_story_maker_clear_log', [ 'exedotcom\aistorymaker\AISTMA_Log_Manager', 'clear_logs' ] );
+add_action( 'schd_ai_story_maker_clear_log', [ 'exedotcom\aistorymaker\AISTMA_Log_Manager', 'aistma_clear_logs' ] );
 

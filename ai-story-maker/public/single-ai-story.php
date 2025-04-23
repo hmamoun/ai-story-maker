@@ -129,9 +129,9 @@ if (has_custom_logo()) {
 function enqueue_story_style() {
     wp_enqueue_style(
         'story-style',
-        plugin_dir_url(__FILE__) . '../public/css/story-style.css',
+        plugin_dir_url(__FILE__) . '../public/css/aistma-style.css',
         array(), // No dependencies
-        filemtime(plugin_dir_path(__FILE__) . '../public/css/story-style.css'), // Cache busting
+        filemtime(plugin_dir_path(__FILE__) . '../public/css/aistma-style.css'), // Cache busting
         'all' // Media type
     );
 }

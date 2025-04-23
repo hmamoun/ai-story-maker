@@ -12,12 +12,12 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
  // remove plugin options
 // delete multiple options
 $options = array(
-	'ai_story_prompts',
-	'opt_ai_storymaker_clear_log',
-	'openai_api_key',
-    'unsplash_api_key',
-    'unsplash_api_secret',
-    'opt_ai_story_repeat_interval_days',
+	'aistma_prompts',
+	'aistma_clear_log_cron',
+	'aistma_openai_api_key',
+    'aistma_unsplash_api_key',
+    'aistma_unsplash_api_secret',
+    'aistma_generate_story_cron',
 
 );
 foreach ($options as $option) {
@@ -25,9 +25,9 @@ foreach ($options as $option) {
 }
 // delete database table
 global $wpdb;
-$table_name = $wpdb->prefix . 'ai_storymaker_logs';
+$table_name = $wpdb->prefix . 'aistma_log_table';
 // safe: removing the table when uninstalling
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery , WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
 $wpdb->query( $wpdb->prepare( "DROP TABLE IF EXISTS `%s`", $table_name ));
 // bmark Schedule on uninstall
-wp_clear_scheduled_hook( 'aistima_generate_story_event' );
+wp_clear_scheduled_hook( 'aistma_generate_story_event' );

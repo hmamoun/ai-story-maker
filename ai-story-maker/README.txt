@@ -136,7 +136,7 @@ If you find this plugin helpful, consider supporting it: https://buymeacoffee.co
 │   ├── class-ai-story-maker-story-generator.php
 │   ├── index.php
 │   ├── repository-open-graph.svg
-│   └── story-scroller.php
+│   └── shortcode-story-scroller.php
 ├── languages
 │   ├── ai-story-maker-es_ES.mo
 │   ├── ai-story-maker-es_ES.po
@@ -146,7 +146,7 @@ If you find this plugin helpful, consider supporting it: https://buymeacoffee.co
 ├── public
 │   ├── css
 │   │   ├── index.php
-│   │   └── story-style.css
+│   │   └── aistma-style.css
 │   ├── index.php
 │   └── single-ai-story.php
 └── uninstall.php
