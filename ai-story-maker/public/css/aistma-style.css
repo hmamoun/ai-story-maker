@@ -1,6 +1,5 @@
-<?php
 /*
-Plugin Name: AI Story Maker
+
 Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
 Description: AI-powered content generator for WordPress — create engaging stories with a single click.
 Version: 0.1.0
@@ -16,8 +15,8 @@ Tested up to: 6.7
 */
 .aistma-story-scroller {
     width: 100%;
-    background: #000;
-    color: #fff;
+    background: var(--wp--preset--color--foreground, #000);
+    color:var(--wp--preset--color--background, #fff);
     padding: 10px 0;
     overflow: hidden;
     position: fixed;
@@ -34,7 +33,7 @@ Tested up to: 6.7
 }
 
 .story-item a {
-    color: #fff;
+    color:var(--wp--preset--color--background, #fff);
     text-decoration: none;
     font-weight: bold;
 }

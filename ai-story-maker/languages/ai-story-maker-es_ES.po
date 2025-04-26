@@ -146,7 +146,7 @@ msgstr "Agregar nueva indicación"
 msgid "Save Prompts"
 msgstr "Guardar Indicaciones"
 
-msgid "Launch Story Generation"
+msgid "Generate AI Stories"
 msgstr "Iniciar Generación de Historia"
 
 msgid "No scheduled story generation."

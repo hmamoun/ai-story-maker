@@ -1,6 +1,6 @@
 <?php
 /*
-Plugin Name: AI Story Maker
+
 Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
 Description: AI-powered content generator for WordPress — create engaging stories with a single click.
 Version: 0.1.0
@@ -283,7 +283,7 @@ class AISTMA_Story_Generator {
             // 'post_status'  => 'publish',
             'post_author'  => 1,
             'post_category' => [get_cat_ID($category)],
-            //'page_template' => '../public/single-ai-story.php',
+            //'page_template' => '../public/templates/aistma-post-template.php',
             'post_excerpt' => $parsed_content['excerpt'] ?? 'No excerpt available.',
             'post_status' => $post_status,
          

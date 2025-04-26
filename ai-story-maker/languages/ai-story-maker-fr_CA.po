@@ -155,7 +155,7 @@ msgstr "Ajouter une nouvelle invite"
 msgid "Save Prompts"
 msgstr "Enregistrer les invites"
 
-msgid "Launch Story Generation"
+msgid "Generate AI Stories"
 msgstr "Lancer la génération d'histoire"
 
 msgid "No scheduled story generation."

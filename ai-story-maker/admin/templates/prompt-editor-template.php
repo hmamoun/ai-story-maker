@@ -1,6 +1,6 @@
 <?php
 /*
-Plugin Name: AI Story Maker
+
 Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
 Description: AI-powered content generator for WordPress — create engaging stories with a single click.
 Version: 0.1.0
@@ -116,11 +116,11 @@ $is_generating = get_transient( 'aistma_generating_lock' );
 $button_disabled = $is_generating ? 'disabled' : '';
 $button_text = $is_generating
     ? __( 'Story generation in progress...', 'ai-story-maker' )
-    : __( 'Launch Story Generation', 'ai-story-maker' );
+    : __( 'Generate AI Stories', 'ai-story-maker' );
 ?>
 
 <button
-    id="make-stories-button"
+    id="aistma-generate-stories-button"
     class="button button-primary"
     <?php echo esc_html($button_disabled); ?>
 >

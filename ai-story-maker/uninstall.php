@@ -1,19 +1,14 @@
 <?php
-/*
-Plugin Name: AI Story Maker
-Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
-Description: AI-powered content generator for WordPress — create engaging stories with a single click.
-Version: 0.1.0
-Author: Hayan Mamoun
-Author URI: https://exedotcom.ca
-License: GPLv2 or later
-License URI: https://www.gnu.org/licenses/gpl-2.0.html
-Text Domain: ai-story-maker
-Domain Path: /languages
-Requires PHP: 7.4
-Requires at least: 5.8
-Tested up to: 6.7
-*/
+/**
+ * Fired when the plugin is uninstalled.
+ *
+ * @link       https://www.aithemes.com
+ * @since      1.0.0
+ *
+ * @package    Ai_Story_Maker
+ * @subpackage Ai_Story_Maker/includes
+ */ 
+
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
     exit;
 }

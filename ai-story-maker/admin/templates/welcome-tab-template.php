@@ -1,6 +1,6 @@
 <?php
 /*
-Plugin Name: AI Story Maker
+
 Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
 Description: AI-powered content generator for WordPress — create engaging stories with a single click.
 Version: 0.1.0
@@ -20,43 +20,44 @@ if ( ! defined( 'ABSPATH' ) ) {
 ?>
 <div class="wrap">
     <div class="aistma-style-settings">
-        <h2>AI Story Maker</h2>
-        <p>
-            AI Story Maker uses OpenAI's LLMs to automatically create engaging stories for your WordPress site.
-            Setting it up is simple&mdash;just enter your API key and add your prompts.
-        </p>
+    <h2>AI Story Maker</h2>
+<p>
+    AI Story Maker leverages OpenAI's advanced language models to automatically create engaging stories for your WordPress site.
+    Getting started is easy — simply enter your API keys and set up your prompts.
+</p>
 
-        <h3>Getting Started</h3>
-        <ul>
-            <li>
-                <strong>Settings:</strong> Enter your API keys and adjust plugin options.
-            </li>
-            <li>
-                <strong>Prompts:</strong> Go to the Prompts tab to add your prompts and start generating stories.
-            </li>
-            <li>
-                <strong>Shortcode:</strong> Use the <code>[story_scroller]</code> shortcode in your posts or pages to display your stories.
-            </li>
-        </ul>
-        <p>
-            Your generated stories are saved as posts and can be shown using our custom template or via the shortcode.
-        </p>
+<h3>Getting Started</h3>
+<ul>
+    <li>
+        <strong>Settings:</strong> Enter your OpenAI and Unsplash API keys and configure your story generation preferences.
+    </li>
+    <li>
+        <strong>Prompts:</strong> Visit the Prompts tab to create and manage the instructions that guide story generation.
+    </li>
+    <li>
+        <strong>Shortcode:</strong> Use the <code>[aistma_scroller]</code> shortcode to display your AI-generated stories anywhere on your site.
+    </li>
+</ul>
+<p>
+    Generated stories are saved as WordPress posts. You can display them using the custom template included with the plugin or by embedding the shortcode into any page or post.
+</p>
 
-        <h3>Easy to Use</h3>
-        <p>
-            We've built AI Story Maker for simplicity, so even beginners can quickly start generating stories without any hassle.
-        </p>
+<h3>Easy to Use</h3>
+<p>
+    AI Story Maker is designed for simplicity and flexibility, making it easy for users of any skill level to start generating rich, AI-driven content within minutes.
+</p>
 
-        <h3>Future Enhancements</h3>
-        <p>
-            This is version 1.0. In future updates, you'll see support for more LLM models (like Gemini, Grok, and Deep Seek)
-            and additional options for embedding high-quality photos.
-        </p>
+<h3>Future Enhancements</h3>
+<p>
+    This is version 1.0. Future updates will bring support for additional AI models like Gemini, Grok, and DeepSeek,
+    along with enhanced options for embedding premium-quality images from various sources.
+</p>
 
-        <p>
-            <strong>For more information</strong>, visit: 
-            <a href="https://github.com/hmamoun/ai-story-maker/wiki" target="_blank">AI Story Maker</a>
-        </p>
+<p>
+    <strong>For more information, visit:</strong> 
+    <a href="https://github.com/hmamoun/ai-story-maker/wiki" target="_blank">AI Story Maker Wiki</a>
+</p>
+
 
         <?php
  $next_event = wp_next_scheduled( 'aistma_generate_story_event');

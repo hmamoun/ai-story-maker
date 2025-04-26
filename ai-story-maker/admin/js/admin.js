@@ -135,8 +135,8 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 // check if the button exists before adding the event listener
-if (document.getElementById("make-stories-button"))
-document.getElementById("make-stories-button").addEventListener("click", function (e) {
+if (document.getElementById("aistma-generate-stories-button"))
+document.getElementById("aistma-generate-stories-button").addEventListener("click", function (e) {
     e.preventDefault();
     $originalCaption = this.innerHTML;
     this.disabled = true;

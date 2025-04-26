@@ -209,7 +209,7 @@ msgid "Save Prompts"
 msgstr ""
 
 #: admin/templates/prompt-editor-template.php:99
-msgid "Launch Story Generation"
+msgid "Generate AI Stories"
 msgstr ""
 
 #: admin/templates/welcome-tab-template.php:64
