@@ -1,9 +1,9 @@
 name: Release AI Story Maker Plugin
 
 on:
-  push:
-    tags:
-      - 'v*'
+#  push:
+#    tags:
+#      - 'v*'
   workflow_dispatch:
 jobs:
   release:
