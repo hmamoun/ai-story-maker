@@ -18,7 +18,6 @@ namespace exedotcom\aistorymaker;
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
-
 define( 'AI_STORY_MAKER_PATH', plugin_dir_path( __FILE__ ) );
 define( 'AI_STORY_MAKER_URL', plugin_dir_url( __FILE__ ) );
 use exedotcom\aistorymaker\AISTMA_Story_Generator;
