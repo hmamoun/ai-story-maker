@@ -14,7 +14,6 @@ Requires PHP: 7.4
 Requires at least: 5.8
 Tested up to: 6.7
 */
-
 namespace exedotcom\aistorymaker;
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
