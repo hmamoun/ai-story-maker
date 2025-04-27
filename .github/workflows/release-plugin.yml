@@ -1,35 +1,26 @@
-name: Build and Release Plugin
+name: Release AI Story Maker Plugin
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'
 
 jobs:
-  build-release:
+  release:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Delete old ai-story-maker.zip (if exists)
-        run: |
-          if [ -f ai-story-maker.zip ]; then
-            rm ai-story-maker.zip
-          fi
-
-      - name: Create new ai-story-maker.zip
+      - name: Zip ai-story-maker folder
         run: |
           cd ai-story-maker
           zip -r ../ai-story-maker.zip ./
 
-      - name: Create GitHub Release
+      - name: Create Release and Upload Plugin Zip
         uses: softprops/action-gh-release@v2
         with:
-          name: "Automated Release - ${{ github.run_number }}"
-          tag_name: "release-${{ github.run_number }}"
-          body: "This is an automated release generated after pushing to main branch."
           files: ai-story-maker.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
