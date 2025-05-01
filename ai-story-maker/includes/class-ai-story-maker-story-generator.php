@@ -127,7 +127,6 @@ class AISTMA_Story_Generator {
                 $results['errors'][] = $error;
                 
             }
-            //self::generate_ai_story( $prompt['prompt_id'], $prompt, $this->default_settings, $recent_posts, $admin_prompt_settings, $this->api_key );
         }
 
         // bmark Schedule after generate
@@ -166,30 +165,57 @@ class AISTMA_Story_Generator {
         $merged_settings = array_merge( $default_settings, $prompt );
         $default_system_content = isset( $merged_settings['system_content'] )
             ? $merged_settings['system_content'] : '';
-            $default_system_content .= "\n" . __( 'You are an article generator tasked with researching a topic online and creating an article based on the provided prompt.', 'ai-story-maker' );
-            // $default_system_content .= "\n" . __( 'The article should be:', 'ai-story-maker' );
-            // $default_system_content .= "\n" . __( '- At least 1000 words.', 'ai-story-maker' );
-            // $default_system_content .= "\n" . __( '- Written in a professional, engaging, and informative tone.', 'ai-story-maker' );
-            // $default_system_content .= "\n" . __( '- Free of grammatical errors and typos.', 'ai-story-maker' );
-            $default_system_content .= "\n" . __( '- Relevant, original, and not plagiarized.', 'ai-story-maker' );
-            $default_system_content .= "\n" . __( '- Composed in clear, semantic HTML format with:', 'ai-story-maker' );
-            $default_system_content .= "\n" . __( '  - Main headings using <h2> tags.', 'ai-story-maker' );
-            $default_system_content .= "\n" . __( '  - Subheadings using <h3> tags.', 'ai-story-maker' );
-            $default_system_content .= "\n" . __( '  - Lists using standard HTML <ul> or <ol> tags.', 'ai-story-maker' );
-            $default_system_content .= "\n" . __( '  - Bold text where emphasis is required using <strong> tags.', 'ai-story-maker' );
-            $default_system_content .= "\n" . __( 'The article should NOT include Markdown syntax (such as #, *, -, etc.).', 'ai-story-maker' );
-            $default_system_content .= "\n" . __( 'Exclude references to the following recent posts:', 'ai-story-maker' );
-            
-            foreach ( $recent_posts as $post ) {
-                $default_system_content .= "\n" . __( 'Title: ', 'ai-story-maker' ) . $post['title'];
-                $default_system_content .= "\n" . __( 'Excerpt: ', 'ai-story-maker' ) . $post['excerpt'];
-            }
-            
-            $default_system_content .= "\n" . __( 'Organize the article clearly into sections with meaningful headings and subheadings.', 'ai-story-maker' );
-            $default_system_content .= "\n" . __( 'Include at least two valid external reference links formatted as clickable HTML <a> tags.', 'ai-story-maker' );
-            
 
-            $merged_settings['system_content'] = $default_system_content . "\n" . $admin_prompt_settings;
+            // Fetch dynamic system content from Exedotcom API Gateway.
+            // Try to get cached instructions first
+            $dynamic_instructions = get_transient('exaig_cached_aistma_instructions');
+
+            if (false === $dynamic_instructions) {
+                // No cache, fetch from the API
+                try {
+                    $api_response = wp_remote_get('https://exedotcom.ca/wp-json/exaig/v1/aistma-general-instructions', [
+                        'timeout' => 10,
+                        'headers' => [
+                            'X-Caller-Url' => home_url(), 
+                            'X-Caller-IP' => $_SERVER['SERVER_ADDR'] ?? '', 
+                        ],
+                    ]);
+
+                    if (!is_wp_error($api_response)) {
+                        $body = wp_remote_retrieve_body($api_response);
+                        $json  = json_decode($body, true);
+                        if (isset($json['instructions'])) {
+                            $dynamic_instructions = sanitize_textarea_field($json['instructions']);
+                            // Cache for 5 minutes
+                            set_transient('exaig_cached_aistma_instructions', $dynamic_instructions, 5 * MINUTE_IN_SECONDS);
+                        }
+                    }
+                    else{
+                        // Silent fail; fallback will be handled below
+                        $this->aistma_log_manager->log('error', 'Error fetching dynamic instructions: ' . $api_response->get_error_message());
+                        $dynamic_instructions = ''; 
+                        
+                    }
+                } catch (Exception $e) {
+                    // Silent fail; fallback will be handled below
+                    $this->aistma_log_manager->log('error', 'Error fetching dynamic instructions: ' . $e->getMessage());
+                    $dynamic_instructions = '';
+                }
+            }
+
+            // Fallback if API call failed or returned empty
+            if (empty($dynamic_instructions)) {
+                $dynamic_instructions = "Write a fact-based, original article based on real-world information. Organize the article clearly with a proper beginning, middle, and conclusion.";
+            }
+
+            // Append recent posts titles
+            $dynamic_instructions .= "\n" . __( 'Exclude references to the following recent posts:', 'ai-story-maker' );
+            foreach ( $recent_posts as $post ) {
+                $dynamic_instructions .= "\n" . __( 'Title: ', 'ai-story-maker' ) . $post['title'];
+            }
+
+            // Assign final system content
+            $merged_settings['system_content'] = $dynamic_instructions . "\n" . $admin_prompt_settings;
 
             $thePrompt = $prompt['text'];
             if ($prompt['photos'] > 0) {
@@ -217,14 +243,14 @@ class AISTMA_Story_Generator {
             // translators: %d: HTTP status code
             $error_msg = sprintf( __( 'OpenAI API returned HTTP %d', 'ai-story-maker' ), $status_code );
             $this->aistma_log_manager->log( 'error', $error_msg );
-
+            delete_transient( 'aistma_generating_lock' );
             wp_send_json_error( array( 'errors' => array( $error_msg ) ) );
         }
         // check if response is valid
         if ( is_wp_error( $response ) ) {
             $error = $response->get_error_message();
             $this->aistma_log_manager->log( 'error', $error );
-
+            delete_transient( 'aistma_generating_lock' );
             wp_send_json_error( array( 'errors' => array( $error ) ) );
         }
         // check if response is empty
@@ -232,13 +258,15 @@ class AISTMA_Story_Generator {
         if ( ! isset( $response_body['choices'][0]['message']['content'] ) ) {
             $error = __( 'Invalid response from OpenAI API.', 'ai-story-maker' );
             $this->aistma_log_manager->log( 'error', $error );
+            delete_transient( 'aistma_generating_lock' );
             wp_send_json_error( array( 'errors' => array( $error ) ) );
         }
 
         $parsed_content = json_decode( $response_body['choices'][0]['message']['content'], true );
         if ( ! isset( $parsed_content['title'], $parsed_content['content'] ) ) {
-            $error = __( 'Invalid content structure.', 'ai-story-maker' );
+            $error = __( 'Invalid content structure, try to simplify your prompts', 'ai-story-maker' );
             $this->aistma_log_manager->log( 'error', $error );
+            delete_transient( 'aistma_generating_lock' );
             wp_send_json_error( array( 'errors' => array( $error ) ) );
         }
 
@@ -250,7 +278,10 @@ class AISTMA_Story_Generator {
         $content      = $this->replace_image_placeholders( $content );
         $category     = isset( $prompt['category'] ) ? sanitize_text_field( $prompt['category'] ) : __( 'News', 'ai-story-maker' );
 
-        $content .= '<div class="ai-story-model">' . __( 'generated by:', 'ai-story-maker' ) . ' ' . esc_html( $merged_settings['model'] ) . '</div>';
+        if ( (int) get_option('aistma_show_ai_attribution', 1) === 1 ) {
+
+            $content .= '<div class="ai-story-model">' . __( 'generated by:', 'ai-story-maker' ) . ' ' . esc_html( $merged_settings['model'] ) . '</div>';
+        }
 
         // Determine the post author.
         $post_author = 0;
@@ -280,10 +311,8 @@ class AISTMA_Story_Generator {
         $post_id = wp_insert_post([
             'post_title'   => sanitize_text_field($parsed_content['title'] ?? 'Untitled AI Post'),
             'post_content' => $content,
-            // 'post_status'  => 'publish',
             'post_author'  => 1,
             'post_category' => [get_cat_ID($category)],
-            //'page_template' => '../public/templates/aistma-post-template.php',
             'post_excerpt' => $parsed_content['excerpt'] ?? 'No excerpt available.',
             'post_status' => $post_status,
          

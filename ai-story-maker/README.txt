@@ -231,6 +231,22 @@ This plugin connects to third-party APIs:
    - Data sent: Keywords only (no personal data).
    - [Unsplash Terms](https://unsplash.com/terms) | [Unsplash Privacy Policy](https://unsplash.com/privacy)
 
+== How AI Story Maker Retrieves General Instructions ==
+
+AI Story Maker dynamically fetches the general AI system instructions from the Exedotcom API Gateway instead of hardcoding them inside the plugin.
+	-	The plugin makes a secure HTTP request to retrieve the latest best-practice instructions.
+	-	If the request fails or returns no data, a default internal fallback is used to ensure smooth operation.
+	-	The retrieved instructions are cached temporarily to minimize remote calls and enhance performance.
+	-	Allows future improvements and best practices without needing plugin updates.
+	-	Ensures the generated articles continue to follow the latest content structure and SEO guidelines.
+
+Privacy note:
+	-	No user personal data is sent.
+	-	Only the site URL and server IP address are transmitted for simple tracking and security purposes.
+	-	See our API terms of service at https://exedotcom.ca/api-terms (optional link if you plan to add later).
+   -  visit this address to see the latest provided instructions: https://exedotcom.ca/wp-json/exaig/v1/aistma-general-instructions
+
+
 No personal user data is collected or stored.
 
 == Contributing ==

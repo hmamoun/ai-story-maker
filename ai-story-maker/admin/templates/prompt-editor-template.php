@@ -115,7 +115,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 $is_generating = get_transient( 'aistma_generating_lock' );
 $button_disabled = $is_generating ? 'disabled' : '';
 $button_text = $is_generating
-    ? __( 'Story generation in progress...', 'ai-story-maker' )
+    ? __( 'Story generation in progress [recheck in 10 minutes]', 'ai-story-maker' )
     : __( 'Generate AI Stories', 'ai-story-maker' );
 ?>
 

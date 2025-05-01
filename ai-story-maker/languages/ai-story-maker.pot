@@ -305,7 +305,7 @@ msgid "Invalid response from OpenAI API."
 msgstr ""
 
 #: includes/class-ai-story-maker-story-generator.php:197
-msgid "Invalid content structure."
+msgid "Invalid content structure, try to simplify your prompts"
 msgstr ""
 
 #: includes/class-ai-story-maker-story-generator.php:205
