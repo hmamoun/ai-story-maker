@@ -1,19 +1,14 @@
 <?php
-/*
+/**
+ * Admin Settings Page for AI Story Maker.
+ *
+ * @package AI_Story_Maker
+ * @author Hayan Mamoun
+ * @license GPLv2 or later
+ * @link https://github.com/hmamoun/ai-story-maker/wiki
+ * @since 0.1.0
+ */
 
-Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
-Description: AI-powered content generator for WordPress — create engaging stories with a single click.
-Version: 0.1.0
-Author: Hayan Mamoun
-Author URI: https://exedotcom.ca
-License: GPLv2 or later
-License URI: https://www.gnu.org/licenses/gpl-2.0.html
-Text Domain: ai-story-maker
-Domain Path: /languages
-Requires PHP: 7.4
-Requires at least: 5.8
-Tested up to: 6.7
-*/
 namespace exedotcom\aistorymaker;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -21,40 +16,48 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class Settings_Page
+ * Class AISTMA_Settings_Page
  *
- * Handles the rendering and processing of the AI Story Maker settings page.
+ * Renders and processes the settings form for the AI Story Maker plugin.
  */
 class AISTMA_Settings_Page {
-	protected $aistma_log_manager;
+
 	/**
-	 * Constructor initializes the settings page.
+	 * @var AISTMA_Log_Manager
+	 */
+	protected $aistma_log_manager;
+
+	/**
+	 * Constructor initializes the settings page and log manager.
 	 */
 	public function __construct() {
 		$this->aistma_log_manager = new AISTMA_Log_Manager();
-
 	}
+
 	/**
-	 * Renders the settings page.
+	 * Renders the plugin settings page and handles form submissions.
+	 *
+	 * @return void
 	 */
 	public function aistma_setting_page_render() {
 
-		// Process form submission for saving settings.
+		// Handle form submission
 		if ( isset( $_POST['save_settings'] ) ) {
 			$story_maker_nonce = isset( $_POST['story_maker_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['story_maker_nonce'] ) ) : '';
 
 			if ( ! $story_maker_nonce || ! wp_verify_nonce( $story_maker_nonce, 'save_story_maker_settings' ) ) {
-				echo '<div class="error"><p>❌ ' . esc_html__( 'Security check failed. Please try again.', 'ai-story-maker' ) . '</p></div>';
-				$this->aistma_log_manager->log(  'error', '❌ Security check failed. Please try again.' );
+				echo '<div class="error"><p> ' . esc_html__( 'Security check failed. Please try again.', 'ai-story-maker' ) . '</p></div>';
+				$this->aistma_log_manager->log( 'error', ' Security check failed. Please try again.' );
 				return;
 			}
 
 			if ( ! isset( $_POST['aistma_openai_api_key'] ) || AISTMA_API_Keys::aistma_validate_aistma_openai_api_key( sanitize_text_field( wp_unslash( $_POST['aistma_openai_api_key'] ) ) ) === false ) {
-				echo '<div class="error"><p>❌ ' . esc_html__( 'Invalid OpenAI API key.', 'ai-story-maker' ) . '</p></div>';
-				$this->aistma_log_manager->log(  'error', '❌ Invalid OpenAI API key.' );
+				echo '<div class="error"><p> ' . esc_html__( 'Invalid OpenAI API key.', 'ai-story-maker' ) . '</p></div>';
+				$this->aistma_log_manager->log( 'error', ' Invalid OpenAI API key.' );
 				return;
 			}
 
+			// If log retention days were changed, clear the old scheduled hook
 			if (
 				isset( $_POST['aistma_clear_log_cron'] ) &&
 				get_option( 'aistma_clear_log_cron' ) !== sanitize_text_field( wp_unslash( $_POST['aistma_clear_log_cron'] ) )
@@ -62,133 +65,49 @@ class AISTMA_Settings_Page {
 				wp_clear_scheduled_hook( 'schd_ai_story_maker_clear_log' );
 			}
 
-			// Update API keys and options.
-			if ( isset( $_POST['aistma_openai_api_key'] ) ) {
-				update_option( 'aistma_openai_api_key', sanitize_text_field( wp_unslash( $_POST['aistma_openai_api_key'] ) ) );
+			// Save Options
+			update_option( 'aistma_openai_api_key', sanitize_text_field( wp_unslash( $_POST['aistma_openai_api_key'] ) ) );
+			if ( isset( $_POST['aistma_unsplash_api_key'], $_POST['aistma_unsplash_api_secret'] ) ) {
+				update_option(
+					'aistma_unsplash_api_key',
+					sanitize_text_field( wp_unslash( $_POST['aistma_unsplash_api_key'] ) )
+				);
+			
+				update_option(
+					'aistma_unsplash_api_secret',
+					sanitize_text_field( wp_unslash( $_POST['aistma_unsplash_api_secret'] ) )
+				);
 			}
-			if ( isset( $_POST['aistma_unsplash_api_key'] ) ) {
-				update_option( 'aistma_unsplash_api_key', sanitize_text_field( wp_unslash( $_POST['aistma_unsplash_api_key'] ) ) );
-			}
-			if ( isset( $_POST['aistma_unsplash_api_secret'] ) ) {
-				update_option( 'aistma_unsplash_api_secret', sanitize_text_field( wp_unslash( $_POST['aistma_unsplash_api_secret'] ) ) );
-			}
-			if ( isset( $_POST['aistma_clear_log_cron'] ) ) {
-				update_option( 'aistma_clear_log_cron', sanitize_text_field( wp_unslash( $_POST['aistma_clear_log_cron'] ) ) );
-			}
-			// bmark Schedule in case of changing settings
+			update_option( 'aistma_clear_log_cron', sanitize_text_field( wp_unslash( $_POST['aistma_clear_log_cron'] ) ) );
+
 			if ( isset( $_POST['aistma_generate_story_cron'] ) ) {
 				$interval = intval( sanitize_text_field( wp_unslash( $_POST['aistma_generate_story_cron'] ) ) );
-				$n = absint(get_option('aistma_generate_story_cron'));
-				// If the value is 0, clear the scheduled event.
-				if ( sanitize_text_field( wp_unslash( $_POST['aistma_generate_story_cron'] ) ) == 0 ) {
-					wp_clear_scheduled_hook( 'aistma_generate_story_event' );
-				} 
+				$n        = absint( get_option( 'aistma_generate_story_cron' ) );
 
-				update_option( 'aistma_generate_story_cron', sanitize_text_field( wp_unslash( $_POST['aistma_generate_story_cron'] ) ) );
-				if (  $n != $interval ) {
+				if ( $interval === 0 ) {
+					wp_clear_scheduled_hook( 'aistma_generate_story_event' );
+				}
+
+				update_option( 'aistma_generate_story_cron', $interval );
+
+				if ( $n !== $interval ) {
 					wp_clear_scheduled_hook( 'aistma_generate_story_event' );
 					$generator = new AISTMA_Story_Generator();
 					$generator->reschedule_cron_event();
-					$this->aistma_log_manager->log('info', 'Schedule changed via admin. Running updated check.');
-					
-					
+					$this->aistma_log_manager->log( 'info', 'Schedule changed via admin. Running updated check.' );
 				}
 			}
+
 			if ( isset( $_POST['opt_ai_story_auther'] ) ) {
 				update_option( 'opt_ai_story_auther', intval( $_POST['opt_ai_story_auther'] ) );
 			}
-
 			update_option( 'aistma_show_ai_attribution', isset( $_POST['aistma_show_ai_attribution'] ) ? 1 : 0 );
 
-			echo '<div class="notice notice-info"><p>✅ ' . esc_html__( 'Settings saved!', 'ai-story-maker' ) . '</p></div>';
+			echo '<div class="notice notice-info"><p>' . esc_html__( 'Settings saved!', 'ai-story-maker' ) . '</p></div>';
 			$this->aistma_log_manager->log( 'info', 'Settings saved' );
 		}
-		?>
-		<div class="wrap">
-			<form method="POST" class="aistma-style-settings">
-				<?php wp_nonce_field( 'save_story_maker_settings', 'story_maker_nonce' ); ?>
-				<h2><?php esc_html_e( 'API Keys', 'ai-story-maker' ); ?></h2>
-				<p>
-					<?php esc_html_e( 'AI Story Maker integrates with OpenAI and Unsplash APIs to generate content and images. Please enter your API keys below. Registration may be required to obtain them.', 'ai-story-maker' ); ?>
-				</p>
-				<label for="aistma_openai_api_key">
-					<?php esc_html_e( 'OpenAI', 'ai-story-maker' ); ?> <a href="https://platform.openai.com/" target="_blank"><?php esc_html_e( 'API', 'ai-story-maker' ); ?></a> <?php esc_html_e( 'Key:', 'ai-story-maker' ); ?>
-				</label>
-				<input type="text" name="aistma_openai_api_key" placeholder="<?php esc_attr_e( 'OpenAI API Key', 'ai-story-maker' ); ?>" value="<?php echo esc_attr( get_option( 'aistma_openai_api_key' ) ); ?>">
-				<label for="aistma_unsplash_api_key">
-					<?php esc_html_e( 'Unsplash', 'ai-story-maker' ); ?> <a href="https://unsplash.com/developers" target="_blank"><?php esc_html_e( 'API Key and Secret', 'ai-story-maker' ); ?></a>:
-				</label>
-				<div class="inline-fields">
-					<label for="aistma_unsplash_api_key"><?php esc_html_e( 'Key:', 'ai-story-maker' ); ?></label>
-					<input type="text" name="aistma_unsplash_api_key" placeholder="<?php esc_attr_e( 'Key', 'ai-story-maker' ); ?>" value="<?php echo esc_attr( get_option( 'aistma_unsplash_api_key' ) ); ?>">
-					<label for="aistma_unsplash_api_secret"><?php esc_html_e( 'Secret:', 'ai-story-maker' ); ?></label>
-					<input type="text" name="aistma_unsplash_api_secret" placeholder="<?php esc_attr_e( 'Secret', 'ai-story-maker' ); ?>" value="<?php echo esc_attr( get_option( 'aistma_unsplash_api_secret' ) ); ?>">
-				</div>
 
-				<h2><?php esc_html_e( 'Story Generation Settings', 'ai-story-maker' ); ?></h2>
-				<label for="aistma_clear_log_cron"><?php esc_html_e( 'Log Retention (Days):', 'ai-story-maker' ); ?></label>
-				<p>
-					<?php
-					printf(
-						/* translators: %s: link to log page */
-						esc_html__( 'AI Story Maker maintains a detailed log of its activities. Choose how many days to retain the logs, or set to 0 to keep them indefinitely. You can view the log <a href="%s">here</a>.', 'ai-story-maker' ),
-						esc_url( admin_url( 'admin.php?page=ai-storymaker-logs' ) )
-					);
-					?>
-				</p>
-				<select name="aistma_clear_log_cron">
-					<?php for ( $i = 0; $i <= 30; $i++ ) : ?>
-						<option value="<?php echo esc_attr( $i ); ?>" <?php selected( get_option( 'aistma_clear_log_cron' ), $i ); ?>>
-							<?php  echo esc_attr( $i ); ?> <?php esc_html_e( 'Day(s)', 'ai-story-maker' ); ?>
-						</option>
-					<?php endfor; ?>
-				</select>
-				<hr>
-				<label for="aistma_generate_story_cron"><?php esc_html_e( 'Generate New Stories Every (Days):', 'ai-story-maker' ); ?></label>
-				<p>
-					<?php esc_html_e( 'AI Story Maker can automatically generate new stories at regular intervals. Set to 0 to disable scheduled generation.', 'ai-story-maker' ); ?>
-				</p>
-				<select name="aistma_generate_story_cron">
-					<?php for ( $i = 0; $i <= 30; $i++ ) : ?>
-						<option value="<?php  echo esc_attr( $i ); ?>" <?php selected( get_option( 'aistma_generate_story_cron' ), $i ); ?>>
-							<?php  echo esc_attr( $i ); ?> <?php esc_html_e( 'Day(s)', 'ai-story-maker' ); ?>
-						</option>
-					<?php endfor; ?>
-				</select>
-				<hr>
-				<label for="opt_ai_story_auther"><?php esc_html_e( 'Select Story Author:', 'ai-story-maker' ); ?></label>
-				<p>
-					<?php esc_html_e( 'Select the author for AI-generated stories. If you need to create a new author, you can do so', 'ai-story-maker' ); ?>
-					<a href="<?php echo esc_url( admin_url( 'user-new.php?role=author' ) ); ?>" target="_blank"><?php esc_html_e( 'here', 'ai-story-maker' ); ?></a>.
-					<?php esc_html_e( 'Ensure the role is set to "Author".', 'ai-story-maker' ); ?>
-				</p>
-				<select name="opt_ai_story_auther">
-					<?php
-					$users = get_users( array( 'role__in' => array( 'author', 'administrator' ) ) );
-					foreach ( $users as $user ) :
-						?>
-						<option value="<?php echo esc_attr( $user->ID ); ?>" <?php selected( get_option( 'opt_ai_story_auther' ), $user->ID ); ?>>
-							<?php echo esc_html( $user->display_name ); ?>
-						</option>
-					<?php endforeach; ?>
-				</select>
-
-				<hr>
-				<p>
-					<label for="aistma_show_ai_attribution">
-						<input type="checkbox" name="aistma_show_ai_attribution" id="aistma_show_ai_attribution" value="1" <?php checked( get_option( 'aistma_show_ai_attribution', 1 ), 1 ); ?> />
-						<?php esc_html_e( 'Show "Generated by AI" attribution at the end of each story', 'ai-story-maker' ); ?>
-					</label>
-				</p>
-				<p style="margin-top: -10px; font-size: 12px; color: #666;">
-					<?php esc_html_e( 'Recommended: Keeping this enabled promotes transparency and trust with your readers.', 'ai-story-maker' ); ?>
-					<?php esc_html_e( 'Note: Future regulations may require disclosure of AI-generated content.', 'ai-story-maker' ); ?>
-				</p>
-
-				<hr>
-				<input type="submit" name="save_settings" value="<?php esc_attr_e( 'Save Settings', 'ai-story-maker' ); ?>" class="button button-primary submit-button">
-			</form>
-		</div>
-		<?php
+		// Render settings form
+		include AI_STORY_MAKER_PATH . 'admin/templates/general-settings-template.php';
 	}
 }

@@ -1,19 +1,15 @@
 <?php
-/*
-
-Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
-Description: AI-powered content generator for WordPress — create engaging stories with a single click.
-Version: 0.1.0
-Author: Hayan Mamoun
-Author URI: https://exedotcom.ca
-License: GPLv2 or later
-License URI: https://www.gnu.org/licenses/gpl-2.0.html
-Text Domain: ai-story-maker
-Domain Path: /languages
-Requires PHP: 7.4
-Requires at least: 5.8
-Tested up to: 6.7
-*/
+/**
+ * Story Generator for AI Story Maker plugin.
+ *
+ * Handles prompt processing, API requests to OpenAI, and post creation.
+ *
+ * @package AI_Story_Maker
+ * @author Hayan Mamoun
+ * @license GPLv2 or later
+ * @link https://github.com/hmamoun/ai-story-maker
+ * @since 0.1.0
+ */
 namespace exedotcom\aistorymaker;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -177,7 +173,7 @@ class AISTMA_Story_Generator {
                         'timeout' => 10,
                         'headers' => [
                             'X-Caller-Url' => home_url(), 
-                            'X-Caller-IP' => $_SERVER['SERVER_ADDR'] ?? '', 
+                            'X-Caller-IP' => isset($_SERVER['SERVER_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['SERVER_ADDR'])) : '', 
                         ],
                     ]);
 
@@ -329,7 +325,7 @@ class AISTMA_Story_Generator {
             update_post_meta($post_id, 'ai_story_maker_sources', isset($parsed_content['references']) && is_array($parsed_content['references']) ? json_encode($parsed_content['references']) : json_encode([]));
             update_post_meta($post_id, 'ai_story_maker_total_tokens', $total_tokens ?? 'N/A');
             update_post_meta($post_id, 'ai_story_maker_request_id', $request_id ?? 'N/A');
-            $this->aistma_log_manager::log('success', 'AI-generated news article created: ' . get_permalink($post_id), $request_id);
+            $this->aistma_log_manager->log('success', 'AI-generated news article created: ' . get_permalink($post_id), $request_id);
 
         }
 

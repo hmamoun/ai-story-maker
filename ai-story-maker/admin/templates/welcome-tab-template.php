@@ -78,8 +78,6 @@ if ( ! defined( 'ABSPATH' ) ) {
              📅 Scheduled for: <em><?php echo esc_html( $formatted_datetime ); ?></em><br>
              <?php if ( $is_generating ) : ?>
                 <span style="color: #d98500;"><strong>Currently generating stories... Please recheck in 10 minutes.</strong></span>
-             <?php else : ?>
-                 ✅ <span style="color: #2f855a;">No generation in progress.</span>
              <?php endif; ?>
          </strong>
      </div>

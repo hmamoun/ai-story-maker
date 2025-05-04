@@ -124,7 +124,9 @@ ai-story-maker
 │   │   ├── admin.js
 │   │   └── index.php
 │   └── templates
+│       ├── general-settings-template.php
 │       ├── index.php
+│       ├── log-table-template.php
 │       ├── prompt-editor-template.php
 │       └── welcome-tab-template.php
 ├── includes

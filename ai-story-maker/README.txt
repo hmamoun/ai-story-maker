@@ -1,10 +1,10 @@
 === AI Story Maker ===
 Contributors: hmamoun
 Tags: ai, content creation, blog automation, article generation, wordpress ai plugin
-Requires at least: 5.6
+Requires at least: 5.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.0
+Stable tag: 0.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Plugin URI: https://github.com/hmamoun/ai-story-maker
@@ -160,7 +160,9 @@ ai-story-maker
 │   │   ├── admin.js
 │   │   └── index.php
 │   └── templates
+│       ├── general-settings-template.php
 │       ├── index.php
+│       ├── log-table-template.php
 │       ├── prompt-editor-template.php
 │       └── welcome-tab-template.php
 ├── includes
