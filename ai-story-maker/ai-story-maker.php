@@ -23,8 +23,8 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'AI_STORY_MAKER_PATH', plugin_dir_path( __FILE__ ) );
-define( 'AI_STORY_MAKER_URL', plugin_dir_url( __FILE__ ) );
+define( 'AISTMA_PATH', plugin_dir_path( __FILE__ ) );
+define( 'AISTMA_URL', plugin_dir_url( __FILE__ ) );
 
 use exedotcom\aistorymaker\AISTMA_Story_Generator;
 use exedotcom\aistorymaker\AISTMA_Log_Manager;
@@ -40,7 +40,6 @@ class AISTMA_Plugin {
      * Constructor to initialize plugin.
      */
     public function __construct() {
-        add_action( 'init', array( $this, 'aistma_load_plugin_textdomain') );
         add_action( 'admin_enqueue_scripts', array( $this, 'aistma_enqueue_admin_styles' ) );
         add_filter( 'template_include', array( $this, 'aistma_template_include_filter' ) );
         $this->aistma_load_dependencies([
@@ -59,7 +58,7 @@ class AISTMA_Plugin {
      */
     public static function aistma_load_dependencies( $files = [] ) {
         foreach ( $files as $file ) {
-            $path = AI_STORY_MAKER_PATH . $file;
+            $path = AISTMA_PATH . $file;
             if ( file_exists( $path ) ) {
                 include_once $path;
             } else {
@@ -68,13 +67,6 @@ class AISTMA_Plugin {
                 }
             }
         }
-    }
-
-    /**
-     * Load plugin text domain for translations.
-     */
-    public function aistma_load_plugin_textdomain() {
-        load_plugin_textdomain( 'ai-story-maker', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
     }
 
     /**
@@ -88,9 +80,9 @@ class AISTMA_Plugin {
         }
         wp_enqueue_style(
             'ai-storymaker-admin-css',
-            AI_STORY_MAKER_URL . 'admin/css/admin.css',
+            AISTMA_URL . 'admin/css/admin.css',
             array(),
-            filemtime( AI_STORY_MAKER_PATH . 'admin/css/admin.css' )
+            filemtime( AISTMA_PATH . 'admin/css/admin.css' )
         );
     }
 
@@ -104,7 +96,7 @@ class AISTMA_Plugin {
         if ( is_single() ) {
             $post_id = get_the_ID();
             if ( get_post_meta( $post_id, 'ai_story_maker_request_id', true ) ) {
-                $plugin_template = AI_STORY_MAKER_PATH . '/public/templates/aistma-post-template.php';
+                $plugin_template = AISTMA_PATH . '/public/templates/aistma-post-template.php';
                 if ( file_exists( $plugin_template ) ) {
                     return $plugin_template;
                 }
@@ -174,9 +166,7 @@ add_action( 'wp_ajax_generate_ai_stories', function() {
     }
 } );
 
-if ( defined( 'WP_ENV' ) && WP_ENV === 'exedotcom-development' ) {
-    define( 'ALTERNATE_WP_CRON', true );
-}
+
 
 /**
  * Hook for scheduled story generation.

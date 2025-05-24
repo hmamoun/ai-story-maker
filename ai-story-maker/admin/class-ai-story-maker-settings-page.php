@@ -98,16 +98,17 @@ class AISTMA_Settings_Page {
 				}
 			}
 
-			if ( isset( $_POST['opt_ai_story_auther'] ) ) {
-				update_option( 'opt_ai_story_auther', intval( $_POST['opt_ai_story_auther'] ) );
+			if ( isset( $_POST['aistma_opt_auther'] ) ) {
+				update_option( 'aistma_opt_auther', intval( $_POST['aistma_opt_auther'] ) );
 			}
 			update_option( 'aistma_show_ai_attribution', isset( $_POST['aistma_show_ai_attribution'] ) ? 1 : 0 );
+			update_option( 'aistma_show_exedotcom_attribution', isset( $_POST['aistma_show_exedotcom_attribution'] ) ? 1 : 0 );
 
 			echo '<div class="notice notice-info"><p>' . esc_html__( 'Settings saved!', 'ai-story-maker' ) . '</p></div>';
 			$this->aistma_log_manager->log( 'info', 'Settings saved' );
 		}
 
 		// Render settings form
-		include AI_STORY_MAKER_PATH . 'admin/templates/general-settings-template.php';
+		include AISTMA_PATH . 'admin/templates/general-settings-template.php';
 	}
 }

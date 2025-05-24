@@ -90,6 +90,6 @@ class AISTMA_Prompt_Editor {
         $data = compact( 'prompts', 'default_settings', 'categories' );
 
         // Load view
-        include AI_STORY_MAKER_PATH . 'admin/templates/prompt-editor-template.php';
+        include AISTMA_PATH . 'admin/templates/prompt-editor-template.php';
     }
 }

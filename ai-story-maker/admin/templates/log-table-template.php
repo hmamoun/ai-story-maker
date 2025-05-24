@@ -5,7 +5,9 @@
  * @package AI Story Maker
  */
 
-defined( 'ABSPATH' ) || exit;
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly
+}
 
 ?>
 <div class="wrap">

@@ -14,7 +14,9 @@ Requires PHP: 7.4
 Requires at least: 5.8
 Tested up to: 6.7
 */
-if (!defined('ABSPATH')) exit;
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly
+}
 function aistma_scrolling_bar() {
     $query = new WP_Query([
         'post_type'      => 'post',
@@ -43,10 +45,10 @@ function aistma_scrolling_bar() {
 add_shortcode('aistma_scroller', 'aistma_scrolling_bar');
     
     function aistma_enqueue_style() {
-        $css_url = AI_STORY_MAKER_URL. 'public/css/aistma-style.css';
+        $css_url = AISTMA_URL. 'public/css/aistma-style.css';
         wp_enqueue_style('aistma-story-scroller', $css_url,
         [],
-        filemtime(AI_STORY_MAKER_PATH . 'public/css/aistma-style.css') // Versioning
+        filemtime(AISTMA_PATH . 'public/css/aistma-style.css') // Versioning
     );
     }
     add_action('wp_enqueue_scripts', 'aistma_enqueue_style',99);

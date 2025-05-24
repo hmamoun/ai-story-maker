@@ -1,4 +1,8 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+    exit; // Exit if accessed directly
+}
+
 /*
 
 Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
@@ -15,9 +19,19 @@ Requires at least: 5.8
 Tested up to: 6.7
 */
 // Get the post data
-if (!defined('ABSPATH')) exit;
 //get_header();
 wp_head();
+
+function aistma_enqueue_story_style() {
+    wp_enqueue_style(
+        'story-style',
+        AISTMA_URL. 'css/aistma-style.css',
+        array(), // No dependencies
+        filemtime(AISTMA_PATH . 'css/aistma-style.css'), // Cache busting
+        'all' // Media type
+    );
+}
+aistma_enqueue_story_style();
 ?>
 <main class="ai-story-container">
     <article class="ai-story-article">
@@ -115,33 +129,22 @@ if (has_custom_logo()) {
     </aside>
 </main>
 
-<script>
-    document.getElementById('ai-story-search-btn').addEventListener('click', function() {
-        let searchQuery = document.getElementById('ai-story-search').value;
-        let url = new URL(window.location.href);
-        url.searchParams.set('s', searchQuery);
-        history.pushState(null, '', url.toString());
-        location.reload();
-    });
-</script>
-
-<?php 
-
-function enqueue_story_style() {
-    wp_enqueue_style(
-        'story-style',
-        AI_STORY_MAKER_URL. 'css/aistma-style.css',
-        array(), // No dependencies
-        filemtime(AI_STORY_MAKER_PATH . 'css/aistma-style.css'), // Cache busting
-        'all' // Media type
-    );
-}
-enqueue_story_style();
+<?php
+// Enqueue the search script
+wp_enqueue_script(
+    'aistma-search-script',
+    AISTMA_URL . 'public/js/search.js',
+    array(),
+    filemtime(AISTMA_PATH . 'public/js/search.js'),
+    true
+);
 ?>
 <footer class="ai-story-maker-footer">
+    <?php if ( get_option( 'aistma_show_exedotcom_attribution', 0 ) ) : ?>
     <p>
         This story is created by AI Story Maker, a plugin by <a href="https://exedotcom.ca" title="Exedotcom" rel="nofollow" style="color: inherit;">Exedotcom.ca</a>
     </p>
+    <?php endif; ?>
 </footer>
 <?php
 wp_footer()

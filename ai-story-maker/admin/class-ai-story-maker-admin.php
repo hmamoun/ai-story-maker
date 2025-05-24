@@ -82,17 +82,17 @@ class AISTMA_Admin {
     public function aistma_admin_enqueue_scripts() {
         wp_enqueue_script(
             'aistma-admin-js',
-            AI_STORY_MAKER_URL . 'admin/js/admin.js',
+            AISTMA_URL . 'admin/js/admin.js',
             array( 'jquery' ),
-            filemtime( AI_STORY_MAKER_PATH . 'admin/js/admin.js' ),
+            filemtime( AISTMA_PATH . 'admin/js/admin.js' ),
             true
         );
 
         wp_enqueue_style(
             'aistma-admin-css',
-            AI_STORY_MAKER_URL . 'admin/css/admin.css',
+            AISTMA_URL . 'admin/css/admin.css',
             array(),
-            filemtime( AI_STORY_MAKER_PATH . 'admin/css/admin.css' )
+            filemtime( AISTMA_PATH . 'admin/css/admin.css' )
         );
     }
 
@@ -151,7 +151,7 @@ class AISTMA_Admin {
         <?php
 
         if ( 'welcome' === $active_tab ) {
-            include_once AI_STORY_MAKER_PATH . 'admin/templates/welcome-tab-template.php';
+            include_once AISTMA_PATH . 'admin/templates/welcome-tab-template.php';
         } elseif ( 'general' === $active_tab ) {
             $this->aistma_settings_page   = new AISTMA_Settings_Page();
             $this->aistma_settings_page->aistma_setting_page_render();

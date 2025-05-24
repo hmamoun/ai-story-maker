@@ -1,3 +1,14 @@
+<?php
+/**
+ * Template for the general settings page.
+ *
+ * @package AI_Story_Maker
+ * @since 0.1.0
+ */
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly
+}
+?>
 <div class="wrap">
 			<form method="POST" class="aistma-style-settings">
 				<?php wp_nonce_field( 'save_story_maker_settings', 'story_maker_nonce' ); ?>
@@ -50,18 +61,18 @@
 					<?php endfor; ?>
 				</select>
 				<hr>
-				<label for="opt_ai_story_auther"><?php esc_html_e( 'Select Story Author:', 'ai-story-maker' ); ?></label>
+				<label for="aistma_opt_auther"><?php esc_html_e( 'Select Story Author:', 'ai-story-maker' ); ?></label>
 				<p>
 					<?php esc_html_e( 'Select the author for AI-generated stories. If you need to create a new author, you can do so', 'ai-story-maker' ); ?>
 					<a href="<?php echo esc_url( admin_url( 'user-new.php?role=author' ) ); ?>" target="_blank"><?php esc_html_e( 'here', 'ai-story-maker' ); ?></a>.
 					<?php esc_html_e( 'Ensure the role is set to "Author".', 'ai-story-maker' ); ?>
 				</p>
-				<select name="opt_ai_story_auther">
+				<select name="aistma_opt_auther">
 					<?php
 					$users = get_users( array( 'role__in' => array( 'author', 'administrator' ) ) );
 					foreach ( $users as $user ) :
 						?>
-						<option value="<?php echo esc_attr( $user->ID ); ?>" <?php selected( get_option( 'opt_ai_story_auther' ), $user->ID ); ?>>
+						<option value="<?php echo esc_attr( $user->ID ); ?>" <?php selected( get_option( 'aistma_opt_auther' ), $user->ID ); ?>>
 							<?php echo esc_html( $user->display_name ); ?>
 						</option>
 					<?php endforeach; ?>
@@ -80,7 +91,19 @@
 				</p>
 
 				<hr>
+				<p>
+					<label for="aistma_show_exedotcom_attribution">
+						<input type="checkbox" name="aistma_show_exedotcom_attribution" id="aistma_show_exedotcom_attribution" value="1" <?php checked( get_option( 'aistma_show_exedotcom_attribution', 0 ), 1 ); ?> />
+						<?php esc_html_e( 'Show "Created by AI Story Maker" attribution', 'ai-story-maker' ); ?>
+					</label>
+				</p>
+				<p style="margin-top: -10px; font-size: 12px; color: #666;">
+					<?php esc_html_e( 'Support our work by showing a small attribution link to Exedotcom.ca. This helps us continue developing and improving AI Story Maker.', 'ai-story-maker' ); ?>
+					<?php esc_html_e( 'Your support means a lot to us!', 'ai-story-maker' ); ?>
+				</p>
+
+				<hr>
 				<input type="submit" name="save_settings" value="<?php esc_attr_e( 'Save Settings', 'ai-story-maker' ); ?>" class="button button-primary submit-button">
 			</form>
 		</div>
-		<?php
+<?php

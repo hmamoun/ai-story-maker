@@ -164,7 +164,7 @@ class AISTMA_Story_Generator {
 
             // Fetch dynamic system content from Exedotcom API Gateway.
             // Try to get cached instructions first
-            $dynamic_instructions = get_transient('exaig_cached_aistma_instructions');
+            $dynamic_instructions = get_transient('aistma_exaig_cached_instructions');
 
             if (false === $dynamic_instructions) {
                 // No cache, fetch from the API
@@ -183,7 +183,7 @@ class AISTMA_Story_Generator {
                         if (isset($json['instructions'])) {
                             $dynamic_instructions = sanitize_textarea_field($json['instructions']);
                             // Cache for 5 minutes
-                            set_transient('exaig_cached_aistma_instructions', $dynamic_instructions, 5 * MINUTE_IN_SECONDS);
+                            set_transient('aistma_exaig_cached_instructions', $dynamic_instructions, 5 * MINUTE_IN_SECONDS);
                         }
                     }
                     else{
