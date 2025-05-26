@@ -13,26 +13,26 @@
  * - Handling the "Add Prompt" button click
  * - Handling the "Delete Prompt" button click
  */
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", function() {
 
     const prompt_form = document.getElementById("prompt-form");
     const promptsData = document.getElementById("prompts-data");
 
     // Capture inline edits
     document.querySelectorAll(".editable").forEach(element => {
-        element.addEventListener("input", function () {
+        element.addEventListener("input", function() {
             element.dataset.changed = "true";
         });
     });
 
     // Toggle active checkbox
     document.querySelectorAll(".toggle-active").forEach(checkbox => {
-        checkbox.addEventListener("change", function () {
+        checkbox.addEventListener("change", function() {
             checkbox.dataset.changed = "true";
         });
     });
 
-    document.addEventListener("click", function (e) {
+    document.addEventListener("click", function(e) {
         if (e.target && e.target.matches(".delete-prompt")) {
             e.target.closest("tr").classList.add("marked-for-deletion");
         }
@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Add new prompt
     const addPromptBtn = document.getElementById("add-prompt");
     if (addPromptBtn) {
-        addPromptBtn.addEventListener("click", function () {
+        addPromptBtn.addEventListener("click", function() {
             const promptList = document.getElementById("prompt-list");
             const lastRow = promptList.querySelector("tr:last-child");
             if (lastRow) {
@@ -93,7 +93,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Handle form submission
     if (prompt_form) {
-        prompt_form.addEventListener("submit", function (event) {
+        prompt_form.addEventListener("submit", function(event) {
             // Remove the rows with the marked-for-deletion class
             document.querySelectorAll(".marked-for-deletion").forEach(row => {
                 row.remove();
@@ -101,10 +101,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
             let settings = {
                 default_settings: {
-                    model: document.getElementById("model").value,
-                    system_content: document.getElementById("system_content").value
-                },
-                prompts: []
+                    model: document.getElementById("model").value
+                    , system_content: document.getElementById("system_content").value
+                }
+                , prompts: []
             };
 
             document.querySelectorAll("#prompt-list tr").forEach(row => {
@@ -116,12 +116,12 @@ document.addEventListener("DOMContentLoaded", function () {
                     const prompt_id = row.querySelector("[data-field='prompt_id']");
                     const auto_publish = row.querySelector("[data-field='auto_publish']");
                     settings.prompts.push({
-                        text: textEl.innerText.trim(),
-                        category: categorySelect ? categorySelect.value : "",
-                        photos: photosSelect ? photosSelect.value : "",
-                        active: activeEl && activeEl.checked ? 1 : 0,
-                        auto_publish: auto_publish && auto_publish.checked ? 1 : 0,
-                        prompt_id: prompt_id && prompt_id.value ? prompt_id.value : "prompt_" + Date.now() + "_" + Math.floor(Math.random() * 1000)
+                        text: textEl.innerText.trim()
+                        , category: categorySelect ? categorySelect.value : ""
+                        , photos: photosSelect ? photosSelect.value : ""
+                        , active: activeEl && activeEl.checked ? 1 : 0
+                        , auto_publish: auto_publish && auto_publish.checked ? 1 : 0
+                        , prompt_id: prompt_id && prompt_id.value ? prompt_id.value : "prompt_" + Date.now() + "_" + Math.floor(Math.random() * 1000)
                     });
                 }
             });
@@ -136,46 +136,48 @@ document.addEventListener("DOMContentLoaded", function () {
 
 // check if the button exists before adding the event listener
 if (document.getElementById("aistma-generate-stories-button"))
-document.getElementById("aistma-generate-stories-button").addEventListener("click", function (e) {
-    e.preventDefault();
-    $originalCaption = this.innerHTML;
-    this.disabled = true;
-    this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating... do not leave or close the page';
+    document.getElementById("aistma-generate-stories-button").addEventListener("click", function(e) {
+        e.preventDefault();
+        $originalCaption = this.innerHTML;
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating... do not leave or close the page';
 
-    const nonce = document.getElementById("generate-story-nonce").value;
-    fetch(ajaxurl, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-            action: "generate_ai_stories",
-            nonce: nonce
-        })
-    })
-        .then(response => {
-            if (!response.ok) {
-                return response.text().then(text => { throw new Error(text) });
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                const messageDiv = document.getElementById("aistma-notice");
-                messageDiv.className = "notice notice-success visible";
-                messageDiv.innerText = "Story generated successfully!";
+        const nonce = document.getElementById("generate-story-nonce").value;
+        fetch(ajaxurl, {
+                method: "POST"
+                , headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }
+                , body: new URLSearchParams({
+                    action: "generate_ai_stories"
+                    , nonce: nonce
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(text)
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    const messageDiv = document.getElementById("aistma-notice");
+                    messageDiv.className = "notice notice-success visible";
+                    messageDiv.innerText = "Story generated successfully!";
 
-            } else {
-                const messageDiv = document.getElementById("aistma-notice");
-                messageDiv.className = "notice notice-error visible";
-                messageDiv.innerText = "Error generating stories please check the logs!";
-            }
-        })
-        .catch(error => {
-            console.error("Fetch error:", error);
-        })
-        .finally(() => {
-            this.disabled = false;
-            this.innerHTML = $originalCaption;
-        });
-});
-
-
+                } else {
+                    const messageDiv = document.getElementById("aistma-notice");
+                    messageDiv.className = "notice notice-error visible";
+                    messageDiv.innerText = "Error generating stories please check the logs!";
+                }
+            })
+            .catch(error => {
+                console.error("Fetch error:", error);
+            })
+            .finally(() => {
+                this.disabled = false;
+                this.innerHTML = $originalCaption;
+            });
+    });

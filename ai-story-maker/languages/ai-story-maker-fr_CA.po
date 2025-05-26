@@ -16,8 +16,8 @@ msgstr ""
 "X-Domain: ai-story-maker\n"
 
 #. Plugin Name of the plugin
-#: ai-story-maker.php admin/class-ai-story-maker-admin.php:83
-#: admin/class-ai-story-maker-admin.php:101
+#: ai-story-maker.php admin/class-aistma-admin.php:83
+#: admin/class-aistma-admin.php:101
 msgid "AI Story Maker"
 msgstr "AI Story Maker"
 

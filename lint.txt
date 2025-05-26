@@ -1,0 +1,8 @@
+WARNING: The WordPress standard uses 1 deprecated sniff
+-------------------------------------------------------------------------------
+-  Generic.Functions.CallTimePassByReference
+   This sniff has been deprecated since v3.12.1 and will be removed in v4.0.0.
+
+Deprecated sniffs are still run, but will stop working at some point in the
+future.
+

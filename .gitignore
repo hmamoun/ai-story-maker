@@ -9,3 +9,5 @@ vendor/
 .vscode/
 wp-config.php
 
+composer.lock
+composer.json

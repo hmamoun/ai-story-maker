@@ -6,7 +6,7 @@
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly
+	exit; // Exit if accessed directly.
 }
 
 ?>
@@ -36,12 +36,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<tr>
 							<td><?php echo esc_html( $log->id ); ?></td>
 							<td>
-								<strong style="color:<?php echo $log->log_type === 'error' ? 'red' : 'green'; ?>">
-									<?php echo esc_html( $log->log_type ); ?>
+								<strong style="color:<?php echo ( 'error' === $log->log_type ) ? 'red' : 'green'; ?>;">
+						<?php echo esc_html( $log->log_type ); ?>
 								</strong>
 							</td>
 							<td><?php echo esc_html( $log->message ); ?></td>
-							<td><?php echo esc_html( $log->request_id ?: 'N/A' ); ?></td>
+							<td><?php echo esc_html( ! empty( $log->request_id ) ? $log->request_id : 'N/A' ); ?></td>
 							<td><?php echo esc_html( $log->created_at ); ?></td>
 						</tr>
 					<?php endforeach; ?>

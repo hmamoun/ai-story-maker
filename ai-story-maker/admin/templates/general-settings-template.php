@@ -3,10 +3,11 @@
  * Template for the general settings page.
  *
  * @package AI_Story_Maker
- * @since 0.1.0
+ * @since   0.1.0
  */
+
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly
+	exit; // Exit if accessed directly.
 }
 ?>
 <div class="wrap">
@@ -35,7 +36,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<p>
 					<?php
 					printf(
-						/* translators: %s: link to log page */
+					/* translators: %s: link to log page */
 						esc_html__( 'AI Story Maker maintains a detailed log of its activities. Choose how many days to retain the logs, or set to 0 to keep them indefinitely. You can view the log <a href="%s">here</a>.', 'ai-story-maker' ),
 						esc_url( admin_url( 'admin.php?page=ai-storymaker-logs' ) )
 					);
@@ -44,7 +45,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<select name="aistma_clear_log_cron">
 					<?php for ( $i = 0; $i <= 30; $i++ ) : ?>
 						<option value="<?php echo esc_attr( $i ); ?>" <?php selected( get_option( 'aistma_clear_log_cron' ), $i ); ?>>
-							<?php  echo esc_attr( $i ); ?> <?php esc_html_e( 'Day(s)', 'ai-story-maker' ); ?>
+						<?php echo esc_attr( $i ); ?> <?php esc_html_e( 'Day(s)', 'ai-story-maker' ); ?>
 						</option>
 					<?php endfor; ?>
 				</select>
@@ -55,8 +56,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 				</p>
 				<select name="aistma_generate_story_cron">
 					<?php for ( $i = 0; $i <= 30; $i++ ) : ?>
-						<option value="<?php  echo esc_attr( $i ); ?>" <?php selected( get_option( 'aistma_generate_story_cron' ), $i ); ?>>
-							<?php  echo esc_attr( $i ); ?> <?php esc_html_e( 'Day(s)', 'ai-story-maker' ); ?>
+						<option value="<?php echo esc_attr( $i ); ?>" <?php selected( get_option( 'aistma_generate_story_cron' ), $i ); ?>>
+						<?php echo esc_attr( $i ); ?> <?php esc_html_e( 'Day(s)', 'ai-story-maker' ); ?>
 						</option>
 					<?php endfor; ?>
 				</select>
@@ -73,7 +74,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					foreach ( $users as $user ) :
 						?>
 						<option value="<?php echo esc_attr( $user->ID ); ?>" <?php selected( get_option( 'aistma_opt_auther' ), $user->ID ); ?>>
-							<?php echo esc_html( $user->display_name ); ?>
+						<?php echo esc_html( $user->display_name ); ?>
 						</option>
 					<?php endforeach; ?>
 				</select>
