@@ -112,10 +112,10 @@ ai-story-maker
 ├── README.txt
 ├── uninstall.php
 ├── admin
-│   ├── class-ai-story-maker-admin.php
-│   ├── class-ai-story-maker-api-keys.php
-│   ├── class-ai-story-maker-prompt-editor.php
-│   ├── class-ai-story-maker-settings-page.php
+│   ├── class-aistma-admin.php
+│   ├── class-aistma-api-keys.php
+│   ├── class-aistma-prompt-editor.php
+│   ├── class-aistma-settings-page.php
 │   ├── index.php
 │   ├── css
 │   │   ├── admin.css
@@ -130,8 +130,8 @@ ai-story-maker
 │       ├── prompt-editor-template.php
 │       └── welcome-tab-template.php
 ├── includes
-│   ├── class-ai-story-maker-log-management.php
-│   ├── class-ai-story-maker-story-generator.php
+│   ├── class-aistma-log-manager.php
+│   ├── class-aistma-story-generator.php
 │   ├── index.php
 │   └── shortcode-story-scroller.php
 ├── languages

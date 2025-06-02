@@ -9,3 +9,8 @@ vendor/
 .vscode/
 wp-config.php
 
+composer.lock
+composer.json
+
+# Ignore SVN metadata inside svn folder
+svn/ai-story-maker/.svn/

@@ -3,11 +3,14 @@
  * Admin Settings Page for AI Story Maker.
  *
  * @package AI_Story_Maker
- * @author Hayan Mamoun
+ * @author  Hayan Mamoun
  * @license GPLv2 or later
- * @link https://github.com/hmamoun/ai-story-maker/wiki
- * @since 0.1.0
+ * @link    https://github.com/hmamoun/ai-story-maker/wiki
+ * @since   0.1.0
  */
+
+// phpcs:disable WordPress.Files.FileName.NotClassName
+// phpcs:disable WordPress.Files.FileName.NotClass
 
 namespace exedotcom\aistorymaker;
 
@@ -23,6 +26,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 class AISTMA_Settings_Page {
 
 	/**
+	 * Instance of the log manager.
+	 *
 	 * @var AISTMA_Log_Manager
 	 */
 	protected $aistma_log_manager;
@@ -41,7 +46,7 @@ class AISTMA_Settings_Page {
 	 */
 	public function aistma_setting_page_render() {
 
-		// Handle form submission
+		// Handle form submission.
 		if ( isset( $_POST['save_settings'] ) ) {
 			$story_maker_nonce = isset( $_POST['story_maker_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['story_maker_nonce'] ) ) : '';
 
@@ -57,22 +62,21 @@ class AISTMA_Settings_Page {
 				return;
 			}
 
-			// If log retention days were changed, clear the old scheduled hook
-			if (
-				isset( $_POST['aistma_clear_log_cron'] ) &&
-				get_option( 'aistma_clear_log_cron' ) !== sanitize_text_field( wp_unslash( $_POST['aistma_clear_log_cron'] ) )
+			// If log retention days were changed, clear the old scheduled hook.
+			if ( isset( $_POST['aistma_clear_log_cron'] )
+				&& get_option( 'aistma_clear_log_cron' ) !== sanitize_text_field( wp_unslash( $_POST['aistma_clear_log_cron'] ) )
 			) {
 				wp_clear_scheduled_hook( 'schd_ai_story_maker_clear_log' );
 			}
 
-			// Save Options
+			// Save Options.
 			update_option( 'aistma_openai_api_key', sanitize_text_field( wp_unslash( $_POST['aistma_openai_api_key'] ) ) );
 			if ( isset( $_POST['aistma_unsplash_api_key'], $_POST['aistma_unsplash_api_secret'] ) ) {
 				update_option(
 					'aistma_unsplash_api_key',
 					sanitize_text_field( wp_unslash( $_POST['aistma_unsplash_api_key'] ) )
 				);
-			
+
 				update_option(
 					'aistma_unsplash_api_secret',
 					sanitize_text_field( wp_unslash( $_POST['aistma_unsplash_api_secret'] ) )
@@ -84,7 +88,7 @@ class AISTMA_Settings_Page {
 				$interval = intval( sanitize_text_field( wp_unslash( $_POST['aistma_generate_story_cron'] ) ) );
 				$n        = absint( get_option( 'aistma_generate_story_cron' ) );
 
-				if ( $interval === 0 ) {
+				if ( 0 === $interval ) {
 					wp_clear_scheduled_hook( 'aistma_generate_story_event' );
 				}
 
@@ -98,16 +102,17 @@ class AISTMA_Settings_Page {
 				}
 			}
 
-			if ( isset( $_POST['opt_ai_story_auther'] ) ) {
-				update_option( 'opt_ai_story_auther', intval( $_POST['opt_ai_story_auther'] ) );
+			if ( isset( $_POST['aistma_opt_auther'] ) ) {
+				update_option( 'aistma_opt_auther', intval( $_POST['aistma_opt_auther'] ) );
 			}
 			update_option( 'aistma_show_ai_attribution', isset( $_POST['aistma_show_ai_attribution'] ) ? 1 : 0 );
+			update_option( 'aistma_show_exedotcom_attribution', isset( $_POST['aistma_show_exedotcom_attribution'] ) ? 1 : 0 );
 
 			echo '<div class="notice notice-info"><p>' . esc_html__( 'Settings saved!', 'ai-story-maker' ) . '</p></div>';
 			$this->aistma_log_manager->log( 'info', 'Settings saved' );
 		}
 
-		// Render settings form
-		include AI_STORY_MAKER_PATH . 'admin/templates/general-settings-template.php';
+		// Render settings form.
+		include AISTMA_PATH . 'admin/templates/general-settings-template.php';
 	}
 }

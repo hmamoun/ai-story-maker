@@ -1,0 +1,77 @@
+command line svn cheat sheet
+
+# Set username caching
+svn --username your_user_name --password your_password checkout URL
+
+🔨 SETUP (once)
+# Set default editor for commits
+export SVN_EDITOR=vim  # or nano
+
+
+🚀 DAILY WORKFLOW
+# Checkout repo
+svn checkout URL
+
+# Update local copy
+svn update
+
+# Check local changes
+svn status
+
+# See remote status (check if someone else committed)
+svn status -u
+
+# View changes before commit
+svn diff
+
+# Commit changes
+svn commit -m "Your commit message"
+
+# Add new file
+svn add filename
+
+# Delete file
+svn delete filename
+
+# Revert local changes
+svn revert filename
+
+🔧 MERGING & BRANCHING
+bash
+Copy
+Edit
+# Merge from branch
+svn merge URL_of_branch
+
+# Resolve conflicts
+svn resolve --accept working filename
+🔍 LOGGING & HISTORY
+bash
+Copy
+Edit
+# Show commit history
+svn log
+
+# Show log for specific file
+svn log filename
+
+# Show specific revision
+svn log -r 1234
+🚑 EMERGENCY
+bash
+Copy
+Edit
+# Undo uncommitted changes in working copy
+svn revert -R .
+
+# View repo info
+svn info
+svn checkout https://plugins.svn.wordpress.org/ai-story-maker
+
+
+cd /Users/ano/Documents/repos/ai-story-maker/svn/ai-story-maker
+
+rm -rf trunk/*
+
+
+cp -R ../../ai-story-maker/* trunk/
