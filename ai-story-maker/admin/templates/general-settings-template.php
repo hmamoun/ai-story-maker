@@ -38,7 +38,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					printf(
 					/* translators: %s: link to log page */
 						__( 'AI Story Maker maintains a detailed log of its activities. Choose how many days to retain the logs, or set to 0 to keep them indefinitely. You can view the log <a href="%s">here</a>.', 'ai-story-maker' ),
-						esc_url( admin_url( 'admin.php?page=aistma-settings&tab=general' ) )
+						esc_url( admin_url( 'admin.php?page=aistma-settings&tab=log' ) )
 					);
 					?>
 				</p>
