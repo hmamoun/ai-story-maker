@@ -1,0 +1,162 @@
+# Copyright (C) 2025 Hayan Mamoun
+# This file is distributed under the GPLv2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: AI Story Maker 1.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/ai-story-maker\n"
+"POT-Creation-Date: 2025-04-01T10:34:39+00:00\n"
+"PO-Revision-Date: 2025-04-01 21:44-0400\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.6\n"
+"X-Domain: ai-story-maker\n"
+
+#. Plugin Name of the plugin
+#: ai-story-maker.php admin/class-aistma-admin.php:83
+#: admin/class-aistma-admin.php:101
+msgid "AI Story Maker"
+msgstr "AI Story Maker"
+
+#. Plugin URI of the plugin
+#: ai-story-maker.php
+msgid "https://github.com/hmamoun/ai-story-maker"
+msgstr "https://github.com/hmamoun/ai-story-maker"
+
+msgid "AI-powered WordPress plugin that generates engaging stories, articles, and images using Large Language Models."
+msgstr "Plugin WordPress alimenté par l'IA qui génère des histoires, des articles et des images attrayants en utilisant de grands modèles de langage."
+
+msgid "Hayan Mamoun"
+msgstr "Hayan Mamoun"
+
+msgid "https://exedotcom.ca"
+msgstr "https://exedotcom.ca"
+
+msgid "AI Story Maker Settings"
+msgstr "Paramètres du Générateur d'Histoires IA"
+
+msgid "General Settings"
+msgstr "Paramètres généraux"
+
+msgid "Prompts"
+msgstr "Invites"
+
+msgid "log"
+msgstr "journal"
+
+msgid "Prompts saved successfully!"
+msgstr "Invites enregistrées avec succès !"
+
+msgid "Security check failed. Please try again."
+msgstr "Vérification de sécurité échouée. Veuillez réessayer."
+
+msgid "Invalid OpenAI API key."
+msgstr "Clé API OpenAI invalide."
+
+msgid "Settings saved!"
+msgstr "Paramètres enregistrés !"
+
+msgid "API Keys"
+msgstr "Clés API"
+
+msgid "OpenAI"
+msgstr "OpenAI"
+
+msgid "API"
+msgstr "API"
+
+msgid "Key:"
+msgstr "Clé :"
+
+msgid "OpenAI API Key"
+msgstr "Clé API OpenAI"
+
+msgid "Unsplash"
+msgstr "Unsplash"
+
+msgid "API Key and Secret"
+msgstr "Clé et Secret API"
+
+msgid "Key"
+msgstr "Clé"
+
+msgid "Secret:"
+msgstr "Secret :"
+
+msgid "Secret"
+msgstr "Secret"
+
+msgid "Story Generation Settings"
+msgstr "Paramètres de génération d'histoires"
+
+msgid "Log Retention (Days):"
+msgstr "Rétention des journaux (jours) :"
+
+msgid "AI Story Maker maintains a detailed log of its activities. Choose how many days to retain the logs, or set to 0 to keep them indefinitely. You can view the log <a href=\"%s\">here."
+msgstr "AI Story Maker garde une trace détaillée de ses activités. Choisissez combien de jours conserver les journaux, ou mettez 0 pour les garder indéfiniment. Vous pouvez consulter le journal <a href=\"%s\">ici."
+
+msgid "Day(s)"
+msgstr "Jour(s)"
+
+msgid "Generate New Stories Every (Days):"
+msgstr "Générer de nouvelles histoires tous les (jours) :"
+
+msgid "AI Story Maker can automatically generate new stories at regular intervals. Set to 0 to disable scheduled generation."
+msgstr "AI Story Maker peut générer automatiquement de nouvelles histoires à intervalles réguliers. Mettez 0 pour désactiver la génération planifiée."
+
+msgid "Select Story Author:"
+msgstr "Sélectionnez l'auteur de l'histoire :"
+
+msgid "Select the author for AI-generated stories. If you need to create a new author, you can do so"
+msgstr "Sélectionnez l'auteur pour les histoires générées par IA. Si vous devez en créer un nouveau, vous pouvez le faire"
+
+msgid "here"
+msgstr "ici"
+
+msgid "Ensure the role is set to \"Author\"."
+msgstr "Assurez-vous que le rôle est défini sur \"Auteur\"."
+
+msgid "Save Settings"
+msgstr "Enregistrer les paramètres"
+
+msgid "Model"
+msgstr "Modèle"
+
+msgid "General Instructions"
+msgstr "Instructions générales"
+
+msgid "Prompt"
+msgstr "Invite"
+
+msgid "Category"
+msgstr "Catégorie"
+
+msgid "Photos Count"
+msgstr "Nombre de photos"
+
+msgid "Active Prompt"
+msgstr "Invite active"
+
+msgid "Auto Publish Post"
+msgstr "Publication automatique"
+
+msgid "Actions"
+msgstr "Actions"
+
+msgid "Delete"
+msgstr "Supprimer"
+
+msgid "Add a new prompt"
+msgstr "Ajouter une nouvelle invite"
+
+msgid "Save Prompts"
+msgstr "Enregistrer les invites"
+
+msgid "Generate AI Stories"
+msgstr "Lancer la génération d'histoire"
+
+msgid "No scheduled story generation."
+msgstr "Aucune génération d'histoire planifiée."
