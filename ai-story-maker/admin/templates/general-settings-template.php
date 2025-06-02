@@ -37,9 +37,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<?php
 					printf(
 					/* translators: %s: link to log page */
-						esc_html__( 'AI Story Maker maintains a detailed log of its activities. Choose how many days to retain the logs, or set to 0 to keep them indefinitely. You can view the log <a href="%s">here</a>.', 'ai-story-maker' ),
-						esc_url( admin_url( 'admin.php?page=ai-storymaker-logs' ) )
+						wp_kses_post( __( 'AI Story Maker maintains a detailed log of its activities. Choose how many days to retain the logs, or set to 0 to keep them indefinitely. You can view the log <a href="%s">here</a>.', 'ai-story-maker' ) ),
+						esc_url( admin_url( 'admin.php?page=aistma-settings&tab=log' ) )
 					);
+
 					?>
 				</p>
 				<select name="aistma_clear_log_cron">
