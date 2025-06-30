@@ -36,16 +36,26 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<?php esc_html_e( 'AI Story Maker offers a subscription service to access premium features. Please enter your subscription key below.', 'ai-story-maker' ); ?>
 				</p>
 				<?php
-					$is_dev = defined('WORDPRESS_ENV') && WORDPRESS_ENV === 'development' ;
-					$slug = 'ai-story-maker-plans';
-					$target = $is_dev
-						? get_site_url(NULL) .'/'. $slug
-						: 'https://www.exedotcom.ca/' . $slug;
+					$is_dev     = defined( 'WORDPRESS_ENV' ) && WORDPRESS_ENV === 'development';
+					$slug       = 'ai-story-maker-plans';
+					$base_url   = $is_dev ? get_site_url( null, $slug . '/' ) : 'https://www.exedotcom.ca/' . $slug . '/';
+					$action_url = add_query_arg(
+						array(
+							'domain' => rawurlencode( get_site_url() ),
+						),
+						$base_url
+					);
 					?>
-					<a href="<?php echo esc_url($target); ?>" class="button button-primary">
-						<?php esc_html_e('Buy Credits' , 'exedotcom-api-gateway'); ?>
+					<a href="<?php echo esc_url( $action_url ); ?>" target="_blank" class="button button-primary">
+						<?php esc_html_e( 'Buy Credits', 'ai-story-maker' ); ?>
 					</a>
-				<h2><?php esc_html_e( 'Settings', 'ai-story-maker' ); ?></h2>
+					<input type="submit" name="save_settings" value="<?php esc_attr_e( 'Save', 'ai-story-maker' ); ?>" class="button button-primary submit-button">
+					</form>
+					<form method="POST" class="aistma-style-settings">
+					<?php wp_nonce_field( 'save_story_maker_settings', 'story_maker_nonce' ); ?>
+				
+				
+					<h2><?php esc_html_e( 'Settings', 'ai-story-maker' ); ?></h2>
 				<table class="form-table">
 					<tr>
 						<td>

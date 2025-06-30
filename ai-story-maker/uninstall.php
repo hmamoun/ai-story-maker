@@ -38,3 +38,9 @@ $table_name = $wpdb->prefix . 'aistma_log_table';
 $wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS `%s`', $table_name ) );
 // bmark Schedule on uninstall.
 wp_clear_scheduled_hook( 'aistma_generate_story_event' );
+
+/**
+ * remove transient
+ */
+delete_transient( 'aistma_exaig_cached_master_instructions' );
+

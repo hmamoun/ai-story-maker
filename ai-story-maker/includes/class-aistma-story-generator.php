@@ -58,9 +58,10 @@ class AISTMA_Story_Generator {
 	 */
 	public function __construct() {
 		// Load the Log_Manager class.
+		
 		$this->aistma_log_manager = new AISTMA_Log_Manager();
 		// Hook into an action to trigger AI story generation.
-		add_action( 'ai_story_generate', array( $this, 'generate_ai_stories' ) );
+		// add_action( 'ai_story_generate', array( $this, 'generate_ai_stories' ) );
 	}
 
 	/**
@@ -71,7 +72,7 @@ class AISTMA_Story_Generator {
 	 */
 	public static function generate_ai_stories_with_lock( $force = false ) {
 		$lock_key = 'aistma_generating_lock';
-
+		delete_transient( $lock_key );
 		if ( ! $force && get_transient( $lock_key ) ) {
 			$instance = new self();
 			$instance->aistma_log_manager->log( 'info', 'Story generation skipped due to active lock.' );
@@ -79,18 +80,18 @@ class AISTMA_Story_Generator {
 		}
 
 		set_transient( $lock_key, true, 10 * MINUTE_IN_SECONDS );
-
 		$instance = new self();
 		try {
 			$instance->generate_ai_stories();
-			$instance->aistma_log_manager->log( 'info', 'Stories successfully generated.' );
+			//$instance->aistma_log_manager->log( 'info', 'Stories successfully generated.' );
 		} catch ( \Throwable $e ) {
 			$instance->aistma_log_manager->log( 'error', 'Error generating stories: ' . $e->getMessage() );
+			delete_transient( $lock_key );
+			wp_send_json_error( array( 'message' => 'Error generating stories: ' . $e->getMessage() ) );
 		} finally {
 			// Always delete the lock, even if an error occurs.
 			delete_transient( $lock_key );
 		}
-
 		// Always schedule the next run after execution.
 		$n = absint( get_option( 'aistma_generate_story_cron' ) );
 		if ( 0 !== $n ) {
@@ -116,7 +117,8 @@ class AISTMA_Story_Generator {
 			$error = __( 'OpenAI API Key is missing.', 'ai-story-maker' );
 			$this->aistma_log_manager::log( 'error', $error );
 			$results['errors'][] = $error;
-			return;
+			throw new \RuntimeException( $error );
+
 		}
 
 		$raw_settings = get_option( 'aistma_prompts', '' );
@@ -127,7 +129,7 @@ class AISTMA_Story_Generator {
 			$error = __( 'Invalid JSON format or no prompts found.', 'ai-story-maker' );
 			$this->aistma_log_manager::log( 'error', $error );
 			$results['errors'][] = $error;
-			wp_send_json_error( $results );
+			throw new \RuntimeException( $error );
 		}
 
 		$this->default_settings = isset( $settings['default_settings'] ) ? $settings['default_settings'] : array();
@@ -176,6 +178,57 @@ class AISTMA_Story_Generator {
 		}
 	}
 
+/**
+ * Get master instructions from master website
+ */
+	private function aistma_get_master_instructions(): string{
+		// Fetch dynamic system content from Exedotcom API Gateway.
+		$aistma_master_instructions = get_transient( 'aistma_exaig_cached_master_instructions' );
+		
+		if ( false === $aistma_master_instructions ) {
+			// No cache, fetch from the API.
+			try {
+				$api_response = wp_remote_get(
+					aistma_get_instructions_url(),
+					array(
+						'timeout' => 10,
+						'headers' => array(
+							'X-Caller-Url' => home_url(),
+							'X-Caller-IP'  => isset( $_SERVER['SERVER_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SERVER_ADDR'] ) ) : '',
+						),
+					)
+				);
+				if ( ! is_wp_error( $api_response ) ) {
+						$body = wp_remote_retrieve_body( $api_response );
+						$json = json_decode( $body, true );
+					if ( isset( $json['instructions'] ) ) {
+						$aistma_master_instructions = sanitize_textarea_field( $json['instructions'] );
+						set_transient( 'aistma_exaig_cached_master_instructions', $aistma_master_instructions, 5 * MINUTE_IN_SECONDS );
+					}
+				} else {
+					// Silent fail; fallback will be handled below.
+					$this->aistma_log_manager->log( 'error', 'Error fetching dynamic instructions: ' . $api_response->get_error_message() );
+					$aistma_master_instructions = '';
+				}
+			} catch ( Exception $e ) {
+				// Silent fail; fallback will be handled below.
+				$this->aistma_log_manager->log( 'error', 'Error fetching master instructions: ' . $e->getMessage() );
+				$aistma_master_instructions = '';
+			}
+		}
+
+		// Fallback if API call failed or returned empty.
+		if ( empty( $aistma_master_instructions ) ) {
+			$aistma_master_instructions = 'Write a fact-based, original article based on real-world information. Organize the article clearly with a proper beginning, middle, and conclusion.';
+		}
+		// Append recent posts titles.
+		$aistma_master_instructions .= "\n" . __( 'Exclude references to the following recent posts:', 'ai-story-maker' );
+		foreach ( $recent_posts as $post ) {
+			$aistma_master_instructions .= "\n" . __( 'Title: ', 'ai-story-maker' ) . $post['title'];
+		}
+
+	}
+
 	/**
 	 * Generate AI Story using OpenAI API.
 	 *
@@ -192,56 +245,9 @@ class AISTMA_Story_Generator {
 		$default_system_content = isset( $merged_settings['system_content'] )
 		? $merged_settings['system_content'] : '';
 
-		// Fetch dynamic system content from Exedotcom API Gateway.
-		$dynamic_instructions = get_transient( 'aistma_exaig_cached_instructions' );
-
-		if ( false === $dynamic_instructions ) {
-			// No cache, fetch from the API.
-			try {
-				$api_response = wp_remote_get(
-					'https://exedotcom.ca/wp-json/exaig/v1/aistma-general-instructions',
-					array(
-						'timeout' => 10,
-						'headers' => array(
-							'X-Caller-Url' => home_url(),
-							'X-Caller-IP'  => isset( $_SERVER['SERVER_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SERVER_ADDR'] ) ) : '',
-						),
-					)
-				);
-
-				if ( ! is_wp_error( $api_response ) ) {
-						$body = wp_remote_retrieve_body( $api_response );
-						$json = json_decode( $body, true );
-					if ( isset( $json['instructions'] ) ) {
-						$dynamic_instructions = sanitize_textarea_field( $json['instructions'] );
-						// Cache for 5 minutes.
-						set_transient( 'aistma_exaig_cached_instructions', $dynamic_instructions, 5 * MINUTE_IN_SECONDS );
-					}
-				} else {
-					// Silent fail; fallback will be handled below.
-					$this->aistma_log_manager->log( 'error', 'Error fetching dynamic instructions: ' . $api_response->get_error_message() );
-					$dynamic_instructions = '';
-				}
-			} catch ( Exception $e ) {
-				// Silent fail; fallback will be handled below.
-				$this->aistma_log_manager->log( 'error', 'Error fetching dynamic instructions: ' . $e->getMessage() );
-				$dynamic_instructions = '';
-			}
-		}
-
-		// Fallback if API call failed or returned empty.
-		if ( empty( $dynamic_instructions ) ) {
-			$dynamic_instructions = 'Write a fact-based, original article based on real-world information. Organize the article clearly with a proper beginning, middle, and conclusion.';
-		}
-
-		// Append recent posts titles.
-		$dynamic_instructions .= "\n" . __( 'Exclude references to the following recent posts:', 'ai-story-maker' );
-		foreach ( $recent_posts as $post ) {
-			$dynamic_instructions .= "\n" . __( 'Title: ', 'ai-story-maker' ) . $post['title'];
-		}
 
 		// Assign final system content.
-		$merged_settings['system_content'] = $dynamic_instructions . "\n" . $admin_prompt_settings;
+		$merged_settings['system_content'] = $aistma_master_instructions . "\n" . $admin_prompt_settings;
 
 		$the_prompt = $prompt['text'];
 		if ( $prompt['photos'] > 0 ) {

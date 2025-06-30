@@ -39,13 +39,13 @@ register_deactivation_hook( __FILE__, array( 'exedotcom\\aistorymaker\\AISTMA_Pl
 /**
  * Handle AJAX request to generate stories.
  */
+;
 add_action(
 	'wp_ajax_generate_ai_stories',
 	function () {
 		if ( ! check_ajax_referer( 'generate_story_nonce', 'nonce', false ) ) {
 			wp_send_json_error( array( 'message' => 'Security check failed.' ) );
 		}
-
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			wp_send_json_error( array( 'message' => 'You do not have permission to perform this action.' ) );
 		}
@@ -53,7 +53,7 @@ add_action(
 		try {
 			$story_generator = new AISTMA_Story_Generator();
 			$results         = $story_generator->generate_ai_stories_with_lock( true );
-
+			error_log(print_r($results));
 			if ( ! empty( $results['errors'] ) ) {
 				wp_send_json_error( $results['errors'] );
 			} else {
@@ -79,3 +79,15 @@ function aistma_handle_generate_story_event() {
 	$generator = new AISTMA_Story_Generator();
 	$generator->generate_ai_stories_with_lock();
 }
+function aistma_get_master_url(string $path = ''): string {
+    $base_url = defined('AISTMA_MASTER_URL') ? rtrim(AISTMA_MASTER_URL, '/') : 'https://exedotcom.ca';
+    return rtrim($base_url, '/') . '/' . ltrim($path, '/');
+}
+
+function aistma_get_instructions_url(): string {
+    $default_url = aistma_get_master_url('wp-json/exaig/v1/aistma-general-instructions');
+    return apply_filters('aistma_instructions_url', $default_url);
+}
+
+
+//delete_transient( 'aistma_generating_lock' );

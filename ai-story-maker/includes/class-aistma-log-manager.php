@@ -31,7 +31,8 @@ class AISTMA_Log_Manager {
 	 * @return void
 	 */
 	public function __construct() {
-		add_action( 'admin_init', array( __CLASS__, 'aistma_create_log_table' ) );
+		//add_action( 'admin_init', array( __CLASS__, 'aistma_create_log_table' ) );
+		$this->aistma_create_log_table();
 	}
 
 	/**
