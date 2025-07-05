@@ -49,11 +49,9 @@ add_action(
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			wp_send_json_error( array( 'message' => 'You do not have permission to perform this action.' ) );
 		}
-
 		try {
 			$story_generator = new AISTMA_Story_Generator();
 			$results         = $story_generator->generate_ai_stories_with_lock( true );
-			error_log(print_r($results));
 			if ( ! empty( $results['errors'] ) ) {
 				wp_send_json_error( $results['errors'] );
 			} else {
@@ -65,7 +63,10 @@ add_action(
 	}
 );
 
-
+if ( defined( 'DOING_AJAX' ) && DOING_AJAX && isset( $_POST['action'] ) && $_POST['action'] === 'aistma_save_setting' ) {
+    $settings_page = new \exedotcom\aistorymaker\AISTMA_Settings_Page();
+    add_action( 'wp_ajax_aistma_save_setting', [ $settings_page, 'aistma_ajax_save_setting' ] );
+}
 
 /**
  * Hook for scheduled story generation.
@@ -86,8 +87,8 @@ function aistma_get_master_url(string $path = ''): string {
 
 function aistma_get_instructions_url(): string {
     $default_url = aistma_get_master_url('wp-json/exaig/v1/aistma-general-instructions');
-    return apply_filters('aistma_instructions_url', $default_url);
+	return apply_filters('aistma_instructions_url', $default_url);
 }
 
 
-//delete_transient( 'aistma_generating_lock' );
+delete_transient( 'aistma_generating_lock' );

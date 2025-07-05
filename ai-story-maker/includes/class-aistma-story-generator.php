@@ -184,7 +184,6 @@ class AISTMA_Story_Generator {
 	private function aistma_get_master_instructions(): string{
 		// Fetch dynamic system content from Exedotcom API Gateway.
 		$aistma_master_instructions = get_transient( 'aistma_exaig_cached_master_instructions' );
-		
 		if ( false === $aistma_master_instructions ) {
 			// No cache, fetch from the API.
 			try {
@@ -198,7 +197,10 @@ class AISTMA_Story_Generator {
 						),
 					)
 				);
+				error_log( print_r( $api_response, true ) );
+				exit;
 				if ( ! is_wp_error( $api_response ) ) {
+
 						$body = wp_remote_retrieve_body( $api_response );
 						$json = json_decode( $body, true );
 					if ( isset( $json['instructions'] ) ) {
@@ -216,6 +218,9 @@ class AISTMA_Story_Generator {
 				$aistma_master_instructions = '';
 			}
 		}
+
+		error_log( $aistma_master_instructions);
+		exit;
 
 		// Fallback if API call failed or returned empty.
 		if ( empty( $aistma_master_instructions ) ) {
@@ -244,7 +249,7 @@ class AISTMA_Story_Generator {
 		$merged_settings        = array_merge( $default_settings, $prompt );
 		$default_system_content = isset( $merged_settings['system_content'] )
 		? $merged_settings['system_content'] : '';
-
+		$aistma_master_instructions = $this->aistma_get_master_instructions();	
 
 		// Assign final system content.
 		$merged_settings['system_content'] = $aistma_master_instructions . "\n" . $admin_prompt_settings;

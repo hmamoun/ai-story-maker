@@ -132,6 +132,71 @@ document.addEventListener("DOMContentLoaded", function() {
             prompt_form.submit();
         });
     }
+
+    // === AI Story Maker Instant Settings Save ===
+    const aistmaSettingsMessage = document.getElementById("aistma-settings-message");
+    const aistmaNonce = window.aistmaSettings ? window.aistmaSettings.nonce : '';
+    const aistmaAjaxUrl = window.aistmaSettings ? window.aistmaSettings.ajaxUrl : '';
+
+    // Debounce utility
+    function aistma_debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
+
+    function aistma_show_message(msg, success = true) {
+        if (!aistmaSettingsMessage) return;
+        aistmaSettingsMessage.textContent = msg;
+        aistmaSettingsMessage.style.color = success ? 'green' : 'red';
+        aistmaSettingsMessage.style.margin = '10px 0';
+        setTimeout(() => { aistmaSettingsMessage.textContent = ''; }, 3000);
+    }
+
+    function aistma_save_setting(setting, value) {
+
+        const data = new FormData();
+        data.append('action', 'aistma_save_setting');
+        data.append('aistma_security', aistmaNonce);
+        data.append('setting_name', setting);
+        data.append('setting_value', value);
+        fetch(aistmaAjaxUrl, {
+            method: 'POST',
+            //credentials: 'same-origin',
+            body: data
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                aistma_show_message(data.data.message, true);
+            } else {
+                aistma_show_message(data.data.message || 'Error saving setting.', false);
+            }
+        })
+        .catch(() => {
+            aistma_show_message('update error. Please try again.', false);
+        });
+    }
+
+    // Attach listeners to all controls with data-setting
+    document.querySelectorAll('[data-setting]').forEach(function(control) {
+        const setting = control.getAttribute('data-setting');
+        if (control.type === 'checkbox') {
+            control.addEventListener('change', function() {
+                aistma_save_setting(setting, control.checked ? 1 : 0);
+            });
+        } else if (control.tagName === 'SELECT') {
+            control.addEventListener('change', function() {
+                aistma_save_setting(setting, control.value);
+            });
+        } else if (control.type === 'text') {
+            control.addEventListener('input', aistma_debounce(function() {
+                aistma_save_setting(setting, control.value);
+            }, 600));
+        }
+    });
 });
 
 // check if the button exists before adding the event listener
@@ -180,4 +245,18 @@ if (document.getElementById("aistma-generate-stories-button"))
                 this.disabled = false;
                 this.innerHTML = $originalCaption;
             });
+    });
+
+    document.querySelectorAll('#aistma-subscribe-or-api-keys-wrapper .nav-tab').forEach(tab => {
+        tab.addEventListener('click', function () {
+            const selectedTab = this.getAttribute('data-tab');
+
+            // Update active tab
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('nav-tab-active'));
+            this.classList.add('nav-tab-active');
+    
+            // Toggle content
+            document.querySelectorAll('.aistma-tab-content').forEach(c => c.style.display = 'none');
+            document.getElementById('tab-' + selectedTab).style.display = 'block';
+        });
     });

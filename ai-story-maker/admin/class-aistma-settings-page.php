@@ -37,82 +37,91 @@ class AISTMA_Settings_Page {
 	 */
 	public function __construct() {
 		$this->aistma_log_manager = new AISTMA_Log_Manager();
+		add_action( 'wp_ajax_aistma_save_setting', [ $this, 'aistma_ajax_save_setting' ] );
 	}
 
 	/**
-	 * Renders the plugin settings page and handles form submissions.
-	 *
-	 * @return void
+	 * Handles AJAX request to save a single setting.
 	 */
-	public function aistma_setting_page_render() {
+	public function aistma_ajax_save_setting() {
+		error_log(1);
+		// Check nonce for security
+		if ( ! isset( $_POST['aistma_security'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['aistma_security'] ) ), 'aistma_save_setting' ) ) {
+			wp_send_json_error( [ 'message' => __( 'Security check failed. Please try again.', 'ai-story-maker' ) ] );
+			$this->aistma_log_manager->log( 'error', ' Security check failed. Please try again.' );
+			wp_die();
+		}
 
-		// Handle form submission.
-		if ( isset( $_POST['save_settings'] ) ) {
-			$story_maker_nonce = isset( $_POST['story_maker_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['story_maker_nonce'] ) ) : '';
+		$setting_name  = isset( $_POST['setting_name'] ) ? sanitize_text_field( wp_unslash( $_POST['setting_name'] ) ) : '';
+		$setting_value = isset( $_POST['setting_value'] ) ? wp_unslash( $_POST['setting_value'] ) : null;
 
-			if ( ! $story_maker_nonce || ! wp_verify_nonce( $story_maker_nonce, 'save_story_maker_settings' ) ) {
-				echo '<div class="error"><p> ' . esc_html__( 'Security check failed. Please try again.', 'ai-story-maker' ) . '</p></div>';
-				$this->aistma_log_manager->log( 'error', ' Security check failed. Please try again.' );
-				return;
-			}
+		if ( empty( $setting_name ) ) {
+			wp_send_json_error( [ 'message' => __( 'No setting name provided.', 'ai-story-maker' ) ] );
+			wp_die();
+		}
 
-			if ( ! isset( $_POST['aistma_openai_api_key'] ) || AISTMA_API_Keys::aistma_validate_aistma_openai_api_key( sanitize_text_field( wp_unslash( $_POST['aistma_openai_api_key'] ) ) ) === false ) {
-				echo '<div class="error"><p> ' . esc_html__( 'Invalid OpenAI API key.', 'ai-story-maker' ) . '</p></div>';
-				$this->aistma_log_manager->log( 'error', ' Invalid OpenAI API key.' );
-				return;
-			}
-
-			// If log retention days were changed, clear the old scheduled hook.
-			if ( isset( $_POST['aistma_clear_log_cron'] )
-				&& get_option( 'aistma_clear_log_cron' ) !== sanitize_text_field( wp_unslash( $_POST['aistma_clear_log_cron'] ) )
-			) {
-				wp_clear_scheduled_hook( 'schd_ai_story_maker_clear_log' );
-			}
-
-			// Save Options.
-			update_option( 'aistma_openai_api_key', sanitize_text_field( wp_unslash( $_POST['aistma_openai_api_key'] ) ) );
-			if ( isset( $_POST['aistma_unsplash_api_key'], $_POST['aistma_unsplash_api_secret'] ) ) {
-				update_option(
-					'aistma_unsplash_api_key',
-					sanitize_text_field( wp_unslash( $_POST['aistma_unsplash_api_key'] ) )
-				);
-
-				update_option(
-					'aistma_unsplash_api_secret',
-					sanitize_text_field( wp_unslash( $_POST['aistma_unsplash_api_secret'] ) )
-				);
-			}
-			update_option( 'aistma_clear_log_cron', sanitize_text_field( wp_unslash( $_POST['aistma_clear_log_cron'] ) ) );
-
-			if ( isset( $_POST['aistma_generate_story_cron'] ) ) {
-				$interval = intval( sanitize_text_field( wp_unslash( $_POST['aistma_generate_story_cron'] ) ) );
+		// Validate and update specific settings
+		switch ( $setting_name ) {
+			case 'aistma_openai_api_key':
+				if ( ! AISTMA_API_Keys::aistma_validate_aistma_openai_api_key( sanitize_text_field( $setting_value ) ) ) {
+					wp_send_json_error( [ 'message' => __( 'Invalid OpenAI API key.', 'ai-story-maker' ) ] );
+					$this->aistma_log_manager->log( 'error', ' Invalid OpenAI API key.' );
+					wp_die();
+				}
+				update_option( 'aistma_openai_api_key', sanitize_text_field( $setting_value ) );
+				break;
+			case 'aistma_unsplash_api_key':
+				update_option( 'aistma_unsplash_api_key', sanitize_text_field( $setting_value ) );
+				break;
+			case 'aistma_unsplash_api_secret':
+				update_option( 'aistma_unsplash_api_secret', sanitize_text_field( $setting_value ) );
+				break;
+			case 'aistma_clear_log_cron':
+				if ( get_option( 'aistma_clear_log_cron' ) !== sanitize_text_field( $setting_value ) ) {
+					wp_clear_scheduled_hook( 'schd_ai_story_maker_clear_log' );
+				}
+				update_option( 'aistma_clear_log_cron', sanitize_text_field( $setting_value ) );
+				break;
+			case 'aistma_generate_story_cron':
+				$interval = intval( $setting_value );
 				$n        = absint( get_option( 'aistma_generate_story_cron' ) );
-
 				if ( 0 === $interval ) {
 					wp_clear_scheduled_hook( 'aistma_generate_story_event' );
 				}
-
 				update_option( 'aistma_generate_story_cron', $interval );
-
 				if ( $n !== $interval ) {
 					wp_clear_scheduled_hook( 'aistma_generate_story_event' );
 					$generator = new AISTMA_Story_Generator();
 					$generator->reschedule_cron_event();
 					$this->aistma_log_manager->log( 'info', 'Schedule changed via admin. Running updated check.' );
 				}
-			}
-
-			if ( isset( $_POST['aistma_opt_auther'] ) ) {
-				update_option( 'aistma_opt_auther', intval( $_POST['aistma_opt_auther'] ) );
-			}
-			update_option( 'aistma_show_ai_attribution', isset( $_POST['aistma_show_ai_attribution'] ) ? 1 : 0 );
-			update_option( 'aistma_show_exedotcom_attribution', isset( $_POST['aistma_show_exedotcom_attribution'] ) ? 1 : 0 );
-
-			echo '<div class="notice notice-info"><p>' . esc_html__( 'Settings saved!', 'ai-story-maker' ) . '</p></div>';
-			$this->aistma_log_manager->log( 'info', 'Settings saved' );
+				break;
+			case 'aistma_opt_auther':
+				update_option( 'aistma_opt_auther', intval( $setting_value ) );
+				break;
+			case 'aistma_show_ai_attribution':
+				update_option( 'aistma_show_ai_attribution', $setting_value ? 1 : 0 );
+				break;
+			case 'aistma_show_exedotcom_attribution':
+				update_option( 'aistma_show_exedotcom_attribution', $setting_value ? 1 : 0 );
+				break;
+			default:
+				wp_send_json_error( [ 'message' => __( 'Unknown setting.', 'ai-story-maker' ) ] );
+				wp_die();
 		}
 
-		// Render settings form.
+		$this->aistma_log_manager->log( 'info', 'Setting ' . $setting_name . ' updated.' );
+		wp_send_json_success( [ 'message' => __( 'Setting saved!', 'ai-story-maker' ) ] );
+		wp_die();
+	}
+
+	/**
+	 * Renders the plugin settings page.
+	 *
+	 * @return void
+	 */
+	public function aistma_setting_page_render() {
+		// Only render the settings form. No POST handling here.
 		include AISTMA_PATH . 'admin/templates/general-settings-template.php';
 	}
 }
