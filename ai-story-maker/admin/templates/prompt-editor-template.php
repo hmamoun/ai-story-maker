@@ -26,7 +26,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 		<?php wp_nonce_field( 'save_story_prompts', 'story_prompts_nonce' ); ?>
 
-			<div>
+			<!-- Model selection hidden
+		<div>
 				<label for="model"><?php esc_html_e( 'Model', 'ai-story-maker' ); ?></label>
 				<select name="model" id="model">
 					<option value="gpt-4o-mini" <?php selected( $data['default_settings']['model'] ?? '', 'gpt-4o-mini' ); ?>>GPT-4o Mini</option>
@@ -34,6 +35,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					
 				</select>
 			</div>
+		-->
 			<div>
 				<label for="system_content"><?php esc_html_e( 'General Instructions', 'ai-story-maker' ); ?></label>
 				<textarea name="system_content" id="system_content" rows="5" style="width: 100%;"><?php echo esc_textarea( $data['default_settings']['system_content'] ?? '' ); ?></textarea>

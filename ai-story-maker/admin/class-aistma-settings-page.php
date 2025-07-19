@@ -14,6 +14,8 @@
 
 namespace exedotcom\aistorymaker;
 
+use WpOrg\Requests\Response;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -44,7 +46,6 @@ class AISTMA_Settings_Page {
 	 * Handles AJAX request to save a single setting.
 	 */
 	public function aistma_ajax_save_setting() {
-		error_log(1);
 		// Check nonce for security
 		if ( ! isset( $_POST['aistma_security'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['aistma_security'] ) ), 'aistma_save_setting' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Security check failed. Please try again.', 'ai-story-maker' ) ] );
@@ -115,13 +116,39 @@ class AISTMA_Settings_Page {
 		wp_die();
 	}
 
+	public function aistma_get_available_packages(): string {
+		$response = wp_remote_get(
+			aistma_get_master_url( 'wp-json/exaig/v1/packages-summary' ),
+			array(
+				'timeout' => 10,
+				'headers' => array(
+					'X-Caller-Url' => home_url(),
+					'X-Caller-IP'  => isset( $_SERVER['SERVER_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SERVER_ADDR'] ) ) : '',
+				),
+			)
+		);
+	
+		if ( is_wp_error( $response ) ) {
+			return json_encode( [
+				'status'  => 'error',
+				'message' => $response->get_error_message(),
+			] );
+		}
+		
+		$body = wp_remote_retrieve_body( $response );
+
+		return is_string( $body ) ? $body : json_encode( [] );
+	}
+	
 	/**
 	 * Renders the plugin settings page.
 	 *
 	 * @return void
 	 */
 	public function aistma_setting_page_render() {
-		// Only render the settings form. No POST handling here.
+		$response_body = $this->aistma_get_available_packages();
 		include AISTMA_PATH . 'admin/templates/general-settings-template.php';
 	}
+
+
 }

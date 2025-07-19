@@ -105,9 +105,10 @@ class AISTMA_Plugin {
 		if ( ! wp_next_scheduled( 'aistma_generate_story_event' ) ) {
 			$n = absint( get_option( 'aistma_generate_story_cron' ) );
 			if ( 0 !== $n ) {
-				wp_schedule_event( time() + $n * DAY_IN_SECONDS, 'daily', 'aistma_generate_story_event' );
+				$next_schedule_timestamp = time() + $n * DAY_IN_SECONDS;
+				wp_schedule_event( $next_schedule_timestamp, 'daily', 'aistma_generate_story_event' );
 				/* translators: Formatting the date for the next schedule to be come readable. */
-				$log_manager->log( 'info', sprintf( __( 'Set next schedule to %s', 'ai-story-maker' ), gmdate( 'Y-m-d H:i:s', time() + $n * DAY_IN_SECONDS ) ) );
+				$log_manager->log( 'info', sprintf( __( 'Set next schedule to %s', 'ai-story-maker' ), self::format_date_for_display( $next_schedule_timestamp ) ) );
 			}
 		}
 	}
@@ -118,6 +119,18 @@ class AISTMA_Plugin {
 	public static function aistma_deactivate() {
 		wp_clear_scheduled_hook( 'aistma_generate_story_event' );
 		delete_transient( 'aistma_generating_lock' );
+	}
+
+	/**
+	 * Convert GMT timestamp to WordPress timezone for display.
+	 *
+	 * @param int $gmt_timestamp The GMT timestamp to convert.
+	 * @return string The formatted date/time in WordPress timezone.
+	 */
+	private static function format_date_for_display( $gmt_timestamp ) {
+		// Convert GMT timestamp to WordPress timezone
+		$wp_timestamp = get_date_from_gmt( date( 'Y-m-d H:i:s', $gmt_timestamp ), 'Y-m-d H:i:s' );
+		return $wp_timestamp;
 	}
 }
 

@@ -52,6 +52,13 @@ class AISTMA_Story_Generator {
 	protected $aistma_log_manager;
 
 	/**
+	 * Subscription status for the current domain.
+	 *
+	 * @var array
+	 */
+	private $subscription_status;
+
+	/**
 	 * Constructor.
 	 *
 	 * Initializes the story generator and sets up necessary hooks.
@@ -71,17 +78,45 @@ class AISTMA_Story_Generator {
 	 * @return void
 	 */
 	public static function generate_ai_stories_with_lock( $force = false ) {
+		$instance = new self();
+
 		$lock_key = 'aistma_generating_lock';
-		delete_transient( $lock_key );
 		if ( ! $force && get_transient( $lock_key ) ) {
-			$instance = new self();
 			$instance->aistma_log_manager->log( 'info', 'Story generation skipped due to active lock.' );
 			return;
 		}
 
-		set_transient( $lock_key, true, 10 * MINUTE_IN_SECONDS );
-		$instance = new self();
+		// Check subscription status and API key availability before generating stories
 		try {
+			$subscription_status = $instance->aistma_get_subscription_status();
+			$has_valid_subscription = $subscription_status['valid'];
+			
+			// Check if we have a valid subscription
+			if ( $has_valid_subscription ) {
+				$instance->aistma_log_manager::log( 'info', 'Subscription validated for domain: ' . ( $subscription_status['domain'] ?? 'unknown' ) . ' - Package: ' . ( $subscription_status['package_name'] ?? 'unknown' ) );
+			} else {
+				// No valid subscription, check if we have a valid OpenAI API key as fallback
+				$openai_api_key = get_option( 'aistma_openai_api_key' );
+				if ( empty( $openai_api_key ) ) {
+					$error_message = isset( $subscription_status['error'] ) 
+						? 'Subscription check failed: ' . $subscription_status['error'] . '. Also, no OpenAI API key found.'
+						: 'No valid subscription found and no OpenAI API key configured. Please either purchase a subscription or configure an OpenAI API key to generate stories.';
+					
+					$instance->aistma_log_manager::log( 'error', $error_message );
+					throw new \RuntimeException( $error_message );
+				} else {
+					$instance->aistma_log_manager::log( 'info', 'No valid subscription found, but OpenAI API key is available. Will use direct OpenAI API calls.' );
+				}
+			}
+		} catch ( \RuntimeException $e ) {
+			$error = $e->getMessage();
+			$instance->aistma_log_manager::log( 'error', $error );
+			throw new \RuntimeException( $error );
+		}
+
+		set_transient( $lock_key, true, 10 * MINUTE_IN_SECONDS );
+		try {
+			// Pass the instance with cached subscription status to generate_ai_stories
 			$instance->generate_ai_stories();
 			//$instance->aistma_log_manager->log( 'info', 'Stories successfully generated.' );
 		} catch ( \Throwable $e ) {
@@ -97,12 +132,49 @@ class AISTMA_Story_Generator {
 		if ( 0 !== $n ) {
 			$next_schedule = time() + $n * DAY_IN_SECONDS;
 			wp_schedule_single_event( $next_schedule, 'aistma_generate_story_event' );
-			$instance->aistma_log_manager->log( 'info', 'Rescheduled story generation at: ' . gmdate( 'Y-m-d H:i:s', $next_schedule ) );
+			//$instance->aistma_log_manager->log( 'info', 'Rescheduled story generation at: ' . $instance->format_date_for_display( $next_schedule ) );
 		}
 	}
 
 	/**
-	 * Generate AI Story using OpenAI API.
+	 * Generate AI Story using OpenAI API or Master Server API.
+	 *
+	 * @param  string $prompt_id             The prompt ID.
+	 * @param  array  $prompt                The prompt data.
+	 * @param  array  $default_settings      Default settings for generation.
+	 * @param  array  $recent_posts          Recent posts to avoid duplication.
+	 * @param  string $admin_prompt_settings Admin prompt settings.
+	 * @param  string $api_key               OpenAI API key.
+	 * @return void
+	 */
+	public function generate_ai_story( $prompt_id, $prompt, $default_settings, $recent_posts,  $api_key ) {
+		$merged_settings        = array_merge( $default_settings, $prompt );
+		$aistma_master_instructions = $this->aistma_get_master_instructions( $recent_posts );	
+
+		// Assign final system content.
+		$merged_settings['system_content'] = $aistma_master_instructions ;
+
+		$the_prompt = $prompt['text'];
+
+
+		// Check if we have a valid subscription
+		$subscription_info = $this->get_subscription_info();
+		
+		if ( $subscription_info['valid'] ) {
+			// Use Master Server API
+			
+			$this->generate_story_via_master_api( $prompt_id, $prompt, $merged_settings, $recent_posts, $the_prompt, $subscription_info );
+		} else {
+			// Fallback to direct OpenAI API call
+			if ( $prompt['photos'] > 0 ) {
+				$the_prompt .= "\n" . __( 'Include at least ', 'ai-story-maker' ) . $prompt['photos'] . __( ' placeholders for images in the article. insert a placeholder in the following format {img_unsplash:keyword1,keyword2,keyword3} using the most relevant keywords for fetching related images from Unsplash', 'ai-story-maker' );
+			}
+			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $recent_posts,  $api_key, $the_prompt );
+		}
+	}
+
+	/**
+	 * Generate AI stories using OpenAI API or Master Server API.
 	 *
 	 * @return void
 	 */
@@ -111,14 +183,24 @@ class AISTMA_Story_Generator {
 			'errors'    => array(),
 			'successes' => array(),
 		);
-		// Check if the OpenAI API key is set and is valid.
-		$this->api_key = get_option( 'aistma_openai_api_key' );
-		if ( ! $this->api_key ) {
-			$error = __( 'OpenAI API Key is missing.', 'ai-story-maker' );
-			$this->aistma_log_manager::log( 'error', $error );
-			$results['errors'][] = $error;
-			throw new \RuntimeException( $error );
-
+		
+		// Check subscription status first
+		$subscription_info = $this->get_subscription_info();
+		$has_valid_subscription = $subscription_info['valid'];
+		
+		// Only check OpenAI API key if no valid subscription 
+		if ( ! $has_valid_subscription ) {
+			$this->api_key = get_option( 'aistma_openai_api_key' );
+			if ( ! $this->api_key ) {
+				$error = __( 'OpenAI API Key is missing. Required for direct OpenAI calls when no subscription is active.', 'ai-story-maker' );
+				$this->aistma_log_manager::log( 'error', $error );
+				$results['errors'][] = $error;
+				throw new \RuntimeException( $error );
+			}
+		} else {
+			// For subscription users, we'll use master API, so OpenAI key is not required
+			$this->api_key = null;
+			$this->aistma_log_manager::log( 'info', 'Valid subscription detected, will use Master API for story generation' );
 		}
 
 		$raw_settings = get_option( 'aistma_prompts', '' );
@@ -134,9 +216,7 @@ class AISTMA_Story_Generator {
 
 		$this->default_settings = isset( $settings['default_settings'] ) ? $settings['default_settings'] : array();
 
-		// Set default values for the settings.
-		$admin_prompt_settings = __( 'The response must strictly follow this json structure: { "title": "Article Title", "content": "Full article content...", "excerpt": "A short summary of the article...", "references": [ {"title": "Source 1", "link": "https://yourdomain.com/source1"}, {"title": "Source 2", "link": "https://yourdomain.com/source2"} ] } return the real https tested domain for your references, not example.com', 'ai-story-maker' );
-
+	
 		foreach ( $settings['prompts'] as &$prompt ) {
 			if ( isset( $prompt['active'] ) && 0 === $prompt['active'] ) {
 				continue;
@@ -147,11 +227,20 @@ class AISTMA_Story_Generator {
 			if ( ! isset( $prompt['prompt_id'] ) || empty( $prompt['prompt_id'] ) ) {
 				continue;
 			}
-			$recent_posts = $this->aistma_get_recent_posts( 20, $prompt['category'] );
+					$recent_posts = $this->aistma_get_recent_posts( 20, $prompt['category'] );
 
-			// Generate the AI story immediately if needed.
-			try {
-				$this->generate_ai_story( $prompt['prompt_id'], $prompt, $this->default_settings, $recent_posts, $admin_prompt_settings, $this->api_key );
+		// Log recent posts for debugging
+		$this->aistma_log_manager::log( 'info', sprintf(
+			'Recent posts for category "%s": %s',
+			$prompt['category'],
+			json_encode( array_column( $recent_posts, 'title' ) )
+		) );
+
+		// Generate the AI story immediately if needed.
+		try {
+				// Generate the story
+				$this->generate_ai_story( $prompt['prompt_id'], $prompt, $this->default_settings, $recent_posts,  $this->api_key );
+				
 				$results['successes'][] = __( 'AI story generated successfully.', 'ai-story-maker' );
 			} catch ( \Exception $e ) {
 				$error = __( 'Error generating AI story: ', 'ai-story-maker' ) . $e->getMessage();
@@ -166,11 +255,12 @@ class AISTMA_Story_Generator {
 			// Cancel the current schedule.
 			wp_clear_scheduled_hook( 'aistma_generate_story_event' );
 			// Schedule the next event.
-			$next_schedule = gmdate( 'Y-m-d H:i:s', time() + $n * DAY_IN_SECONDS );
-			wp_schedule_single_event( time() + $n * DAY_IN_SECONDS, 'aistma_generate_story_event' );
+			$next_schedule_timestamp = time() + $n * DAY_IN_SECONDS;
+			$next_schedule_display = $this->format_date_for_display( $next_schedule_timestamp );
+			wp_schedule_single_event( $next_schedule_timestamp, 'aistma_generate_story_event' );
 
 			/* translators: %s: The next scheduled date and time in Y-m-d H:i:s format */
-			$error_msg = sprintf( __( 'Set next schedule to %s', 'ai-story-maker' ), $next_schedule );
+			$error_msg = sprintf( __( 'Set next schedule to %s', 'ai-story-maker' ), $next_schedule_display );
 			$this->aistma_log_manager::log( 'info', $error_msg );
 		} else {
 			$this->aistma_log_manager::log( 'info', __( 'Schedule for next story is unset', 'ai-story-maker' ) );
@@ -178,85 +268,114 @@ class AISTMA_Story_Generator {
 		}
 	}
 
-/**
- * Get master instructions from master website
- */
-	private function aistma_get_master_instructions(): string{
-		// Fetch dynamic system content from Exedotcom API Gateway.
-		$aistma_master_instructions = get_transient( 'aistma_exaig_cached_master_instructions' );
-		if ( false === $aistma_master_instructions ) {
-			// No cache, fetch from the API.
-			try {
-				$api_response = wp_remote_get(
-					aistma_get_instructions_url(),
-					array(
-						'timeout' => 10,
-						'headers' => array(
-							'X-Caller-Url' => home_url(),
-							'X-Caller-IP'  => isset( $_SERVER['SERVER_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SERVER_ADDR'] ) ) : '',
-						),
-					)
-				);
-				error_log( print_r( $api_response, true ) );
-				exit;
-				if ( ! is_wp_error( $api_response ) ) {
-
-						$body = wp_remote_retrieve_body( $api_response );
-						$json = json_decode( $body, true );
-					if ( isset( $json['instructions'] ) ) {
-						$aistma_master_instructions = sanitize_textarea_field( $json['instructions'] );
-						set_transient( 'aistma_exaig_cached_master_instructions', $aistma_master_instructions, 5 * MINUTE_IN_SECONDS );
-					}
-				} else {
-					// Silent fail; fallback will be handled below.
-					$this->aistma_log_manager->log( 'error', 'Error fetching dynamic instructions: ' . $api_response->get_error_message() );
-					$aistma_master_instructions = '';
-				}
-			} catch ( Exception $e ) {
-				// Silent fail; fallback will be handled below.
-				$this->aistma_log_manager->log( 'error', 'Error fetching master instructions: ' . $e->getMessage() );
-				$aistma_master_instructions = '';
-			}
+	/**
+	 * Generate story via Master Server API.
+	 *
+	 * @param  string $prompt_id        The prompt ID.
+	 * @param  array  $prompt           The prompt data.
+	 * @param  array  $merged_settings  Merged settings.
+	 * @param  array  $recent_posts     Recent posts to avoid duplication.
+	 * @param  string $the_prompt       The prompt text.
+	 * @param  array  $subscription_info Subscription information.
+	 * @return void
+	 */
+	private function generate_story_via_master_api( $prompt_id, $prompt, $merged_settings, $recent_posts, $the_prompt, $subscription_info ) {
+		$master_url = defined( 'AISTMA_MASTER_URL' ) ? AISTMA_MASTER_URL : '';
+		
+		if ( empty( $master_url ) ) {
+			$this->aistma_log_manager::log( 'error', 'AISTMA_MASTER_URL not defined, falling back to direct OpenAI call' );
+			// Fallback to direct OpenAI call
+			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $recent_posts, $this->api_key, $the_prompt );
+			return;
 		}
 
-		error_log( $aistma_master_instructions);
-		exit;
+		$api_url = trailingslashit( $master_url ) . 'wp-json/exaig/v1/generate-story';
+		
+		// Prepare request data
+		$request_data = array(
+			'domain' => $subscription_info['domain'],
+			'prompt_id' => $prompt_id,
+			'prompt_text' => $the_prompt,
+			'settings' => array(
+				'model' => $merged_settings['model'] ?? 'gpt-4-turbo',
+				'max_tokens' => 1500,
+				'system_content' => $merged_settings['system_content'] ?? '',
+				'timeout' => $merged_settings['timeout'] ?? 30,
+			),
+			'recent_posts' => $recent_posts,
+			'category' => $prompt['category'] ?? '',
+			'photos' => $prompt['photos'] ?? 0,
+		);
 
-		// Fallback if API call failed or returned empty.
-		if ( empty( $aistma_master_instructions ) ) {
-			$aistma_master_instructions = 'Write a fact-based, original article based on real-world information. Organize the article clearly with a proper beginning, middle, and conclusion.';
-		}
-		// Append recent posts titles.
-		$aistma_master_instructions .= "\n" . __( 'Exclude references to the following recent posts:', 'ai-story-maker' );
-		foreach ( $recent_posts as $post ) {
-			$aistma_master_instructions .= "\n" . __( 'Title: ', 'ai-story-maker' ) . $post['title'];
+		$response = wp_remote_post( $api_url, array(
+			'timeout' => 60,
+			'headers' => array(
+				'Content-Type' => 'application/json',
+				'User-Agent' => 'AI-Story-Maker/1.0',
+			),
+			'body' => wp_json_encode( $request_data ),
+		) );
+
+		if ( is_wp_error( $response ) ) {
+			$error_message = $response->get_error_message();
+			$this->aistma_log_manager::log( 'error', 'Master API error: ' . $error_message . ', falling back to direct OpenAI call' );
+			// Fallback to direct OpenAI call
+			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $recent_posts, $this->api_key, $the_prompt );
+			return;
 		}
 
+		$response_code = wp_remote_retrieve_response_code( $response );
+		$response_body = wp_remote_retrieve_body( $response );
+		$data = json_decode( $response_body, true );
+
+		if ( $response_code !== 200 ) {
+			$this->aistma_log_manager::log( 'error', 'Master API returned HTTP ' . $response_code . ', falling back to direct OpenAI call' );
+			// Fallback to direct OpenAI call
+			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $recent_posts, $this->api_key, $the_prompt );
+			return;
+		}
+
+		if ( json_last_error() !== JSON_ERROR_NONE ) {
+			$this->aistma_log_manager::log( 'error', 'Invalid JSON response from Master API, falling back to direct OpenAI call' );
+			// Fallback to direct OpenAI call
+			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $recent_posts, $this->api_key, $the_prompt );
+			return;
+		}
+
+		if ( ! isset( $data['success'] ) || ! $data['success'] ) {
+			$error_msg = isset( $data['error'] ) ? $data['error'] : 'Unknown error from Master API';
+			$this->aistma_log_manager::log( 'error', 'Master API error: ' . $error_msg . ', falling back to direct OpenAI call' );
+			// Fallback to direct OpenAI call
+			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $recent_posts, $this->api_key, $the_prompt );
+			return;
+		}
+
+		// Success! Process the response from Master API
+		$this->process_master_api_response( $data, $prompt_id, $prompt, $merged_settings );
 	}
 
 	/**
-	 * Generate AI Story using OpenAI API.
+	 * Generate story via direct OpenAI API (fallback method).
 	 *
 	 * @param  string $prompt_id             The prompt ID.
 	 * @param  array  $prompt                The prompt data.
-	 * @param  array  $default_settings      Default settings for generation.
+	 * @param  array  $merged_settings       Merged settings.
 	 * @param  array  $recent_posts          Recent posts to avoid duplication.
-	 * @param  string $admin_prompt_settings Admin prompt settings.
+
 	 * @param  string $api_key               OpenAI API key.
+	 * @param  string $the_prompt            The prompt text.
 	 * @return void
 	 */
-	public function generate_ai_story( $prompt_id, $prompt, $default_settings, $recent_posts, $admin_prompt_settings, $api_key ) {
-		$merged_settings        = array_merge( $default_settings, $prompt );
-		$default_system_content = isset( $merged_settings['system_content'] )
-		? $merged_settings['system_content'] : '';
-		$aistma_master_instructions = $this->aistma_get_master_instructions();	
-
-		// Assign final system content.
-		$merged_settings['system_content'] = $aistma_master_instructions . "\n" . $admin_prompt_settings;
-
-		$the_prompt = $prompt['text'];
-		if ( $prompt['photos'] > 0 ) {
-			$the_prompt .= "\n" . __( 'Include at least ', 'ai-story-maker' ) . $prompt['photos'] . __( ' placeholders for images in the article. insert a placeholder in the following format {img_unsplash:keyword1,keyword2,keyword3} using the most relevant keywords for fetching related images from Unsplash', 'ai-story-maker' );
+	private function generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $recent_posts,  $api_key, $the_prompt ) {
+		// Check if the OpenAI API key is set and is valid.
+		if ( empty( $api_key ) ) {
+			$api_key = get_option( 'aistma_openai_api_key' );
+		}
+		
+		if ( ! $api_key ) {
+			$error = __( 'OpenAI API Key is missing. Required for direct OpenAI calls without subscription', 'ai-story-maker' );
+			$this->aistma_log_manager::log( 'error', $error );
+			throw new \RuntimeException( $error );
 		}
 
 		$response = wp_remote_post(
@@ -293,7 +412,7 @@ class AISTMA_Story_Generator {
 		if ( 200 !== $status_code ) {
 			/* translators: %d: HTTP status code returned by the OpenAI API */
 			$error_msg = sprintf( __( 'OpenAI API returned HTTP %d', 'ai-story-maker' ), $status_code );
-			$this->aistma_log_manager->log( 'error', $error_msg );
+			$this->aistma_log_manager::log( 'error', $error_msg );
 			delete_transient( 'aistma_generating_lock' );
 			wp_send_json_error( array( 'errors' => array( $error_msg ) ) );
 		}
@@ -301,7 +420,7 @@ class AISTMA_Story_Generator {
 		// Check if response is valid.
 		if ( is_wp_error( $response ) ) {
 			$error = $response->get_error_message();
-			$this->aistma_log_manager->log( 'error', $error );
+			$this->aistma_log_manager::log( 'error', $error );
 			delete_transient( 'aistma_generating_lock' );
 			wp_send_json_error( array( 'errors' => array( $error ) ) );
 		}
@@ -310,25 +429,139 @@ class AISTMA_Story_Generator {
 		$response_body = json_decode( wp_remote_retrieve_body( $response ), true );
 		if ( ! isset( $response_body['choices'][0]['message']['content'] ) ) {
 			$error = __( 'Invalid response from OpenAI API.', 'ai-story-maker' );
-			$this->aistma_log_manager->log( 'error', $error );
+			$this->aistma_log_manager::log( 'error', $error );
 			delete_transient( 'aistma_generating_lock' );
 			wp_send_json_error( array( 'errors' => array( $error ) ) );
 		}
 
 		$parsed_content = json_decode( $response_body['choices'][0]['message']['content'], true );
+
 		if ( ! isset( $parsed_content['title'], $parsed_content['content'] ) ) {
 			$error = __( 'Invalid content structure, try to simplify your prompts', 'ai-story-maker' );
-			$this->aistma_log_manager->log( 'error', $error );
+			$this->aistma_log_manager::log( 'error', $error );
 			delete_transient( 'aistma_generating_lock' );
 			wp_send_json_error( array( 'errors' => array( $error ) ) );
 		}
 
+		// Process the OpenAI response
+		$this->process_openai_response( $response_body, $parsed_content, $prompt_id, $prompt, $merged_settings );
+	}
+
+	/**
+	 * Process response from Master API.
+	 *
+	 * @param  array  $data           Response data from Master API.
+	 * @param  string $prompt_id      The prompt ID.
+	 * @param  array  $prompt         The prompt data.
+	 * @param  array  $merged_settings Merged settings.
+	 * @return void
+	 */
+	private function process_master_api_response( $data, $prompt_id, $prompt, $merged_settings ) {
+		if ( ! isset( $data['content']['title'], $data['content']['content'] ) ) {
+			$error = __( 'Invalid content structure from Master API', 'ai-story-maker' );
+			$this->aistma_log_manager::log( 'error', $error );
+			throw new \RuntimeException( $error );
+		}
+
+		$title = isset( $data['content']['title'] ) ? sanitize_text_field( $data['content']['title'] ) : __( 'Untitled Article', 'ai-story-maker' );
+		$content = isset( $data['content']['content'] ) ? wp_kses_post( $data['content']['content'] ) : __( 'Content not available.', 'ai-story-maker' );
+		// Note: Image placeholders are already processed by the Master API, so we don't need to process them again
+		$category_name = isset( $prompt['category'] ) ? sanitize_text_field( $prompt['category'] ) : __( 'News', 'ai-story-maker' );
+
+		// Get or create category ID
+		$category_id = get_cat_ID( $category_name );
+		if ( 0 === $category_id ) {
+			// Category doesn't exist, create it
+			$category_id = wp_create_category( $category_name );
+		}
+
+		// Generate excerpt from content
+		$excerpt = wp_trim_words( wp_strip_all_tags( $content ), 55, '...' );
+
+		if ( 1 === (int) get_option( 'aistma_show_ai_attribution', 1 ) ) {
+			$content .= '<div class="ai-story-model">' . __( 'generated by:', 'ai-story-maker' ) . ' ' . esc_html( $merged_settings['model'] ?? 'gpt-4-turbo' ) . '</div>';
+		}
+
+		// Determine the post author.
+		$post_author = 0;
+		if ( isset( $prompt['author'] ) && ! empty( $prompt['author'] ) ) {
+			$user = get_user_by( 'login', $prompt['author'] );
+			if ( $user ) {
+				$post_author = $user->ID;
+			}
+		}
+		if ( ! $post_author ) {
+			$post_author = get_current_user_id();
+		}
+		if ( ! $post_author ) {
+			$post_author = 1; // Default to admin user ID 1 if no user is logged in.
+		}
+
+		// Create the post.
+		$post_data = array(
+			'post_title'   => $title,
+			'post_content' => $content,
+			'post_excerpt' => $excerpt,
+			'post_status'  => isset( $prompt['auto_publish'] ) && 1 === $prompt['auto_publish'] ? 'publish' : 'draft',
+			'post_author'  => $post_author,
+			'post_category' => array( $category_id ),
+		);
+
+		$post_id = wp_insert_post( $post_data );
+
+		if ( is_wp_error( $post_id ) ) {
+			$error = __( 'Error creating post: ', 'ai-story-maker' ) . $post_id->get_error_message();
+			$this->aistma_log_manager::log( 'error', $error );
+			throw new \RuntimeException( $error );
+		}
+
+		// Save post meta data
+		if ( $post_id ) {
+			$total_tokens = isset( $data['usage']['total_tokens'] ) ? (int) $data['usage']['total_tokens'] : 0;
+			$request_id = isset( $data['usage']['request_id'] ) ? sanitize_text_field( $data['usage']['request_id'] ) : uniqid( 'ai_news_' );
+			
+			update_post_meta( $post_id, 'ai_story_maker_sources', isset( $data['content']['references'] ) && is_array( $data['content']['references'] ) ? wp_json_encode( $data['content']['references'] ) : wp_json_encode( array() ) );
+			update_post_meta( $post_id, 'ai_story_maker_total_tokens', $total_tokens ?? 'N/A' );
+			update_post_meta( $post_id, 'ai_story_maker_request_id', $request_id ?? 'N/A' );
+			update_post_meta( $post_id, 'ai_story_maker_generated_via', 'master_api' );
+			$this->aistma_log_manager::log( 'success', 'AI-generated news article created via Master API: ' . get_permalink( $post_id ), $request_id );
+		}
+
+		// Log usage from Master API response
+		if ( isset( $data['usage']['total_tokens'] ) ) {
+			$this->aistma_log_manager::log( 'info', 'Story generated via Master API. Tokens used: ' . $data['usage']['total_tokens'] );
+		}
+
+		$this->aistma_log_manager::log( 'info', 'Story generated successfully via Master API. Post ID: ' . $post_id );
+	}
+
+	/**
+	 * Process response from OpenAI API.
+	 *
+	 * @param  array  $response_body   Response body from OpenAI API.
+	 * @param  array  $parsed_content  Parsed content from OpenAI.
+	 * @param  string $prompt_id       The prompt ID.
+	 * @param  array  $prompt          The prompt data.
+	 * @param  array  $merged_settings Merged settings.
+	 * @return void
+	 */
+	private function process_openai_response( $response_body, $parsed_content, $prompt_id, $prompt, $merged_settings ) {
 		$total_tokens = isset( $response_body['usage']['total_tokens'] ) ? (int) $response_body['usage']['total_tokens'] : 0;
 		$request_id   = isset( $response_body['id'] ) ? sanitize_text_field( $response_body['id'] ) : uniqid( 'ai_news_' );
 		$title        = isset( $parsed_content['title'] ) ? sanitize_text_field( $parsed_content['title'] ) : __( 'Untitled Article', 'ai-story-maker' );
 		$content      = isset( $parsed_content['content'] ) ? wp_kses_post( $parsed_content['content'] ) : __( 'Content not available.', 'ai-story-maker' );
 		$content      = $this->replace_image_placeholders( $content );
-		$category     = isset( $prompt['category'] ) ? sanitize_text_field( $prompt['category'] ) : __( 'News', 'ai-story-maker' );
+		$category_name = isset( $prompt['category'] ) ? sanitize_text_field( $prompt['category'] ) : __( 'News', 'ai-story-maker' );
+
+		// Get or create category ID
+		$category_id = get_cat_ID( $category_name );
+		if ( 0 === $category_id ) {
+			// Category doesn't exist, create it
+			$category_id = wp_create_category( $category_name );
+		}
+
+		// Generate excerpt from content
+		$excerpt = wp_trim_words( wp_strip_all_tags( $content ), 55, '...' );
 
 		if ( 1 === (int) get_option( 'aistma_show_ai_attribution', 1 ) ) {
 			$content .= '<div class="ai-story-model">' . __( 'generated by:', 'ai-story-maker' ) . ' ' . esc_html( $merged_settings['model'] ) . '</div>';
@@ -349,34 +582,95 @@ class AISTMA_Story_Generator {
 			$post_author = 1; // Default to admin user ID 1 if no user is logged in.
 		}
 
-		// Determine auto publish post variable.
-		$auto_publish = isset( $prompt['auto_publish'] ) ? (bool) $prompt['auto_publish'] : false;
-		$post_status  = $auto_publish ? 'publish' : 'draft';
-
-		$post_id = wp_insert_post(
-			array(
-				'post_title'    => sanitize_text_field( $parsed_content['title'] ?? 'Untitled AI Post' ),
-				'post_content'  => $content,
-				'post_author'   => 1,
-				'post_category' => array( get_cat_ID( $category ) ),
-				'post_excerpt'  => $parsed_content['excerpt'] ?? 'No excerpt available.',
-				'post_status'   => $post_status,
-			)
+		// Create the post.
+		$post_data = array(
+			'post_title'   => $title,
+			'post_content' => $content,
+			'post_excerpt' => $excerpt,
+			'post_status'  => isset( $prompt['auto_publish'] ) && 1 === $prompt['auto_publish'] ? 'publish' : 'draft',
+			'post_author'  => $post_author,
+			'post_category' => array( $category_id ),
 		);
 
-		// Check for errors.
+		$post_id = wp_insert_post( $post_data );
+
 		if ( is_wp_error( $post_id ) ) {
-			$error = $post_id->get_error_message();
+			$error = __( 'Error creating post: ', 'ai-story-maker' ) . $post_id->get_error_message();
 			$this->aistma_log_manager::log( 'error', $error );
-			wp_send_json_error( array( 'errors' => array( $error ) ) );
+			throw new \RuntimeException( $error );
 		}
 
+		// Save post meta data
 		if ( $post_id ) {
 			update_post_meta( $post_id, 'ai_story_maker_sources', isset( $parsed_content['references'] ) && is_array( $parsed_content['references'] ) ? wp_json_encode( $parsed_content['references'] ) : wp_json_encode( array() ) );
 			update_post_meta( $post_id, 'ai_story_maker_total_tokens', $total_tokens ?? 'N/A' );
 			update_post_meta( $post_id, 'ai_story_maker_request_id', $request_id ?? 'N/A' );
-			$this->aistma_log_manager->log( 'success', 'AI-generated news article created: ' . get_permalink( $post_id ), $request_id );
+			update_post_meta( $post_id, 'ai_story_maker_generated_via', 'openai_api' );
+			$this->aistma_log_manager::log( 'success', 'AI-generated news article created via OpenAI API: ' . get_permalink( $post_id ), $request_id );
 		}
+
+		$this->aistma_log_manager::log( 'info', 'Story generated successfully via OpenAI API. Post ID: ' . $post_id . ', Tokens used: ' . $total_tokens );
+	}
+
+	/**
+	 * Get master instructions for AI story generation.
+	 *
+	 * @param array $recent_posts Array of recent posts to exclude from generation.
+	 * @return string Master instructions for AI story generation.
+	 */
+	private function aistma_get_master_instructions( $recent_posts = array() )	{
+		// Fetch dynamic system content from Exedotcom API Gateway.
+		$aistma_master_instructions = get_transient( 'aistma_exaig_cached_master_instructions' );
+		if ( false === $aistma_master_instructions ) {
+			// No cache, fetch from the API.
+			try {
+				$api_response = wp_remote_get(
+					aistma_get_instructions_url(),
+					array(
+						'timeout' => 10,
+						'headers' => array(
+							'X-Caller-Url' => home_url(),
+							'X-Caller-IP'  => isset( $_SERVER['SERVER_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SERVER_ADDR'] ) ) : '',
+						),
+					)
+				);
+
+				if ( ! is_wp_error( $api_response ) ) {
+
+						$body = wp_remote_retrieve_body( $api_response );
+						$json = json_decode( $body, true );
+					if ( isset( $json['instructions'] ) ) {
+						$aistma_master_instructions = sanitize_textarea_field( $json['instructions'] );
+						set_transient( 'aistma_exaig_cached_master_instructions', $aistma_master_instructions, 5 * MINUTE_IN_SECONDS );
+					}
+				} else {
+					// Silent fail; fallback will be handled below.
+					$this->aistma_log_manager::log( 'error', 'Error fetching dynamic instructions: ' . $api_response->get_error_message() );
+					$aistma_master_instructions = '';
+				}
+			} catch ( Exception $e ) {
+				// Silent fail; fallback will be handled below.
+				$this->aistma_log_manager::log( 'error', 'Error fetching master instructions: ' . $e->getMessage() );
+				$aistma_master_instructions = '';
+			}
+		}
+
+		// Fallback if API call failed or returned empty.
+		if ( empty( $aistma_master_instructions ) ) {
+			$aistma_master_instructions = 'Write a fact-based, original article based on real-world information. Organize the article clearly with a proper beginning, middle, and conclusion.';
+		}
+		
+		// Append recent posts titles if provided and not empty.
+		if ( ! empty( $recent_posts ) && is_array( $recent_posts ) ) {
+			$aistma_master_instructions .= "\n" . __( 'Exclude references to the following recent posts:', 'ai-story-maker' );
+			foreach ( $recent_posts as $post ) {
+				if ( isset( $post['title'] ) && ! empty( $post['title'] ) ) {
+					$aistma_master_instructions .= "\n" . __( 'Title: ', 'ai-story-maker' ) . $post['title'];
+				}
+			}
+		}
+
+		return $aistma_master_instructions;
 	}
 
 	/**
@@ -484,7 +778,7 @@ class AISTMA_Story_Generator {
 			if ( 0 !== $n ) {
 				$run_at = time() + $n * DAY_IN_SECONDS;
 				wp_schedule_single_event( $run_at, 'aistma_generate_story_event' );
-				$this->aistma_log_manager->log( 'info', 'Scheduled next AI story generation at: ' . gmdate( 'Y-m-d H:i:s', $run_at ) );
+				$this->aistma_log_manager->log( 'info', 'Scheduled next AI story generation at: ' . $this->format_date_for_display( $run_at ) );
 			}
 		}
 	}
@@ -504,7 +798,196 @@ class AISTMA_Story_Generator {
 		if ( 0 !== $n ) {
 			$run_at = time() + $n * DAY_IN_SECONDS;
 			wp_schedule_single_event( $run_at, 'aistma_generate_story_event' );
-			$this->aistma_log_manager->log( 'info', 'Rescheduled cron event: ' . gmdate( 'Y-m-d H:i:s', $run_at ) );
+			$this->aistma_log_manager->log( 'info', 'Rescheduled cron event: ' . $this->format_date_for_display( $run_at ) );
 		}
 	}
+
+	/**
+	 * Check subscription status for the current domain.
+	 *
+	 * Similar to the JavaScript aistma_get_subscription_status() function.
+	 * Makes an API call to the master server to verify subscription status.
+	 *
+	 * @param string $domain Optional domain to check. If not provided, uses current site domain.
+	 * @return array Subscription status data or error information.
+	 */
+	public function aistma_get_subscription_status( $domain = '' ) {
+		// Get current domain with port if it exists
+		if ( empty( $domain ) ) {
+			$domain = $_SERVER['HTTP_HOST'] ?? '';
+
+		}
+
+		// Get master URL from WordPress constant
+		$master_url = defined( 'AISTMA_MASTER_URL' ) ? AISTMA_MASTER_URL : '';
+		
+		if ( empty( $master_url ) ) {
+			$this->aistma_log_manager::log( 'error', 'AISTMA_MASTER_URL not defined' );
+			$this->subscription_status = array(
+				'valid' => false,
+				'error' => 'AISTMA_MASTER_URL not defined',
+				'domain' => $domain,
+			);
+			return $this->subscription_status;
+		}
+
+		// Make API call to master server to check subscription status
+		$api_url = trailingslashit( $master_url ) . 'wp-json/exaig/v1/verify-subscription?domain=' . urlencode( $domain );
+		
+		$response = wp_remote_get( $api_url, array(
+			'timeout' => 30,
+			'headers' => array(
+				'User-Agent' => 'AI-Story-Maker/1.0',
+			),
+		) );
+
+		if ( is_wp_error( $response ) ) {
+			$error_message = $response->get_error_message();
+			$this->aistma_log_manager::log( 'error', 'Error checking subscription status: ' . $error_message );
+			$this->subscription_status = array(
+				'valid' => false,
+				'error' => 'Network error: ' . $error_message,
+				'domain' => $domain,
+			);
+			return $this->subscription_status;
+		}
+
+		$response_code = wp_remote_retrieve_response_code( $response );
+		$response_body = wp_remote_retrieve_body( $response );
+		$data = json_decode( $response_body, true );
+
+		if ( $response_code !== 200 ) {
+			$this->aistma_log_manager::log( 'error', 'API error checking subscription status. Response code: ' . $response_code );
+			$this->subscription_status = array(
+				'valid' => false,
+				'error' => 'API error: HTTP ' . $response_code,
+				'domain' => $domain,
+			);
+			return $this->subscription_status;
+		}
+
+		if ( json_last_error() !== JSON_ERROR_NONE ) {
+			$this->aistma_log_manager::log( 'error', 'Invalid JSON response from subscription API' );
+			$this->subscription_status = array(
+				'valid' => false,
+				'error' => 'Invalid JSON response',
+				'domain' => $domain,
+			);
+			return $this->subscription_status;
+		}
+
+		if ( isset( $data['valid'] ) && $data['valid'] ) {
+			$this->aistma_log_manager::log( 'info', 'Subscription found for domain: ' . $domain . ' - Credits remaining: ' . ( $data['credits_remaining'] ?? 0 ) );
+			$this->subscription_status = array(
+				'valid' => true,
+				'domain' => $data['domain'] ?? $domain,
+				'credits_remaining' => intval( $data['credits_remaining'] ?? 0 ),
+				'package_id' => $data['package_id'] ?? '',
+				'package_name' => $data['package_name'] ?? '',
+				'price' => floatval( $data['price'] ?? 0 ),
+				'created_at' => $data['created_at'] ?? '',
+			);
+		} else {
+			//$this->aistma_log_manager::log( 'info', 'No active subscription found for domain: ' . $domain );
+			$this->subscription_status = array(
+				'valid' => false,
+				'message' => $data['message'] ?? 'No subscription found',
+				'domain' => $domain,
+			);
+		}
+
+		return $this->subscription_status;
+	}
+
+	/**
+	 * Get the cached subscription status.
+	 *
+	 * @return array|null The cached subscription status or null if not set.
+	 */
+	public function get_cached_subscription_status() {
+		return $this->subscription_status;
+	}
+
+	/**
+	 * Check if subscription status is cached.
+	 *
+	 * @return bool True if subscription status is cached, false otherwise.
+	 */
+	public function has_cached_subscription_status() {
+		return ! empty( $this->subscription_status );
+	}
+
+	/**
+	 * Clear the cached subscription status.
+	 *
+	 * @return void
+	 */
+	public function clear_cached_subscription_status() {
+		$this->subscription_status = null;
+	}
+
+	/**
+	 * Get subscription information for use during story generation.
+	 *
+	 * @return array Subscription information including domain, package name, etc.
+	 */
+	public function get_subscription_info() {
+		if ( ! $this->has_cached_subscription_status() ) {
+			// If not cached, fetch it
+			$this->aistma_get_subscription_status();
+		}
+		
+		return $this->subscription_status ?? array(
+			'valid' => false,
+			'domain' => '',
+			'package_name' => '',
+			'package_id' => '',
+			'credits_remaining' => 0,
+			'price' => 0.0,
+			'created_at' => '',
+		);
+	}
+
+	/**
+	 * Check if the current subscription is a free subscription.
+	 *
+	 * @return bool True if it's a free subscription, false otherwise.
+	 */
+	public function is_free_subscription() {
+		$subscription_info = $this->get_subscription_info();
+		return isset( $subscription_info['package_name'] ) && $subscription_info['package_name'] === 'Free subscription';
+	}
+
+	/**
+	 * Get the subscription domain.
+	 *
+	 * @return string The subscription domain.
+	 */
+	public function get_subscription_domain() {
+		$subscription_info = $this->get_subscription_info();
+		return $subscription_info['domain'] ?? '';
+	}
+
+	/**
+	 * Get the subscription package name.
+	 *
+	 * @return string The subscription package name.
+	 */
+	public function get_subscription_package_name() {
+		$subscription_info = $this->get_subscription_info();
+		return $subscription_info['package_name'] ?? '';
+	}
+
+	/**
+	 * Convert GMT timestamp to WordPress timezone for display.
+	 *
+	 * @param int $gmt_timestamp The GMT timestamp to convert.
+	 * @return string The formatted date/time in WordPress timezone.
+	 */
+	private function format_date_for_display( $gmt_timestamp ) {
+		// Convert GMT timestamp to WordPress timezone
+		$wp_timestamp = get_date_from_gmt( date( 'Y-m-d H:i:s', $gmt_timestamp ), 'Y-m-d H:i:s' );
+		return $wp_timestamp;
+	}
+
 }

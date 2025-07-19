@@ -1,0 +1,26 @@
+{
+    "name": "Zip Multiple Folders",
+    "description": "Run zip_current_folder.sh on multiple folders",
+    "commands": [
+      {
+        "name": "zip-ai-story-maker",
+        "description": "Zip the ai-story-maker folder",
+        "command": "ai-story-maker/zip_current_folder.sh"
+      },
+      {
+        "name": "zip-api-gateway", 
+        "description": "Zip the API Gateway folder",
+        "command": "cd \"API Gateway\" && chmod +x zip_current_folder.sh && ./zip_current_folder.sh"
+      },
+      {
+        "name": "zip-all-plugins",
+        "description": "Zip both ai-story-maker and API Gateway folders",
+        "command": "cd ai-story-maker && chmod +x zip_current_folder.sh && ./zip_current_folder.sh && cd ../\"API Gateway\" && chmod +x zip_current_folder.sh && ./zip_current_folder.sh"
+      },
+      {
+        "name": "setup-zip-scripts",
+        "description": "Copy zip script to both plugin folders and make executable",
+        "command": "cp zip_current_folder.sh ai-story-maker/ && cp zip_current_folder.sh \"API Gateway/\" && chmod +x ai-story-maker/zip_current_folder.sh && chmod +x \"API Gateway/zip_current_folder.sh\""
+      }
+    ]
+  }

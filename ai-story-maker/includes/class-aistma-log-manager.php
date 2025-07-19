@@ -66,6 +66,7 @@ class AISTMA_Log_Manager {
 	 * @return void
 	 */
 	public static function log( $type, $message, $request_id = null ) {
+
 		global $wpdb;
 		$table = $wpdb->prefix . 'aistma_log_table';
 		// Log table is a custom table.

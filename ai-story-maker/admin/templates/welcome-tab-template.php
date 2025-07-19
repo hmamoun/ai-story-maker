@@ -53,6 +53,29 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<a href="https://github.com/hmamoun/ai-story-maker/wiki" target="_blank">AI Story Maker Wiki</a>
 </p>
 
+<div class="aistma-generate-stories-section">
+	<h3><?php esc_html_e( 'Generate Stories Now', 'ai-story-maker' ); ?></h3>
+	<p>
+		<?php esc_html_e( 'Click the button below to manually generate AI stories using your configured prompts and settings.', 'ai-story-maker' ); ?>
+	</p>
+	
+	<?php
+	$is_generating   = get_transient( 'aistma_generating_lock' );
+	$button_disabled = $is_generating ? 'disabled' : '';
+	$button_text     = $is_generating
+		? __( 'Story generation in progress [recheck in 10 minutes]', 'ai-story-maker' )
+		: __( 'Generate AI Stories', 'ai-story-maker' );
+	?>
+
+	<input type="hidden" id="generate-story-nonce" value="<?php echo esc_attr( wp_create_nonce( 'generate_story_nonce' ) ); ?>">
+	<button
+		id="aistma-generate-stories-button"
+		class="button button-primary"
+		<?php echo esc_attr( $button_disabled ); ?>
+	>
+		<?php echo esc_html( $button_text ); ?>
+	</button>
+</div>
 
 		<?php
 		$next_event    = wp_next_scheduled( 'aistma_generate_story_event' );

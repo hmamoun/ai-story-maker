@@ -247,16 +247,91 @@ if (document.getElementById("aistma-generate-stories-button"))
             });
     });
 
-    document.querySelectorAll('#aistma-subscribe-or-api-keys-wrapper .nav-tab').forEach(tab => {
-        tab.addEventListener('click', function () {
-            const selectedTab = this.getAttribute('data-tab');
+document.querySelectorAll('#aistma-subscribe-or-api-keys-wrapper .nav-tab').forEach(tab => {
+    tab.addEventListener('click', function () {
+        const selectedTab = this.getAttribute('data-tab');
 
-            // Update active tab
-            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('nav-tab-active'));
-            this.classList.add('nav-tab-active');
-    
-            // Toggle content
-            document.querySelectorAll('.aistma-tab-content').forEach(c => c.style.display = 'none');
-            document.getElementById('tab-' + selectedTab).style.display = 'block';
-        });
+        // Update active tab
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('nav-tab-active'));
+        this.classList.add('nav-tab-active');
+
+        // Toggle content
+        document.querySelectorAll('.aistma-tab-content').forEach(c => c.style.display = 'none');
+        document.getElementById('tab-' + selectedTab).style.display = 'block';
     });
+});
+
+function aistma_get_subscription_status() {
+    // Get current domain with port if it exists
+    const currentDomain = window.location.hostname + (window.location.port ? ':' + window.location.port : '');
+
+    // Get master URL from WordPress constant
+    const masterUrl = window.aistmaSettings ? window.aistmaSettings.masterUrl : '';
+    
+    if (!masterUrl) {
+        console.error('AISTMA_MASTER_URL not defined');
+        return;
+    }
+    
+    // Make API call to master server to check subscription status
+    fetch(`${masterUrl}wp-json/exaig/v1/verify-subscription?domain=${encodeURIComponent(currentDomain)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.valid) {
+                console.log('Subscription found:', data);
+                
+                // Create or update subscription status display
+                let statusElement = document.getElementById('aistma-subscription-status');
+                if (!statusElement) {
+                    statusElement = document.createElement('div');
+                    statusElement.id = 'aistma-subscription-status';
+                    statusElement.className = 'notice notice-info';
+                    statusElement.style.margin = '10px 0';
+                    
+                    // Insert at the top of the packages container
+                    const packagesContainer = document.querySelector('.aistma-packages-container');
+                    if (packagesContainer) {
+                        packagesContainer.parentNode.insertBefore(statusElement, packagesContainer);
+                    }
+                }
+                
+                // Update the status display
+                statusElement.innerHTML = `
+                    <strong>Active Subscription Found!</strong><br>
+                    Domain: <strong>${data.domain}</strong><br>
+                    Remaining Credits: <strong>${data.credits_remaining}</strong><br>
+                    Package ID: <strong>${data.package_id}</strong><br>
+                    Created: <strong>${new Date(data.created_at).toLocaleDateString()}</strong>
+                `;
+
+                
+            } else {
+                console.log('No active subscription found');
+                
+                // Remove any existing status display
+                const statusElement = document.getElementById('aistma-subscription-status');
+                if (statusElement) {
+                    statusElement.remove();
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error checking subscription status:', error);
+            
+            // Show error message
+            let statusElement = document.getElementById('aistma-subscription-status');
+            if (!statusElement) {
+                statusElement = document.createElement('div');
+                statusElement.id = 'aistma-subscription-status';
+                statusElement.className = 'notice notice-error';
+                statusElement.style.margin = '10px 0';
+                
+                const packagesContainer = document.querySelector('.aistma-packages-container');
+                if (packagesContainer) {
+                    packagesContainer.parentNode.insertBefore(statusElement, packagesContainer);
+                }
+            }
+            
+            statusElement.innerHTML = '<strong>Error:</strong> Could not check subscription status. Please try again later.';
+        });
+}

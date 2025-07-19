@@ -39,7 +39,6 @@ register_deactivation_hook( __FILE__, array( 'exedotcom\\aistorymaker\\AISTMA_Pl
 /**
  * Handle AJAX request to generate stories.
  */
-;
 add_action(
 	'wp_ajax_generate_ai_stories',
 	function () {
@@ -51,12 +50,8 @@ add_action(
 		}
 		try {
 			$story_generator = new AISTMA_Story_Generator();
-			$results         = $story_generator->generate_ai_stories_with_lock( true );
-			if ( ! empty( $results['errors'] ) ) {
-				wp_send_json_error( $results['errors'] );
-			} else {
-				wp_send_json_success( $results['successes'] );
-			}
+			$story_generator->generate_ai_stories_with_lock( true );
+			wp_send_json_success( array( 'message' => 'Stories generated successfully.' ) );
 		} catch ( \Throwable $e ) {
 			wp_send_json_error( array( 'message' => 'Fatal error: ' . $e->getMessage() ) );
 		}
@@ -77,8 +72,7 @@ add_action( 'aistma_generate_story_event', __NAMESPACE__ . '\\aistma_handle_gene
  * Callback for WP-Cron to generate new stories.
  */
 function aistma_handle_generate_story_event() {
-	$generator = new AISTMA_Story_Generator();
-	$generator->generate_ai_stories_with_lock();
+	AISTMA_Story_Generator::generate_ai_stories_with_lock();
 }
 function aistma_get_master_url(string $path = ''): string {
     $base_url = defined('AISTMA_MASTER_URL') ? rtrim(AISTMA_MASTER_URL, '/') : 'https://exedotcom.ca';
@@ -89,6 +83,3 @@ function aistma_get_instructions_url(): string {
     $default_url = aistma_get_master_url('wp-json/exaig/v1/aistma-general-instructions');
 	return apply_filters('aistma_instructions_url', $default_url);
 }
-
-
-delete_transient( 'aistma_generating_lock' );

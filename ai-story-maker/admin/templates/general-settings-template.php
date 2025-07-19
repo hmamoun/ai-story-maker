@@ -14,20 +14,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 if ( ! isset( $active_tab ) ) {
 	$active_tab = 'subscribe';
 }
+
 ?>
 <div class="wrap">
 <?php
-
 	// Add a nonce for AJAX security
 	$ajax_nonce = wp_create_nonce( 'aistma_save_setting' );
-	$aistma_master_url = defined('AISTMA_MASTER_URL') ? AISTMA_MASTER_URL : 'https://www.exedotcom.ca/';
-	error_log( 'aistma_master_url' . $aistma_master_url );
+	$aistma_subscription_url = defined('AISTMA_SUBSCRIBTION_URL') ? AISTMA_SUBSCRIBTION_URL : 'https://www.exedotcom.ca/';
 
 	?>
 	<script type="text/javascript">
 		window.aistmaSettings = {
 			ajaxUrl: '<?php echo admin_url( 'admin-ajax.php' ); ?>',
-			nonce: '<?php echo esc_js( $ajax_nonce ); ?>'
+			nonce: '<?php echo esc_js( $ajax_nonce ); ?>',
+			masterUrl: '<?php echo $aistma_subscription_url; ?>'
 		};
 	</script>
 
@@ -41,88 +41,68 @@ if ( ! isset( $active_tab ) ) {
         <?php esc_html_e( 'Use your own API keys', 'ai-story-maker' ); ?>
     </a>
 
-
-
 </h2>
 <div class="aistma-subscribe-or-api-keys-content-wrapper">
 <div id="tab-subscribe" class="aistma-tab-content" style="display: <?php echo ( $active_tab === 'subscribe' ) ? 'block' : 'none'; ?>;">
     <h2><?php esc_html_e( 'Subscription Settings', 'ai-story-maker' ); ?></h2>
     <p>
-        <?php esc_html_e( 'AI Story Maker offers a subscription service to access premium features. Please enter your subscription key below.', 'ai-story-maker' ); ?>
+        <?php esc_html_e( 'Choose one of the available subscription tiers', 'ai-story-maker' ); ?>
     </p>
     <?php
-// Debug: Check local packages
-$local_packages = get_option( 'exaig_aistma_packages', [ 'packages' => [] ] );
-echo '<div class="notice notice-info"><p>Local packages count: ' . count($local_packages['packages'] ?? []) . '</p></div>';
-
-// Test local REST API endpoint
-$local_api_url = get_rest_url(null, 'exaig/v1/packages-summary');
-echo '<div class="notice notice-info"><p>Local API URL: ' . esc_html( $local_api_url ) . '</p></div>';
-
-$local_response = wp_remote_get( $local_api_url );
-if ( !is_wp_error( $local_response ) ) {
-    $local_code = wp_remote_retrieve_response_code( $local_response );
-    echo '<div class="notice notice-info"><p>Local API Response Code: ' . esc_html( $local_code ) . '</p></div>';
-}
-
-// make a call to 'exaig/v1', '/packages-summary' endpoint on $aistma_master_url and print the response
-$api_url = $aistma_master_url . 'exaig/v1/packages-summary';
-echo '<div class="notice notice-info"><p>Calling API URL: ' . esc_html( $api_url ) . '</p></div>';
-
-$response = wp_remote_get( $api_url );
-
-// Debug the response
-if ( is_wp_error( $response ) ) {
-    echo '<div class="notice notice-error"><p>API Error: ' . esc_html( $response->get_error_message() ) . '</p></div>';
-} else {
-    $response_code = wp_remote_retrieve_response_code( $response );
-    $response_body = wp_remote_retrieve_body( $response );
-    
-    echo '<div class="notice notice-info"><p>Response Code: ' . esc_html( $response_code ) . '</p></div>';
-    
-    if ( $response_code === 200 ) {
-        $packages = json_decode( $response_body, true );
-        if ( json_last_error() === JSON_ERROR_NONE ) {
-            echo '<pre>';
-            print_r( $packages );
-            echo '</pre>';
-        } else {
-            echo '<div class="notice notice-error"><p>JSON Decode Error: ' . esc_html( json_last_error_msg() ) . '</p></div>';
-            echo '<pre>Raw Response: ' . esc_html( $response_body ) . '</pre>';
-        }
-    } else {
-        echo '<div class="notice notice-error"><p>HTTP Error: ' . esc_html( $response_code ) . '</p></div>';
-        echo '<pre>Response Body: ' . esc_html( $response_body ) . '</pre>';
-    }
-}
 
 		// Parse the URL to get domain and port
-		$parsed_url = parse_url($aistma_master_url);
-		$domain = $parsed_url['host']; // 'www.exedotcom.ca'
+		$parsed_url = parse_url($aistma_subscription_url);
+		$domain = $parsed_url['host']; 
 		$port = isset($parsed_url['port']) ? $parsed_url['port'] : null; // null or port number
 		$scheme = $parsed_url['scheme']; // 'https'
 		
 		// Build the base URL
 		$slug = 'ai-story-maker-plans';
-		$base_url = $aistma_master_url . $slug . '/';
+		$base_url = $aistma_subscription_url . $slug . '/';
 		
 		// For the action URL, you might want to include the current site's domain
 		$current_site_url = get_site_url();
 		$current_parsed = parse_url($current_site_url);
 		$current_domain = $current_parsed['host'];
 		$current_port = isset($current_parsed['port']) ? $current_parsed['port'] : null;
-		
+		$packages = json_decode( $response_body, true );
+?>
+<script>
+	// Check subscription status when page loads
+	document.addEventListener('DOMContentLoaded', function() {
+		if (typeof aistma_get_subscription_status === 'function') {
+			aistma_get_subscription_status();
+		}
+	});
+</script>
+<div class="aistma-packages-container">
+    <?php foreach ( $packages as $package ) : 
 		$action_url = add_query_arg(
 			array(
 				'domain' => rawurlencode($current_domain),
 				'port' => $current_port ? rawurlencode($current_port) : '',
+				'package' => $package['name']
 			),
 			$base_url
 		);
-    ?>
-    <a href="<?php echo esc_url( $action_url ); ?>" target="_blank" class="button button-primary">
-        <?php esc_html_e( 'Buy Credits', 'ai-story-maker' ); ?>
-    </a>
+		
+		?>
+        <div class="aistma-package-box">
+            <div class="aistma-package-title"><?php echo esc_html( $package['name'] ); ?></div>
+            <div class="aistma-package-description"><?php echo nl2br( esc_html( $package['description'] ) ); ?></div>
+            <div class="aistma-package-meta">
+                <span><strong>Price:</strong> $<?php echo esc_html( $package['price'] ); ?></span>
+                <span><strong>Status:</strong> <?php echo esc_html( ucfirst( $package['status'] ) ); ?></span>
+                <span><strong>Monthly Credits:</strong> <?php echo esc_html( $package['credits'] ); ?></span>
+				<a href="<?php echo esc_url( $action_url ); ?>" target="_blank" class="button button-primary">
+					<?php esc_html_e( 'Buy Credits', 'ai-story-maker' ); ?>
+				</a>
+            </div>
+        </div>
+    <?php endforeach; ?>
+</div>
+
+
 </div>
 
 <div id="tab-api_keys" class="aistma-tab-content" style="display: <?php echo ( $active_tab === 'api_keys' ) ? 'block' : 'none'; ?>;">
