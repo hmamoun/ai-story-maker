@@ -515,6 +515,11 @@ class AISTMA_Story_Generator {
 			throw new \RuntimeException( $error );
 		}
 
+		// Set featured image from first image in content (Master API already processes images)
+		if ( $post_id ) {
+			$this->set_featured_image_from_content( $post_id, $content );
+		}
+
 		// Save post meta data
 		if ( $post_id ) {
 			$total_tokens = isset( $data['usage']['total_tokens'] ) ? (int) $data['usage']['total_tokens'] : 0;
@@ -550,7 +555,6 @@ class AISTMA_Story_Generator {
 		$request_id   = isset( $response_body['id'] ) ? sanitize_text_field( $response_body['id'] ) : uniqid( 'ai_news_' );
 		$title        = isset( $parsed_content['title'] ) ? sanitize_text_field( $parsed_content['title'] ) : __( 'Untitled Article', 'ai-story-maker' );
 		$content      = isset( $parsed_content['content'] ) ? wp_kses_post( $parsed_content['content'] ) : __( 'Content not available.', 'ai-story-maker' );
-		$content      = $this->replace_image_placeholders( $content );
 		$category_name = isset( $prompt['category'] ) ? sanitize_text_field( $prompt['category'] ) : __( 'News', 'ai-story-maker' );
 
 		// Get or create category ID
@@ -598,6 +602,17 @@ class AISTMA_Story_Generator {
 			$error = __( 'Error creating post: ', 'ai-story-maker' ) . $post_id->get_error_message();
 			$this->aistma_log_manager::log( 'error', $error );
 			throw new \RuntimeException( $error );
+		}
+
+		// Process image placeholders and set featured image
+		if ( $post_id ) {
+			$content = $this->replace_image_placeholders( $content, $post_id );
+			
+			// Update the post with processed content
+			wp_update_post( array(
+				'ID' => $post_id,
+				'post_content' => $content
+			) );
 		}
 
 		// Save post meta data
@@ -713,19 +728,42 @@ class AISTMA_Story_Generator {
 	 * Replace image placeholders in the article content with Unsplash images.
 	 *
 	 * @param  string $article_content The article content with image placeholders.
+	 * @param  int    $post_id         The post ID to set featured image for.
 	 * @return string The article content with image placeholders replaced by Unsplash images.
 	 */
-	public function replace_image_placeholders( $article_content ) {
+	public function replace_image_placeholders( $article_content, $post_id = 0 ) {
 		$self = $this; // Assign $this to $self.
-		return preg_replace_callback(
+		$first_image_url = null;
+		$image_count = 0;
+		
+		$processed_content = preg_replace_callback(
 			'/\{img_unsplash:([a-zA-Z0-9,_ ]+)\}/',
-			function ( $matches ) use ( $self ) {
+			function ( $matches ) use ( $self, &$first_image_url, &$image_count ) {
 				$keywords = explode( ',', $matches[1] );
-				$image    = $self->fetch_unsplash_image( $keywords );
-				return $image ? $image : '';
+				$image_data = $self->fetch_unsplash_image_data( $keywords );
+				
+				if ( $image_data ) {
+					$image_count++;
+					
+					// Store the first image URL for featured image
+					if ( $image_count === 1 && ! $first_image_url ) {
+						$first_image_url = $image_data['url'];
+					}
+					
+					return $image_data['html'];
+				}
+				
+				return '';
 			},
 			$article_content
 		);
+		
+		// Set the first image as featured image if we have a post ID
+		if ( $post_id && $first_image_url ) {
+			$this->set_featured_image_from_url( $post_id, $first_image_url );
+		}
+		
+		return $processed_content;
 	}
 
 	/**
@@ -735,7 +773,23 @@ class AISTMA_Story_Generator {
 	 * @return string The HTML markup for the image or an empty string if no image is found.
 	 */
 	public function fetch_unsplash_image( $keywords ) {
+		$image_data = $this->fetch_unsplash_image_data( $keywords );
+		return $image_data ? $image_data['html'] : '';
+	}
+
+	/**
+	 * Fetch image data from Unsplash based on the provided keywords.
+	 *
+	 * @param  array $keywords The keywords to search for.
+	 * @return array|false Array with 'url' and 'html' keys, or false if no image found.
+	 */
+	public function fetch_unsplash_image_data( $keywords ) {
 		$api_key = get_option( 'aistma_unsplash_api_key' );
+
+		if ( ! $api_key ) {
+			$this->aistma_log_manager::log( 'error', 'Unsplash API key not configured' );
+			return false;
+		}
 
 		$query    = implode( ',', $keywords );
 		$url      = 'https://api.unsplash.com/search/photos?query=' . rawurlencode( $query ) . '&client_id=' . $api_key . '&per_page=30&orientation=landscape&quantity=100';
@@ -743,13 +797,13 @@ class AISTMA_Story_Generator {
 
 		if ( is_wp_error( $response ) ) {
 			$this->aistma_log_manager::log( 'error', 'Error fetching Unsplash image: ' . $response->get_error_message() );
-			return '';
+			return false;
 		}
 		$body = wp_remote_retrieve_body( $response );
 		$data = json_decode( $body, true );
 		if ( empty( $data['results'] ) ) {
-			$this->aistma_log_manager::log( 'error', $data['errors'][0] );
-			return '';
+			$this->aistma_log_manager::log( 'error', 'No Unsplash images found for keywords: ' . $query );
+			return false;
 		}
 		$image_index = array_rand( $data['results'] );
 		if ( ! empty( $data['results'][ $image_index ]['urls']['small'] ) ) {
@@ -757,12 +811,96 @@ class AISTMA_Story_Generator {
 			$credits = $data['results'][ $image_index ]['user']['name'] . ' by unsplash.com';
 			// As required by unsplash.
          // phpcs:ignore PluginCheck.CodeAnalysis.ImageFunctions.NonEnqueuedImage
-			$ret = '<figure><img src="' . esc_url( $url ) . '" alt="' . esc_attr( implode( ' ', $keywords ) ) . '" /><figcaption>' . esc_html( $credits ) . '</figcaption></figure>';
+			$html = '<figure><img src="' . esc_url( $url ) . '" alt="' . esc_attr( implode( ' ', $keywords ) ) . '" /><figcaption>' . esc_html( $credits ) . '</figcaption></figure>';
 
-			return $ret;
+			return array(
+				'url' => $url,
+				'html' => $html,
+				'credits' => $credits
+			);
 		}
 
-		return ''; // Return empty if no images found.
+		return false; // Return false if no images found.
+	}
+
+	/**
+	 * Download and set featured image from URL.
+	 *
+	 * @param  int    $post_id The post ID to set featured image for.
+	 * @param  string $image_url The URL of the image to download.
+	 * @return int|false The attachment ID on success, false on failure.
+	 */
+	private function set_featured_image_from_url( $post_id, $image_url ) {
+		// Check if post exists
+		if ( ! get_post( $post_id ) ) {
+			$this->aistma_log_manager::log( 'error', 'Post not found for featured image: ' . $post_id );
+			return false;
+		}
+
+		// Download the image
+		$upload = media_sideload_image( $image_url, $post_id, '', 'id' );
+		
+		if ( is_wp_error( $upload ) ) {
+			$this->aistma_log_manager::log( 'error', 'Failed to download featured image: ' . $upload->get_error_message() );
+			return false;
+		}
+
+		// Set as featured image
+		$result = set_post_thumbnail( $post_id, $upload );
+		
+		if ( $result ) {
+			$this->aistma_log_manager::log( 'info', 'Featured image set successfully for post ' . $post_id );
+		} else {
+			$this->aistma_log_manager::log( 'error', 'Failed to set featured image for post ' . $post_id );
+		}
+
+		return $upload;
+	}
+
+	/**
+	 * Extract first image from content and set as featured image.
+	 *
+	 * @param  int    $post_id The post ID to set featured image for.
+	 * @param  string $content The post content to extract image from.
+	 * @return int|false The attachment ID on success, false on failure.
+	 */
+	private function set_featured_image_from_content( $post_id, $content ) {
+		// Check if post exists
+		if ( ! get_post( $post_id ) ) {
+			$this->aistma_log_manager::log( 'error', 'Post not found for featured image: ' . $post_id );
+			return false;
+		}
+
+		// Extract first image URL from content
+		$image_url = $this->extract_first_image_url( $content );
+		
+		if ( ! $image_url ) {
+			$this->aistma_log_manager::log( 'info', 'No image found in content for featured image on post ' . $post_id );
+			return false;
+		}
+
+		// Set featured image from URL
+		return $this->set_featured_image_from_url( $post_id, $image_url );
+	}
+
+	/**
+	 * Extract the first image URL from HTML content.
+	 *
+	 * @param  string $content The HTML content to search.
+	 * @return string|false The image URL or false if not found.
+	 */
+	private function extract_first_image_url( $content ) {
+		// Look for img tags
+		if ( preg_match( '/<img[^>]+src=["\']([^"\']+)["\'][^>]*>/i', $content, $matches ) ) {
+			return $matches[1];
+		}
+
+		// Look for figure tags with img inside
+		if ( preg_match( '/<figure[^>]*>.*?<img[^>]+src=["\']([^"\']+)["\'][^>]*>/is', $content, $matches ) ) {
+			return $matches[1];
+		}
+
+		return false;
 	}
 
 	/**

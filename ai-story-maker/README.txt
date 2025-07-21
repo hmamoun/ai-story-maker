@@ -98,7 +98,8 @@ General Instructions are combined automatically with each prompt during generati
 
 - Insert `{img_unsplash:keyword1,keyword2}` inside your prompt text.
 - The plugin queries Unsplash and fetches matching royalty-free images.
-- The first image becomes the **featured image**; others are placed inline.
+- **The first image automatically becomes the featured image** for the post.
+- Additional images are placed inline within the article content.
 
 == Displaying Generated Stories ==
 

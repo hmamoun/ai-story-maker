@@ -59,6 +59,36 @@ class AISTMA_Prompt_Editor {
 			$raw_prompts_input = isset( $_POST['prompts'] ) ? sanitize_textarea_field( wp_unslash( $_POST['prompts'] ) ) : '';
 			$updated_prompts   = $raw_prompts_input ? json_decode( $raw_prompts_input, true ) : array();
 
+			// Check for JSON decode errors
+			if ( json_last_error() !== JSON_ERROR_NONE ) {
+				echo '<div id="aistma-notice" class="notice notice-error"><p>❌ ' .
+				esc_html__( 'Error: Invalid JSON data received. Please try again.', 'ai-story-maker' ) .
+				' JSON Error: ' . json_last_error_msg() . '</p></div>';
+				
+				$this->aistma_log_manager->log( 'error', 'JSON decode error: ' . json_last_error_msg() . ' Raw data: ' . $raw_prompts_input );
+				return;
+			}
+
+			// Validate the JSON structure and ensure it has the required properties
+			if ( ! is_array( $updated_prompts ) ) {
+				$updated_prompts = array();
+			}
+
+			// Ensure the structure has both default_settings and prompts
+			if ( ! isset( $updated_prompts['default_settings'] ) ) {
+				$updated_prompts['default_settings'] = array();
+			}
+			if ( ! isset( $updated_prompts['prompts'] ) ) {
+				$updated_prompts['prompts'] = array();
+			}
+
+			// Preserve existing default_settings if not provided in the form
+			$existing_settings = get_option( 'aistma_prompts', '{}' );
+			$existing_data = json_decode( $existing_settings, true );
+			if ( is_array( $existing_data ) && isset( $existing_data['default_settings'] ) && empty( $updated_prompts['default_settings'] ) ) {
+				$updated_prompts['default_settings'] = $existing_data['default_settings'];
+			}
+
 			update_option( 'aistma_prompts', wp_json_encode( $updated_prompts ) );
 
 			echo '<div id="aistma-notice" class="notice notice-info"><p>✅ ' .
@@ -71,6 +101,18 @@ class AISTMA_Prompt_Editor {
 		// Prepare data for rendering.
 		$raw_json         = get_option( 'aistma_prompts', '{}' );
 		$settings         = json_decode( $raw_json, true );
+		
+		// Check for JSON decode errors in existing data
+		if ( json_last_error() !== JSON_ERROR_NONE ) {
+			$this->aistma_log_manager->log( 'error', 'JSON decode error loading existing prompts: ' . json_last_error_msg() . ' Raw data: ' . $raw_json );
+			$settings = array();
+		}
+		
+		// Validate the settings structure
+		if ( ! is_array( $settings ) ) {
+			$settings = array();
+		}
+		
 		$prompts          = isset( $settings['prompts'] ) ? $settings['prompts'] : array();
 		$default_settings = isset( $settings['default_settings'] ) ? $settings['default_settings'] : array();
 		$categories       = get_categories( array( 'hide_empty' => false ) );
@@ -87,6 +129,11 @@ class AISTMA_Prompt_Editor {
 				'active'       => false,
 				'auto_publish' => false,
 			);
+		}
+
+		// Ensure we preserve the default_settings structure
+		if ( ! isset( $settings['default_settings'] ) ) {
+			$settings['default_settings'] = array();
 		}
 
 		// Make variables available to the template.
