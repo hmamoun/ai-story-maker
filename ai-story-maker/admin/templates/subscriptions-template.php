@@ -76,17 +76,7 @@ if ( ! isset( $active_tab ) ) {
 	});
 </script>
 <div class="aistma-packages-container">
-    <?php foreach ( $packages as $package ) : 
-		$action_url = add_query_arg(
-			array(
-				'domain' => rawurlencode($current_domain),
-				'port' => $current_port ? rawurlencode($current_port) : '',
-				'package' => $package['name']
-			),
-			$base_url
-		);
-		
-		?>
+    <?php foreach ( $packages as $package ) : ?>
         <div class="aistma-package-box">
             <div class="aistma-package-title"><?php echo esc_html( $package['name'] ); ?></div>
             <div class="aistma-package-description"><?php echo nl2br( esc_html( $package['description'] ) ); ?></div>
@@ -94,12 +84,29 @@ if ( ! isset( $active_tab ) ) {
                 <span><strong>Price:</strong> $<?php echo esc_html( $package['price'] ); ?></span>
                 <span><strong>Status:</strong> <?php echo esc_html( ucfirst( $package['status'] ) ); ?></span>
                 <span><strong>Monthly Credits:</strong> <?php echo esc_html( $package['credits'] ); ?></span>
-				<a href="<?php echo esc_url( $action_url ); ?>" target="_blank" class="button button-primary">
-					<?php esc_html_e( 'Buy Credits', 'ai-story-maker' ); ?>
-				</a>
             </div>
         </div>
     <?php endforeach; ?>
+</div>
+
+<?php
+// Build the subscription URL with the same GET values
+$subscription_url = add_query_arg(
+    array(
+        'domain' => rawurlencode($current_domain),
+        'port' => $current_port ? rawurlencode($current_port) : '',
+    ),
+    $base_url
+);
+?>
+
+<div class="aistma-subscribe-button-container">
+    <a href="<?php echo esc_url( $subscription_url ); ?>" target="_blank" class="button button-primary button-hero">
+        <?php esc_html_e( 'Subscribe', 'ai-story-maker' ); ?>
+    </a>
+    <p class="aistma-subscribe-description">
+        <?php esc_html_e( 'Click the Subscribe button to view all available plans and choose the one that best fits your needs.', 'ai-story-maker' ); ?>
+    </p>
 </div>
 </div>
 
