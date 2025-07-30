@@ -60,6 +60,8 @@ class AISTMA_Admin {
 	// These constants are used internally as tab identifiers.
 	// Translation and HTML escaping are applied when outputting user-facing labels.
 	const TAB_WELCOME = 'welcome';
+	const TAB_SUBSCRIPTIONS = 'subscriptions';
+	const TAB_SETTINGS = 'settings';
 	const TAB_GENERAL = 'general';
 	const TAB_PROMPTS = 'prompts';
 	const TAB_LOG     = 'log';
@@ -133,6 +135,8 @@ class AISTMA_Admin {
 
 		$allowed_tabs = array(
 			self::TAB_WELCOME,
+			self::TAB_SUBSCRIPTIONS,
+			self::TAB_SETTINGS,
 			self::TAB_GENERAL,
 			self::TAB_PROMPTS,
 			self::TAB_LOG,
@@ -146,8 +150,11 @@ class AISTMA_Admin {
 			<a href="?page=aistma-settings&tab=<?php echo esc_attr( self::TAB_WELCOME ); ?>" class="nav-tab <?php echo ( self::TAB_WELCOME === $active_tab ) ? 'nav-tab-active' : ''; ?>">
 		<?php esc_html_e( 'AI Story Maker', 'ai-story-maker' ); ?>
 			</a>
-			<a href="?page=aistma-settings&tab=<?php echo esc_attr( self::TAB_GENERAL ); ?>" class="nav-tab <?php echo ( self::TAB_GENERAL === $active_tab ) ? 'nav-tab-active' : ''; ?>">
-		<?php esc_html_e( 'General Settings', 'ai-story-maker' ); ?>
+			<a href="?page=aistma-settings&tab=<?php echo esc_attr( self::TAB_SUBSCRIPTIONS ); ?>" class="nav-tab <?php echo ( self::TAB_SUBSCRIPTIONS === $active_tab ) ? 'nav-tab-active' : ''; ?>">
+		<?php esc_html_e( 'Subscriptions', 'ai-story-maker' ); ?>
+			</a>
+			<a href="?page=aistma-settings&tab=<?php echo esc_attr( self::TAB_SETTINGS ); ?>" class="nav-tab <?php echo ( self::TAB_SETTINGS === $active_tab ) ? 'nav-tab-active' : ''; ?>">
+		<?php esc_html_e( 'Settings', 'ai-story-maker' ); ?>
 			</a>
 			<a href="?page=aistma-settings&tab=<?php echo esc_attr( self::TAB_PROMPTS ); ?>" class="nav-tab <?php echo ( self::TAB_PROMPTS === $active_tab ) ? 'nav-tab-active' : ''; ?>">
 		<?php esc_html_e( 'Prompts', 'ai-story-maker' ); ?>
@@ -160,9 +167,12 @@ class AISTMA_Admin {
 
 		if ( self::TAB_WELCOME === $active_tab ) {
 			include_once AISTMA_PATH . 'admin/templates/welcome-tab-template.php';
-		} elseif ( self::TAB_GENERAL === $active_tab ) {
+		} elseif ( self::TAB_SUBSCRIPTIONS === $active_tab ) {
 			$this->aistma_settings_page = new AISTMA_Settings_Page();
-			$this->aistma_settings_page->aistma_setting_page_render();
+			$this->aistma_settings_page->aistma_subscriptions_page_render();
+		} elseif ( self::TAB_SETTINGS === $active_tab ) {
+			$this->aistma_settings_page = new AISTMA_Settings_Page();
+			$this->aistma_settings_page->aistma_settings_page_render();
 		} elseif ( self::TAB_PROMPTS === $active_tab ) {
 			$this->aistma_prompt_editor = new AISTMA_Prompt_Editor();
 			$this->aistma_prompt_editor->aistma_prompt_editor_render();

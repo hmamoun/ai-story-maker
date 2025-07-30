@@ -134,37 +134,65 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     // === AI Story Maker Instant Settings Save ===
-    const aistmaSettingsMessage = document.getElementById("aistma-settings-message");
-    const aistmaNonce = window.aistmaSettings ? window.aistmaSettings.nonce : '';
-    const aistmaAjaxUrl = window.aistmaSettings ? window.aistmaSettings.ajaxUrl : '';
+        const aistmaSettingsMessage = document.getElementById("aistma-settings-message");
+        const aistmaNonce = window.aistmaSettings ? window.aistmaSettings.nonce : '';
+        const aistmaAjaxUrl = window.aistmaSettings ? window.aistmaSettings.ajaxUrl : '';
 
     // Debounce utility
-    function aistma_debounce(func, wait) {
-        let timeout;
-        return function(...args) {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(this, args), wait);
-        };
-    }
+        function aistma_debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
 
+            // Enhanced message display with animations
     function aistma_show_message(msg, success = true) {
         if (!aistmaSettingsMessage) return;
+        
         aistmaSettingsMessage.textContent = msg;
-        aistmaSettingsMessage.style.color = success ? 'green' : 'red';
-        aistmaSettingsMessage.style.margin = '10px 0';
-        setTimeout(() => { aistmaSettingsMessage.textContent = ''; }, 3000);
+        aistmaSettingsMessage.style.color = success ? '#28a745' : '#dc3545';
+        aistmaSettingsMessage.style.backgroundColor = success ? '#d4edda' : '#f8d7da';
+        aistmaSettingsMessage.style.border = success ? '1px solid #c3e6cb' : '1px solid #f5c6cb';
+        aistmaSettingsMessage.style.margin = '15px 0';
+        aistmaSettingsMessage.style.opacity = '0';
+        aistmaSettingsMessage.style.transform = 'translateY(-10px)';
+        aistmaSettingsMessage.style.transition = 'all 0.3s ease';
+        
+        // Animate in
+        setTimeout(() => {
+            aistmaSettingsMessage.style.opacity = '1';
+            aistmaSettingsMessage.style.transform = 'translateY(0)';
+        }, 10);
+        
+        // Auto-hide after 4 seconds
+        setTimeout(() => {
+            aistmaSettingsMessage.style.opacity = '0';
+            aistmaSettingsMessage.style.transform = 'translateY(-10px)';
+            setTimeout(() => {
+                aistmaSettingsMessage.textContent = '';
+            }, 300);
+        }, 4000);
     }
 
+            // Enhanced settings saving with loading states
     function aistma_save_setting(setting, value) {
+        const control = document.querySelector(`[data-setting="${setting}"]`);
+        if (control) {
+            // Add loading state
+            control.style.opacity = '0.6';
+            control.disabled = true;
+        }
 
         const data = new FormData();
         data.append('action', 'aistma_save_setting');
         data.append('aistma_security', aistmaNonce);
         data.append('setting_name', setting);
         data.append('setting_value', value);
+        
         fetch(aistmaAjaxUrl, {
             method: 'POST',
-            //credentials: 'same-origin',
             body: data
         })
         .then(response => response.json())
@@ -175,77 +203,121 @@ document.addEventListener("DOMContentLoaded", function() {
                 aistma_show_message(data.data.message || 'Error saving setting.', false);
             }
         })
-        .catch(() => {
-            aistma_show_message('update error. Please try again.', false);
+        .catch((error) => {
+            console.error('Settings save error:', error);
+            aistma_show_message('Network error. Please try again.', false);
+        })
+        .finally(() => {
+            if (control) {
+                control.style.opacity = '1';
+                control.disabled = false;
+            }
         });
     }
 
     // Attach listeners to all controls with data-setting
-    document.querySelectorAll('[data-setting]').forEach(function(control) {
-        const setting = control.getAttribute('data-setting');
-        if (control.type === 'checkbox') {
-            control.addEventListener('change', function() {
-                aistma_save_setting(setting, control.checked ? 1 : 0);
-            });
-        } else if (control.tagName === 'SELECT') {
-            control.addEventListener('change', function() {
-                aistma_save_setting(setting, control.value);
-            });
-        } else if (control.type === 'text') {
-            control.addEventListener('input', aistma_debounce(function() {
-                aistma_save_setting(setting, control.value);
-            }, 600));
-        }
+        document.querySelectorAll('[data-setting]').forEach(function(control) {
+            const setting = control.getAttribute('data-setting');
+            if (control.type === 'checkbox') {
+                control.addEventListener('change', function() {
+                    aistma_save_setting(setting, control.checked ? 1 : 0);
+                });
+            } else if (control.tagName === 'SELECT') {
+                control.addEventListener('change', function() {
+                    aistma_save_setting(setting, control.value);
+                });
+            } else if (control.type === 'text') {
+                control.addEventListener('input', aistma_debounce(function() {
+                    aistma_save_setting(setting, control.value);
+            }, 800)); // Increased debounce time for better UX
+            }
+        });
     });
-});
 
-// check if the button exists before adding the event listener
-if (document.getElementById("aistma-generate-stories-button"))
-    document.getElementById("aistma-generate-stories-button").addEventListener("click", function(e) {
-        e.preventDefault();
-        $originalCaption = this.innerHTML;
-        this.disabled = true;
-        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating... do not leave or close the page';
+    // check if the button exists before adding the event listener
+    if (document.getElementById("aistma-generate-stories-button"))
+        document.getElementById("aistma-generate-stories-button").addEventListener("click", function(e) {
+            e.preventDefault();
+            $originalCaption = this.innerHTML;
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating... do not leave or close the page';
 
-        const nonce = document.getElementById("generate-story-nonce").value;
-        fetch(ajaxurl, {
-                method: "POST"
-                , headers: {
-                    "Content-Type": "application/x-www-form-urlencoded"
-                }
-                , body: new URLSearchParams({
-                    action: "generate_ai_stories"
-                    , nonce: nonce
+            const nonce = document.getElementById("generate-story-nonce").value;
+            fetch(ajaxurl, {
+                    method: "POST"
+                    , headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    }
+                    , body: new URLSearchParams({
+                        action: "generate_ai_stories"
+                        , nonce: nonce
+                    })
                 })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => {
-                        throw new Error(text)
-                    });
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    const messageDiv = document.getElementById("aistma-notice");
-                    messageDiv.className = "notice notice-success visible";
-                    messageDiv.innerText = "Story generated successfully!";
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            throw new Error(text)
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        const messageDiv = document.getElementById("aistma-notice");
+                        messageDiv.className = "notice notice-success visible";
+                        messageDiv.innerText = "Story generated successfully!";
 
-                } else {
-                    const messageDiv = document.getElementById("aistma-notice");
-                    messageDiv.className = "notice notice-error visible";
-                    messageDiv.innerText = "Error generating stories please check the logs!";
+                    } else {
+                        const messageDiv = document.getElementById("aistma-notice");
+                        messageDiv.className = "notice notice-error visible";
+                        messageDiv.innerText = "Error generating stories please check the logs!";
+                    }
+                })
+                .catch(error => {
+                    console.error("Fetch error:", error);
+                })
+                .finally(() => {
+                    this.disabled = false;
+                    this.innerHTML = $originalCaption;
+                });
+        });
+
+// Enhanced Tab Switching Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Enhanced tab switching for subscription tabs
+    const subscriptionTabs = document.querySelectorAll('#aistma-subscribe-or-api-keys-wrapper .nav-tab');
+    if (subscriptionTabs.length > 0) {
+        subscriptionTabs.forEach(tab => {
+            tab.addEventListener('click', function(e) {
+                e.preventDefault();
+                const selectedTab = this.getAttribute('data-tab');
+
+                // Update active tab with smooth transition
+                subscriptionTabs.forEach(t => {
+                    t.classList.remove('nav-tab-active');
+                    t.style.transition = 'all 0.3s ease';
+                });
+                this.classList.add('nav-tab-active');
+
+                // Toggle content with fade effect
+                const tabContents = document.querySelectorAll('.aistma-tab-content');
+                tabContents.forEach(content => {
+                    content.style.opacity = '0';
+                    content.style.transition = 'opacity 0.3s ease';
+                    content.style.display = 'none';
+                });
+                
+                const targetContent = document.getElementById('tab-' + selectedTab);
+                if (targetContent) {
+                    targetContent.style.display = 'block';
+                    setTimeout(() => {
+                        targetContent.style.opacity = '1';
+                    }, 50);
                 }
-            })
-            .catch(error => {
-                console.error("Fetch error:", error);
-            })
-            .finally(() => {
-                this.disabled = false;
-                this.innerHTML = $originalCaption;
             });
-    });
+        });
+    }
+});
 
 document.querySelectorAll('#aistma-subscribe-or-api-keys-wrapper .nav-tab').forEach(tab => {
     tab.addEventListener('click', function () {
@@ -276,7 +348,7 @@ function aistma_get_subscription_status() {
     // Make API call to master server to check subscription status
     fetch(`${masterUrl}wp-json/exaig/v1/verify-subscription?domain=${encodeURIComponent(currentDomain)}`)
         .then(response => response.json())
-        .then(data => {
+                .then(data => {
             if (data.valid) {
                 console.log('Subscription found:', data);
                 
@@ -304,8 +376,8 @@ function aistma_get_subscription_status() {
                     Created: <strong>${new Date(data.created_at).toLocaleDateString()}</strong>
                 `;
 
-                
-            } else {
+
+                    } else {
                 console.log('No active subscription found');
                 
                 // Remove any existing status display
@@ -313,9 +385,9 @@ function aistma_get_subscription_status() {
                 if (statusElement) {
                     statusElement.remove();
                 }
-            }
-        })
-        .catch(error => {
+                    }
+                })
+                .catch(error => {
             console.error('Error checking subscription status:', error);
             
             // Show error message

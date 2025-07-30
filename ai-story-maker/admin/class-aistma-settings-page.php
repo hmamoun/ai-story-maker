@@ -141,13 +141,22 @@ class AISTMA_Settings_Page {
 	}
 	
 	/**
+	 * Renders the plugin subscriptions page.
+	 *
+	 * @return void
+	 */
+	public function aistma_subscriptions_page_render() {
+		$response_body = $this->aistma_get_available_packages();
+		include AISTMA_PATH . 'admin/templates/subscriptions-template.php';
+	}
+
+	/**
 	 * Renders the plugin settings page.
 	 *
 	 * @return void
 	 */
-	public function aistma_setting_page_render() {
-		$response_body = $this->aistma_get_available_packages();
-		include AISTMA_PATH . 'admin/templates/general-settings-template.php';
+	public function aistma_settings_page_render() {
+		include AISTMA_PATH . 'admin/templates/settings-template.php';
 	}
 
 
