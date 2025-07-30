@@ -493,6 +493,16 @@ tr:hover .row-actions {
 	.aistma-generate-stories-section {
 		padding: 20px;
 	}
+	
+	.aistma-subscribe-button-container {
+		padding: 20px;
+		margin: 20px 0;
+	}
+	
+	.aistma-subscribe-button-container .button-hero {
+		padding: 12px 30px;
+		font-size: 16px;
+	}
 }
 
 @media (max-width: 480px) {
@@ -515,6 +525,19 @@ tr:hover .row-actions {
 	.nav-tab {
 		font-size: 12px;
 		padding: 8px 12px;
+	}
+	
+	.aistma-subscribe-button-container {
+		padding: 15px;
+	}
+	
+	.aistma-subscribe-button-container .button-hero {
+		padding: 10px 25px;
+		font-size: 14px;
+	}
+	
+	.aistma-subscribe-description {
+		font-size: 13px;
 	}
 }
 
