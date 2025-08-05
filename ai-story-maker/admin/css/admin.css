@@ -231,13 +231,13 @@
 	left: 0;
 	right: 0;
 	height: 4px;
-	background: linear-gradient(90deg, #28a745, #20c997);
+	background: linear-gradient(90deg, #ef06d4, #20c997);
 }
 
 .aistma-package-box:hover {
-	box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-	transform: translateY(-5px);
-	border-color: #28a745;
+	/* box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1); */
+	/* transform: translateY(-5px); */
+	/* border-color: #28a745; */
 }
 
 .aistma-package-title {
@@ -253,7 +253,7 @@
 	color: #555;
 	white-space: pre-wrap;
 	margin-bottom: 20px;
-	line-height: 1.6;
+	line-height: 1.2;
 }
 
 .aistma-package-meta {

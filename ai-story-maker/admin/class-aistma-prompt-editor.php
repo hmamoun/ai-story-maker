@@ -63,7 +63,7 @@ class AISTMA_Prompt_Editor {
 			if ( json_last_error() !== JSON_ERROR_NONE ) {
 				echo '<div id="aistma-notice" class="notice notice-error"><p>❌ ' .
 				esc_html__( 'Error: Invalid JSON data received. Please try again.', 'ai-story-maker' ) .
-				' JSON Error: ' . json_last_error_msg() . '</p></div>';
+				' JSON Error: ' . esc_html( json_last_error_msg() ) . '</p></div>';
 				
 				$this->aistma_log_manager->log( 'error', 'JSON decode error: ' . json_last_error_msg() . ' Raw data: ' . $raw_prompts_input );
 				return;

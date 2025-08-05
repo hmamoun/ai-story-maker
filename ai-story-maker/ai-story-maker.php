@@ -58,10 +58,11 @@ add_action(
 	}
 );
 
-if ( defined( 'DOING_AJAX' ) && DOING_AJAX && isset( $_POST['action'] ) && $_POST['action'] === 'aistma_save_setting' ) {
+// Register AJAX actions
+add_action( 'wp_ajax_aistma_save_setting', function() {
     $settings_page = new \exedotcom\aistorymaker\AISTMA_Settings_Page();
-    add_action( 'wp_ajax_aistma_save_setting', [ $settings_page, 'aistma_ajax_save_setting' ] );
-}
+    $settings_page->aistma_ajax_save_setting();
+});
 
 /**
  * Hook for scheduled story generation.

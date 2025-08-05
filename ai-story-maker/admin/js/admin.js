@@ -346,6 +346,7 @@ function aistma_get_subscription_status() {
     }
     
     // Make API call to master server to check subscription status
+
     fetch(`${masterUrl}wp-json/exaig/v1/verify-subscription?domain=${encodeURIComponent(currentDomain)}`)
         .then(response => response.json())
                 .then(data => {

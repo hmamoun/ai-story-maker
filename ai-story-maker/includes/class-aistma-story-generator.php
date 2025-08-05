@@ -111,7 +111,7 @@ class AISTMA_Story_Generator {
 		} catch ( \RuntimeException $e ) {
 			$error = $e->getMessage();
 			$instance->aistma_log_manager::log( 'error', $error );
-			throw new \RuntimeException( $error );
+			throw new \RuntimeException( esc_html( $error ) );
 		}
 
 		set_transient( $lock_key, true, 10 * MINUTE_IN_SECONDS );
@@ -152,7 +152,7 @@ class AISTMA_Story_Generator {
 		$aistma_master_instructions = $this->aistma_get_master_instructions( $recent_posts );	
 
 		// Assign final system content.
-		$merged_settings['system_content'] = $aistma_master_instructions ;
+		$merged_settings['system_content'] .= $aistma_master_instructions ;
 
 		$the_prompt = $prompt['text'];
 
@@ -191,11 +191,11 @@ class AISTMA_Story_Generator {
 		// Only check OpenAI API key if no valid subscription 
 		if ( ! $has_valid_subscription ) {
 			$this->api_key = get_option( 'aistma_openai_api_key' );
-			if ( ! $this->api_key ) {
-				$error = __( 'OpenAI API Key is missing. Required for direct OpenAI calls when no subscription is active.', 'ai-story-maker' );
-				$this->aistma_log_manager::log( 'error', $error );
-				$results['errors'][] = $error;
-				throw new \RuntimeException( $error );
+					if ( ! $this->api_key ) {
+			$error = __( 'OpenAI API Key is missing. Required for direct OpenAI calls when no subscription is active.', 'ai-story-maker' );
+			$this->aistma_log_manager::log( 'error', $error );
+			$results['errors'][] = $error;
+			throw new \RuntimeException( esc_html( $error ) );
 			}
 		} else {
 			// For subscription users, we'll use master API, so OpenAI key is not required
@@ -211,12 +211,9 @@ class AISTMA_Story_Generator {
 			$error = __( 'Invalid JSON format or no prompts found.', 'ai-story-maker' );
 			$this->aistma_log_manager::log( 'error', $error );
 			$results['errors'][] = $error;
-			throw new \RuntimeException( $error );
+			throw new \RuntimeException( esc_html( $error ) );
 		}
-
 		$this->default_settings = isset( $settings['default_settings'] ) ? $settings['default_settings'] : array();
-
-	
 		foreach ( $settings['prompts'] as &$prompt ) {
 			if ( isset( $prompt['active'] ) && 0 === $prompt['active'] ) {
 				continue;
@@ -227,7 +224,7 @@ class AISTMA_Story_Generator {
 			if ( ! isset( $prompt['prompt_id'] ) || empty( $prompt['prompt_id'] ) ) {
 				continue;
 			}
-					$recent_posts = $this->aistma_get_recent_posts( 20, $prompt['category'] );
+				$recent_posts = $this->aistma_get_recent_posts( 20, $prompt['category'] );
 
 		// Log recent posts for debugging
 		$this->aistma_log_manager::log( 'info', sprintf(
@@ -375,7 +372,7 @@ class AISTMA_Story_Generator {
 		if ( ! $api_key ) {
 			$error = __( 'OpenAI API Key is missing. Required for direct OpenAI calls without subscription', 'ai-story-maker' );
 			$this->aistma_log_manager::log( 'error', $error );
-			throw new \RuntimeException( $error );
+			throw new \RuntimeException( esc_html( $error ) );
 		}
 
 		$response = wp_remote_post(
@@ -391,7 +388,7 @@ class AISTMA_Story_Generator {
 						'messages'        => array(
 							array(
 								'role'    => 'system',
-								'content' => $merged_settings['system_content'] ?? '',
+								'content' => $merged_settings['system_content'] ?? '' ,
 							),
 							array(
 								'role'    => 'user',
@@ -457,8 +454,6 @@ class AISTMA_Story_Generator {
 	 * @return void
 	 */
 	private function process_master_api_response( $data, $prompt_id, $prompt, $merged_settings ) {
-		error_log('process_master_api_response');
-		error_log(print_r($data, true));
 		// Check for the new response format first
 		if ( isset( $data['content']['title'], $data['content']['content'] ) ) {
 			// New format: direct title and content
@@ -470,7 +465,7 @@ class AISTMA_Story_Generator {
 		} else {
 			$error = __( 'Invalid content structure from Master API', 'ai-story-maker' );
 			$this->aistma_log_manager::log( 'error', $error );
-			throw new \RuntimeException( $error );
+			throw new \RuntimeException( esc_html( $error ) );
 		}
 
 		// Note: Image placeholders are already processed by the Master API, so we don't need to process them again
@@ -517,7 +512,7 @@ class AISTMA_Story_Generator {
 		if ( is_wp_error( $post_id ) ) {
 			$error = __( 'Error creating post: ', 'ai-story-maker' ) . $post_id->get_error_message();
 			$this->aistma_log_manager::log( 'error', $error );
-			throw new \RuntimeException( $error );
+			throw new \RuntimeException( esc_html( $error ) );
 		}
 
 		// Set featured image from first image in content (Master API already processes images)
@@ -637,7 +632,7 @@ class AISTMA_Story_Generator {
 		if ( is_wp_error( $post_id ) ) {
 			$error = __( 'Error creating post: ', 'ai-story-maker' ) . $post_id->get_error_message();
 			$this->aistma_log_manager::log( 'error', $error );
-			throw new \RuntimeException( $error );
+			throw new \RuntimeException( esc_html( $error ) );
 		}
 
 		// Process image placeholders and set featured image
@@ -988,7 +983,7 @@ class AISTMA_Story_Generator {
 	public function aistma_get_subscription_status( $domain = '' ) {
 		// Get current domain with port if it exists
 		if ( empty( $domain ) ) {
-			$domain = $_SERVER['HTTP_HOST'] ?? '';
+			$domain = sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? '' ) );
 
 		}
 
@@ -1160,7 +1155,7 @@ class AISTMA_Story_Generator {
 	 */
 	private function format_date_for_display( $gmt_timestamp ) {
 		// Convert GMT timestamp to WordPress timezone
-		$wp_timestamp = get_date_from_gmt( date( 'Y-m-d H:i:s', $gmt_timestamp ), 'Y-m-d H:i:s' );
+		$wp_timestamp = get_date_from_gmt( gmdate( 'Y-m-d H:i:s', $gmt_timestamp ), 'Y-m-d H:i:s' );
 		return $wp_timestamp;
 	}
 

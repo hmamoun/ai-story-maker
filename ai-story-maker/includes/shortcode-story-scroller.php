@@ -48,6 +48,41 @@ function aistma_scrolling_bar() {
 add_shortcode( 'aistma_scroller', 'aistma_scrolling_bar' );
 
 /**
+ * Shortcode for AdSense integration.
+ *
+ * @param array $atts Shortcode attributes.
+ * @return string AdSense HTML code.
+ */
+function aistma_adsense_shortcode( $atts ) {
+	// Default AdSense settings (hardcoded as requested)
+	$adsense_client = 'ca-pub-6861474761481747';
+	$adsense_slot   = '8915797913';
+	
+	// Parse shortcode attributes
+	$atts = shortcode_atts( array(
+		'client' => $adsense_client,
+		'slot'   => $adsense_slot,
+		'format' => 'in-article', // Default format
+		'style'  => 'display:block; text-align:center;', // Default style
+	), $atts );
+	
+	// Build AdSense code
+	$adsense_code = sprintf(
+		'<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=%s" crossorigin="anonymous"></script>
+		<ins class="adsbygoogle" style="%s" data-ad-layout="%s" data-ad-format="fluid" data-ad-client="%s" data-ad-slot="%s"></ins>
+		<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>',
+		esc_attr( $atts['client'] ),
+		esc_attr( $atts['style'] ),
+		esc_attr( $atts['format'] ),
+		esc_attr( $atts['client'] ),
+		esc_attr( $atts['slot'] )
+	);
+	
+	return $adsense_code;
+}
+add_shortcode( 'aistma_adsense', 'aistma_adsense_shortcode' );
+
+/**
  * Enqueue style for story scroller.
  *
  * @return void

@@ -15,6 +15,10 @@ if ( ! isset( $active_tab ) ) {
 	$active_tab = 'subscribe';
 }
 
+// Get current user email
+$current_user = wp_get_current_user();
+$current_user_email = $current_user->user_email;
+
 ?>
 <div class="wrap">
 <?php
@@ -25,9 +29,9 @@ if ( ! isset( $active_tab ) ) {
 	?>
 	<script type="text/javascript">
 		window.aistmaSettings = {
-			ajaxUrl: '<?php echo admin_url( 'admin-ajax.php' ); ?>',
+			ajaxUrl: '<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>',
 			nonce: '<?php echo esc_js( $ajax_nonce ); ?>',
-			masterUrl: '<?php echo $aistma_subscription_url; ?>'
+			masterUrl: '<?php echo esc_url( $aistma_subscription_url ); ?>'
 		};
 	</script>
 
@@ -51,7 +55,7 @@ if ( ! isset( $active_tab ) ) {
     <?php
 
 		// Parse the URL to get domain and port
-		$parsed_url = parse_url($aistma_subscription_url);
+		$parsed_url = wp_parse_url($aistma_subscription_url);
 		$domain = $parsed_url['host']; 
 		$port = isset($parsed_url['port']) ? $parsed_url['port'] : null; // null or port number
 		$scheme = $parsed_url['scheme']; // 'https'
@@ -62,7 +66,7 @@ if ( ! isset( $active_tab ) ) {
 		
 		// For the action URL, you might want to include the current site's domain
 		$current_site_url = get_site_url();
-		$current_parsed = parse_url($current_site_url);
+		$current_parsed = wp_parse_url($current_site_url);
 		$current_domain = $current_parsed['host'];
 		$current_port = isset($current_parsed['port']) ? $current_parsed['port'] : null;
 		$packages = json_decode( $response_body, true );
@@ -79,11 +83,10 @@ if ( ! isset( $active_tab ) ) {
     <?php foreach ( $packages as $package ) : ?>
         <div class="aistma-package-box">
             <div class="aistma-package-title"><?php echo esc_html( $package['name'] ); ?></div>
-            <div class="aistma-package-description"><?php echo nl2br( esc_html( $package['description'] ) ); ?></div>
+            
             <div class="aistma-package-meta">
                 <span><strong>Price:</strong> $<?php echo esc_html( $package['price'] ); ?></span>
-                <span><strong>Status:</strong> <?php echo esc_html( ucfirst( $package['status'] ) ); ?></span>
-                <span><strong>Monthly Credits:</strong> <?php echo esc_html( $package['credits'] ); ?></span>
+                <span><strong>Monthly Generated Stories:</strong> <?php echo esc_html( $package['credits'] ); ?></span>
             </div>
         </div>
     <?php endforeach; ?>
@@ -95,6 +98,7 @@ $subscription_url = add_query_arg(
     array(
         'domain' => rawurlencode($current_domain),
         'port' => $current_port ? rawurlencode($current_port) : '',
+		'email' => rawurlencode($current_user_email),
     ),
     $base_url
 );

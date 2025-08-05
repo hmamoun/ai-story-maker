@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	?>
 	<script type="text/javascript">
 		window.aistmaSettings = {
-			ajaxUrl: '<?php echo admin_url( 'admin-ajax.php' ); ?>',
+			ajaxUrl: '<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>',
 			nonce: '<?php echo esc_js( $ajax_nonce ); ?>'
 		};
 	</script>

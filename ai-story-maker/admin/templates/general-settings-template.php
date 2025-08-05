@@ -25,9 +25,9 @@ if ( ! isset( $active_tab ) ) {
 	?>
 	<script type="text/javascript">
 		window.aistmaSettings = {
-			ajaxUrl: '<?php echo admin_url( 'admin-ajax.php' ); ?>',
+			ajaxUrl: '<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>',
 			nonce: '<?php echo esc_js( $ajax_nonce ); ?>',
-			masterUrl: '<?php echo $aistma_subscription_url; ?>'
+			masterUrl: '<?php echo esc_url( $aistma_subscription_url ); ?>'
 		};
 	</script>
 
@@ -51,7 +51,7 @@ if ( ! isset( $active_tab ) ) {
     <?php
 
 		// Parse the URL to get domain and port
-		$parsed_url = parse_url($aistma_subscription_url);
+		$parsed_url = wp_parse_url($aistma_subscription_url);
 		$domain = $parsed_url['host']; 
 		$port = isset($parsed_url['port']) ? $parsed_url['port'] : null; // null or port number
 		$scheme = $parsed_url['scheme']; // 'https'
@@ -62,7 +62,7 @@ if ( ! isset( $active_tab ) ) {
 		
 		// For the action URL, you might want to include the current site's domain
 		$current_site_url = get_site_url();
-		$current_parsed = parse_url($current_site_url);
+		$current_parsed = wp_parse_url($current_site_url);
 		$current_domain = $current_parsed['host'];
 		$current_port = isset($current_parsed['port']) ? $current_parsed['port'] : null;
 		$packages = json_decode( $response_body, true );

@@ -129,7 +129,7 @@ class AISTMA_Plugin {
 	 */
 	private static function format_date_for_display( $gmt_timestamp ) {
 		// Convert GMT timestamp to WordPress timezone
-		$wp_timestamp = get_date_from_gmt( date( 'Y-m-d H:i:s', $gmt_timestamp ), 'Y-m-d H:i:s' );
+		$wp_timestamp = get_date_from_gmt( gmdate( 'Y-m-d H:i:s', $gmt_timestamp ), 'Y-m-d H:i:s' );
 		return $wp_timestamp;
 	}
 }

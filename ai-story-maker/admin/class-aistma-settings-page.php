@@ -54,7 +54,7 @@ class AISTMA_Settings_Page {
 		}
 
 		$setting_name  = isset( $_POST['setting_name'] ) ? sanitize_text_field( wp_unslash( $_POST['setting_name'] ) ) : '';
-		$setting_value = isset( $_POST['setting_value'] ) ? wp_unslash( $_POST['setting_value'] ) : null;
+		$setting_value = isset( $_POST['setting_value'] ) ? sanitize_text_field( wp_unslash( $_POST['setting_value'] ) ) : null;
 
 		if ( empty( $setting_name ) ) {
 			wp_send_json_error( [ 'message' => __( 'No setting name provided.', 'ai-story-maker' ) ] );
