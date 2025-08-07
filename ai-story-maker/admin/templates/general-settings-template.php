@@ -42,6 +42,7 @@ if ( ! isset( $active_tab ) ) {
     </a>
 
 </h2>
+
 <div class="aistma-subscribe-or-api-keys-content-wrapper">
 <div id="tab-subscribe" class="aistma-tab-content" style="display: <?php echo ( $active_tab === 'subscribe' ) ? 'block' : 'none'; ?>;">
     <h2><?php esc_html_e( 'Subscription Settings', 'ai-story-maker' ); ?></h2>

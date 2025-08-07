@@ -24,9 +24,10 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
-
 define( 'AISTMA_PATH', plugin_dir_path( __FILE__ ) );
 define( 'AISTMA_URL', plugin_dir_url( __FILE__ ) );
+
+
 
 use exedotcom\aistorymaker\AISTMA_Story_Generator;
 

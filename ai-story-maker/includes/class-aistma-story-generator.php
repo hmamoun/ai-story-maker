@@ -147,10 +147,22 @@ class AISTMA_Story_Generator {
 	 * @param  string $api_key               OpenAI API key.
 	 * @return void
 	 */
-	public function generate_ai_story( $prompt_id, $prompt, $default_settings, $recent_posts,  $api_key ) {
+	public function generate_ai_story( $prompt_id, $prompt, $default_settings,   $api_key,$aistma_master_instructions  ) {
 		$merged_settings        = array_merge( $default_settings, $prompt );
-		$aistma_master_instructions = $this->aistma_get_master_instructions( $recent_posts );	
+	
+		$recent_posts = $this->aistma_get_recent_posts( 20, $prompt['category'] );
 
+		// Append recent posts titles if provided and not empty.
+		if ( ! empty( $recent_posts ) && is_array( $recent_posts ) ) {
+			$aistma_master_instructions .= "\n" . __( 'Exclude references to the following recent posts:', 'ai-story-maker' );
+			foreach ( $recent_posts as $post ) {
+				if ( isset( $post['title'] ) && ! empty( $post['title'] ) ) {
+					$aistma_master_instructions .= "\n" . __( 'Title: ', 'ai-story-maker' ) . $post['title'];
+				}
+			}
+		}
+
+		
 		// Assign final system content.
 		$merged_settings['system_content'] .= $aistma_master_instructions ;
 
@@ -163,13 +175,13 @@ class AISTMA_Story_Generator {
 		if ( $subscription_info['valid'] ) {
 			// Use Master Server API
 			
-			$this->generate_story_via_master_api( $prompt_id, $prompt, $merged_settings, $recent_posts, $the_prompt, $subscription_info );
+			$this->generate_story_via_master_api( $prompt_id, $prompt, $merged_settings,  $the_prompt, $subscription_info );
 		} else {
 			// Fallback to direct OpenAI API call
 			if ( $prompt['photos'] > 0 ) {
 				$the_prompt .= "\n" . __( 'Include at least ', 'ai-story-maker' ) . $prompt['photos'] . __( ' placeholders for images in the article. insert a placeholder in the following format {img_unsplash:keyword1,keyword2,keyword3} using the most relevant keywords for fetching related images from Unsplash', 'ai-story-maker' );
 			}
-			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $recent_posts,  $api_key, $the_prompt );
+			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings,  $api_key, $the_prompt );
 		}
 	}
 
@@ -208,12 +220,15 @@ class AISTMA_Story_Generator {
 
 		// Check if the settings are valid.
 		if ( JSON_ERROR_NONE !== json_last_error() || empty( $settings['prompts'] ) ) {
-			$error = __( 'Invalid JSON format or no prompts found.', 'ai-story-maker' );
+			$error = __( 'General instructions or prompts are not set properly', 'ai-story-maker' );
 			$this->aistma_log_manager::log( 'error', $error );
 			$results['errors'][] = $error;
 			throw new \RuntimeException( esc_html( $error ) );
 		}
 		$this->default_settings = isset( $settings['default_settings'] ) ? $settings['default_settings'] : array();
+
+		$aistma_master_instructions = $this->aistma_get_master_instructions( );	
+
 		foreach ( $settings['prompts'] as &$prompt ) {
 			if ( isset( $prompt['active'] ) && 0 === $prompt['active'] ) {
 				continue;
@@ -224,19 +239,13 @@ class AISTMA_Story_Generator {
 			if ( ! isset( $prompt['prompt_id'] ) || empty( $prompt['prompt_id'] ) ) {
 				continue;
 			}
-				$recent_posts = $this->aistma_get_recent_posts( 20, $prompt['category'] );
-
-		// Log recent posts for debugging
-		$this->aistma_log_manager::log( 'info', sprintf(
-			'Recent posts for category "%s": %s',
-			$prompt['category'],
-			json_encode( array_column( $recent_posts, 'title' ) )
-		) );
+			
+	
 
 		// Generate the AI story immediately if needed.
 		try {
 				// Generate the story
-				$this->generate_ai_story( $prompt['prompt_id'], $prompt, $this->default_settings, $recent_posts,  $this->api_key );
+				$this->generate_ai_story( $prompt['prompt_id'], $prompt, $this->default_settings,  $this->api_key ,$aistma_master_instructions );
 				
 				$results['successes'][] = __( 'AI story generated successfully.', 'ai-story-maker' );
 			} catch ( \Exception $e ) {
@@ -276,13 +285,13 @@ class AISTMA_Story_Generator {
 	 * @param  array  $subscription_info Subscription information.
 	 * @return void
 	 */
-	private function generate_story_via_master_api( $prompt_id, $prompt, $merged_settings, $recent_posts, $the_prompt, $subscription_info ) {
+	private function generate_story_via_master_api( $prompt_id, $prompt, $merged_settings, $the_prompt, $subscription_info ) {
 		$master_url = defined( 'AISTMA_MASTER_URL' ) ? AISTMA_MASTER_URL : '';
 		
 		if ( empty( $master_url ) ) {
 			$this->aistma_log_manager::log( 'error', message: 'AISTMA_MASTER_URL not defined, falling back to direct OpenAI call' );
 			// Fallback to direct OpenAI call
-			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $recent_posts, $this->api_key, $the_prompt );
+			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $this->api_key, $the_prompt );
 			return;
 		}
 
@@ -317,7 +326,7 @@ class AISTMA_Story_Generator {
 			$error_message = $response->get_error_message();
 			$this->aistma_log_manager::log( 'error', 'Master API error: ' . $error_message . ', falling back to direct OpenAI call' );
 			// Fallback to direct OpenAI call
-			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $recent_posts, $this->api_key, $the_prompt );
+			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $this->api_key, $the_prompt );
 			return;
 		}
 
@@ -328,14 +337,14 @@ class AISTMA_Story_Generator {
 		if ( $response_code !== 200 ) {
 			$this->aistma_log_manager::log( 'error', 'Master API returned HTTP ' . $response_code . ', falling back to direct OpenAI call' );
 			// Fallback to direct OpenAI call
-			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $recent_posts, $this->api_key, $the_prompt );
+			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $this->api_key, $the_prompt );
 			return;
 		}
 
 		if ( json_last_error() !== JSON_ERROR_NONE ) {
 			$this->aistma_log_manager::log( 'error', 'Invalid JSON response from Master API, falling back to direct OpenAI call' );
 			// Fallback to direct OpenAI call
-			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $recent_posts, $this->api_key, $the_prompt );
+			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings,  $this->api_key, $the_prompt );
 			return;
 		}
 
@@ -343,7 +352,7 @@ class AISTMA_Story_Generator {
 			$error_msg = isset( $data['error'] ) ? $data['error'] : 'Unknown error from Master API';
 			$this->aistma_log_manager::log( 'error', 'Master API error: ' . $error_msg . ', falling back to direct OpenAI call' );
 			// Fallback to direct OpenAI call
-			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $recent_posts, $this->api_key, $the_prompt );
+			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings,  $this->api_key, $the_prompt );
 			return;
 		}
 
@@ -363,7 +372,7 @@ class AISTMA_Story_Generator {
 	 * @param  string $the_prompt            The prompt text.
 	 * @return void
 	 */
-	private function generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $recent_posts,  $api_key, $the_prompt ) {
+	private function generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $api_key, $the_prompt ) {
 		// Check if the OpenAI API key is set and is valid.
 		if ( empty( $api_key ) ) {
 			$api_key = get_option( 'aistma_openai_api_key' );
@@ -664,25 +673,40 @@ class AISTMA_Story_Generator {
 	 * @param array $recent_posts Array of recent posts to exclude from generation.
 	 * @return string Master instructions for AI story generation.
 	 */
-	private function aistma_get_master_instructions( $recent_posts = array() )	{
+	private function aistma_get_master_instructions(  )	{
 		// Fetch dynamic system content from Exedotcom API Gateway.
 		$aistma_master_instructions = get_transient( 'aistma_exaig_cached_master_instructions' );
-		if ( false === $aistma_master_instructions ) {
+		if ( false === $aistma_master_instructions  || true) {
 			// No cache, fetch from the API.
 			try {
-				$api_response = wp_remote_get(
+				// Get plugin version
+				$plugin_data = get_plugin_data( AISTMA_PATH . 'ai-story-maker.php' );
+				$plugin_version = $plugin_data['Version'] ?? 'unknown';
+				
+				// Get subscription information
+				$subscription_info = $this->get_subscription_info();
+				$subscription_plan = $subscription_info['package_name'] ?? 'Using own API key';
+				
+				$api_response = wp_remote_post(
 					aistma_get_instructions_url(),
 					array(
 						'timeout' => 10,
 						'headers' => array(
 							'X-Caller-Url' => home_url(),
 							'X-Caller-IP'  => isset( $_SERVER['SERVER_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SERVER_ADDR'] ) ) : '',
+							'Content-Type' => 'application/json',
 						),
+						'body' => json_encode( array(
+							'plugin_version' => $plugin_version,
+							'subscription_plan' => $subscription_plan,
+							'caller-domain' => home_url(),
+							'caller-ip' => isset( $_SERVER['SERVER_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SERVER_ADDR'] ) ) : '',
+
+						) ),
 					)
 				);
 
 				if ( ! is_wp_error( $api_response ) ) {
-
 						$body = wp_remote_retrieve_body( $api_response );
 						$json = json_decode( $body, true );
 					if ( isset( $json['instructions'] ) ) {
@@ -706,15 +730,7 @@ class AISTMA_Story_Generator {
 			$aistma_master_instructions = 'Write a fact-based, original article based on real-world information. Organize the article clearly with a proper beginning, middle, and conclusion.';
 		}
 		
-		// Append recent posts titles if provided and not empty.
-		if ( ! empty( $recent_posts ) && is_array( $recent_posts ) ) {
-			$aistma_master_instructions .= "\n" . __( 'Exclude references to the following recent posts:', 'ai-story-maker' );
-			foreach ( $recent_posts as $post ) {
-				if ( isset( $post['title'] ) && ! empty( $post['title'] ) ) {
-					$aistma_master_instructions .= "\n" . __( 'Title: ', 'ai-story-maker' ) . $post['title'];
-				}
-			}
-		}
+
 
 		return $aistma_master_instructions;
 	}

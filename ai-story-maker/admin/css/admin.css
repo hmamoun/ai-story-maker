@@ -577,3 +577,175 @@ tr:hover .row-actions {
 	margin-left: auto;
 	margin-right: auto;
 }
+
+/* Heatmap Styles */
+.aistma-heatmap-section {
+	margin: 30px 0;
+	padding: 20px;
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.aistma-heatmap-header {
+	margin-bottom: 20px;
+}
+
+.aistma-heatmap-stats {
+	display: flex;
+	gap: 30px;
+	margin-bottom: 20px;
+}
+
+.stat-item {
+	text-align: center;
+}
+
+.stat-number {
+	display: block;
+	font-size: 24px;
+	font-weight: bold;
+	color: #0073aa;
+}
+
+.stat-label {
+	font-size: 12px;
+	color: #666;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.aistma-heatmap-calendar {
+	max-width: 800px;
+}
+
+.aistma-heatmap-legend {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 15px;
+	font-size: 12px;
+	color: #666;
+}
+
+.legend-squares {
+	display: flex;
+	gap: 2px;
+}
+
+.legend-square {
+	width: 12px;
+	height: 12px;
+	border-radius: 2px;
+}
+
+.aistma-heatmap-grid {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+}
+
+.aistma-heatmap-container-vertical {
+	display: flex;
+	gap: 10px;
+	align-items: flex-start;
+}
+
+.aistma-heatmap-weekdays-vertical {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin-right: 10px;
+}
+
+.weekday-vertical {
+	font-size: 10px;
+	color: #666;
+	text-align: center;
+	font-weight: 500;
+	height: 12px;
+	line-height: 12px;
+	width: 30px;
+}
+
+.aistma-heatmap-weeks-vertical {
+	display: flex;
+	gap: 2px;
+	overflow-x: auto;
+	padding-bottom: 5px;
+}
+
+.aistma-heatmap-week-vertical {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.aistma-heatmap-day {
+	width: 12px;
+	height: 12px;
+	border-radius: 2px;
+	position: relative;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.aistma-heatmap-day:hover {
+	transform: scale(1.2);
+	z-index: 10;
+}
+
+.day-tooltip {
+	position: absolute;
+	bottom: 100%;
+	left: 50%;
+	transform: translateX(-50%);
+	background: #333;
+	color: white;
+	padding: 4px 8px;
+	border-radius: 4px;
+	font-size: 11px;
+	white-space: nowrap;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.2s ease;
+	z-index: 1000;
+}
+
+.aistma-heatmap-day:hover .day-tooltip {
+	opacity: 1;
+}
+
+/* Intensity classes */
+.intensity-0 { background-color: #ebedf0; }
+.intensity-1 { background-color: #c6e48b; }
+.intensity-2 { background-color: #7bc96f; }
+.intensity-3 { background-color: #239a3b; }
+.intensity-4 { background-color: #196127; }
+
+/* Heatmap responsive design */
+@media (max-width: 768px) {
+	.aistma-heatmap-stats {
+		flex-direction: column;
+		gap: 15px;
+	}
+	
+	.aistma-heatmap-day {
+		width: 10px;
+		height: 10px;
+	}
+	
+	.weekday-vertical {
+		font-size: 9px;
+		width: 25px;
+	}
+	
+	.aistma-heatmap-container-vertical {
+		gap: 5px;
+	}
+	
+	.aistma-heatmap-weekdays-vertical {
+		margin-right: 5px;
+	}
+}

@@ -332,7 +332,6 @@ document.querySelectorAll('#aistma-subscribe-or-api-keys-wrapper .nav-tab').forE
         document.getElementById('tab-' + selectedTab).style.display = 'block';
     });
 });
-
 function aistma_get_subscription_status() {
     // Get current domain with port if it exists
     const currentDomain = window.location.hostname + (window.location.port ? ':' + window.location.port : '');
@@ -346,10 +345,9 @@ function aistma_get_subscription_status() {
     }
     
     // Make API call to master server to check subscription status
-
     fetch(`${masterUrl}wp-json/exaig/v1/verify-subscription?domain=${encodeURIComponent(currentDomain)}`)
         .then(response => response.json())
-                .then(data => {
+        .then(data => {
             if (data.valid) {
                 console.log('Subscription found:', data);
                 
@@ -358,7 +356,6 @@ function aistma_get_subscription_status() {
                 if (!statusElement) {
                     statusElement = document.createElement('div');
                     statusElement.id = 'aistma-subscription-status';
-                    statusElement.className = 'notice notice-info';
                     statusElement.style.margin = '10px 0';
                     
                     // Insert at the top of the packages container
@@ -368,17 +365,55 @@ function aistma_get_subscription_status() {
                     }
                 }
                 
+                // Determine status class and message based on subscription details
+                let statusClass = 'notice-info';
+                let statusMessage = '';
+                
+                if (data.status === 'active_no_credits') {
+                    statusClass = 'notice-warning';
+                    statusMessage = `
+                        <strong>⚠️ Active Subscription - Credits Depleted</strong><br>
+                        Domain: <strong>${data.domain}</strong><br>
+                        Package: <strong>${data.package_name}</strong><br>
+                        Credits Used: <strong>${data.credits_used}</strong> / <strong>${data.credits_total}</strong><br>
+                        Remaining Credits: <strong>0</strong><br>
+                        Status: <strong>Waiting for next billing cycle</strong><br>
+                        Next Billing: <strong>${data.next_billing_date ? data.next_billing_date.formatted_date : 'N/A'}</strong><br>
+                        Days Until Billing: <strong>${data.next_billing_date ? data.next_billing_date.days_until_billing : 'N/A'}</strong><br>
+                        Next Refill: <strong>${data.next_refill ? new Date(data.next_refill.next_refill_date).toLocaleDateString() : 'Unknown'}</strong><br>
+                        <em>${data.next_refill ? data.next_refill.refill_message : ''}</em>
+                    `;
+                } else if (data.is_free_subscription) {
+                    statusClass = 'notice-success';
+                    statusMessage = `
+                        <strong>✅ Free Subscription Active</strong><br>
+                        Domain: <strong>${data.domain}</strong><br>
+                        Package: <strong>${data.package_name}</strong><br>
+                        Credits Used: <strong>${data.credits_used}</strong><br>
+                        Status: <strong>Unlimited usage</strong><br>
+                        Next Refill: <strong>Daily at midnight</strong><br>
+                        Billing: <strong>${data.next_billing_date ? data.next_billing_date.message : 'N/A'}</strong>
+                    `;
+                } else {
+                    statusClass = 'notice-success';
+                    statusMessage = `
+                        <strong>✅ Active Subscription Found!</strong><br>
+                        Domain: <strong>${data.domain}</strong><br>
+                        Package: <strong>${data.package_name}</strong><br>
+                        Credits Used: <strong>${data.credits_used}</strong> / <strong>${data.credits_total}</strong><br>
+                        Remaining Credits: <strong>${data.credits_remaining}</strong><br>
+                        Package ID: <strong>${data.package_id}</strong><br>
+                        Created: <strong>${new Date(data.created_at).toLocaleDateString()}</strong><br>
+                        Next Billing: <strong>${data.next_billing_date ? data.next_billing_date.formatted_date : 'N/A'}</strong><br>
+                        Days Until Billing: <strong>${data.next_billing_date ? data.next_billing_date.days_until_billing : 'N/A'}</strong>
+                    `;
+                }
+                
                 // Update the status display
-                statusElement.innerHTML = `
-                    <strong>Active Subscription Found!</strong><br>
-                    Domain: <strong>${data.domain}</strong><br>
-                    Remaining Credits: <strong>${data.credits_remaining}</strong><br>
-                    Package ID: <strong>${data.package_id}</strong><br>
-                    Created: <strong>${new Date(data.created_at).toLocaleDateString()}</strong>
-                `;
-
-
-                    } else {
+                statusElement.className = `notice ${statusClass}`;
+                statusElement.innerHTML = statusMessage;
+                
+            } else {
                 console.log('No active subscription found');
                 
                 // Remove any existing status display
@@ -386,9 +421,9 @@ function aistma_get_subscription_status() {
                 if (statusElement) {
                     statusElement.remove();
                 }
-                    }
-                })
-                .catch(error => {
+            }
+        })
+        .catch(error => {
             console.error('Error checking subscription status:', error);
             
             // Show error message
