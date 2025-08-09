@@ -23,6 +23,7 @@ $options = array(
 	'aistma_unsplash_api_key',
 	'aistma_unsplash_api_secret',
 	'aistma_generate_story_cron',
+	'aistma_show_exedotcom_attribution',
 
 );
 foreach ( $options as $option ) {
@@ -32,10 +33,16 @@ foreach ( $options as $option ) {
 }
 // delete database table.
 global $wpdb;
-$table_name = $wpdb->prefix . 'aistma_log_table';
-// safe: removing the table when uninstalling.
-// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery , WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
-$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS `%s`', $table_name ) );
+
+// Drop custom log table.
+$log_table = $wpdb->prefix . 'aistma_log_table';
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
+$wpdb->query( "DROP TABLE IF EXISTS `{$log_table}`" );
+
+// Drop traffic info table if exists.
+$traffic_table = $wpdb->prefix . 'aistma_traffic_info';
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
+$wpdb->query( "DROP TABLE IF EXISTS `{$traffic_table}`" );
 // bmark Schedule on uninstall.
 wp_clear_scheduled_hook( 'aistma_generate_story_event' );
 
@@ -43,4 +50,8 @@ wp_clear_scheduled_hook( 'aistma_generate_story_event' );
  * remove transient
  */
 delete_transient( 'aistma_exaig_cached_master_instructions' );
+
+// Remove plugin-related post meta keys.
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+$wpdb->query( "DELETE FROM `{$wpdb->postmeta}` WHERE meta_key IN ('_aistma_generated','_ai_story_maker_sources','ai_story_maker_request_id')" );
 

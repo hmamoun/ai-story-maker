@@ -12,7 +12,7 @@
  * Domain Path: /languages
  * Requires PHP: 7.4
  * Requires at least: 5.8
- * Tested up to: 6.8
+ * Tested up to: 6.8.2
  *
  * @package AI_Story_Maker
  */

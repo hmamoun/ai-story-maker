@@ -95,6 +95,104 @@ $debug_info['ai_generated_posts'] = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb-
 $debug_info['recent_posts'] = $wpdb->get_results("SELECT ID, post_title, post_date FROM {$wpdb->posts} WHERE post_type = 'post' AND post_status = 'publish' ORDER BY post_date DESC LIMIT 5");
 $debug_info['story_data_count'] = count($story_data);
 $debug_info['total_stories'] = $total_stories;
+
+// Build Post Views Heatmap data (recent posts x last N days)
+$aistma_views_days_window = 14;
+$recent_posts_limit = 5;
+$recent_posts_list = $debug_info['recent_posts'];
+
+// Ensure we have IDs only for recent posts
+$recent_post_ids = array();
+foreach ( $recent_posts_list as $rp ) {
+    $recent_post_ids[] = (int) $rp->ID;
+}
+
+$post_views_by_day = array();
+$date_labels = array();
+$max_views_per_cell = 0;
+
+if ( ! empty( $recent_post_ids ) ) {
+    // Build date range and labels (last N days ending today)
+    $date_index_map = array();
+    for ( $i = $aistma_views_days_window - 1; $i >= 0; $i-- ) {
+        $date = new DateTime( '-' . $i . ' days', wp_timezone() );
+        $label = $date->format( 'Y-m-d' );
+        $date_labels[] = $label;
+        $date_index_map[ $label ] = count( $date_labels ) - 1;
+    }
+
+    // Prepare IN placeholders
+    $placeholders = implode( ',', array_fill( 0, count( $recent_post_ids ), '%d' ) );
+    $table = $wpdb->prefix . 'aistma_traffic_info';
+    $date_from = ( new DateTime( '-' . ( $aistma_views_days_window - 1 ) . ' days', wp_timezone() ) )->format( 'Y-m-d 00:00:00' );
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+    $rows = $wpdb->get_results( $wpdb->prepare(
+        "SELECT post_id, DATE(viewed_at) AS vdate, COUNT(*) AS views
+         FROM {$table}
+         WHERE viewed_at >= %s AND post_id IN ($placeholders)
+         GROUP BY post_id, DATE(viewed_at)",
+         array_merge( array( $date_from ), $recent_post_ids )
+    ) );
+
+    // Initialize matrix
+    foreach ( $recent_post_ids as $pid ) {
+        $post_views_by_day[ $pid ] = array_fill( 0, $aistma_views_days_window, 0 );
+    }
+
+    foreach ( (array) $rows as $r ) {
+        $pid = (int) $r->post_id;
+        $vdate = $r->vdate;
+        $views = (int) $r->views;
+        if ( isset( $date_index_map[ $vdate ] ) && isset( $post_views_by_day[ $pid ] ) ) {
+            $idx = $date_index_map[ $vdate ];
+            $post_views_by_day[ $pid ][ $idx ] = $views;
+            if ( $views > $max_views_per_cell ) {
+                $max_views_per_cell = $views;
+            }
+        }
+    }
+}
+
+// Weekly views (last 5 ISO weeks) for full list
+$weeks_window = 5;
+$week_labels = array();
+$week_bounds = array();
+for ( $w = $weeks_window - 1; $w >= 0; $w-- ) {
+    $start = new DateTime( 'monday -' . $w . ' week', wp_timezone() );
+    $end = clone $start; $end->modify( '+6 days' );
+    $week_labels[] = $start->format( 'M j' ) . ' - ' . $end->format( 'M j' );
+    $week_bounds[] = array( $start->format( 'Y-m-d 00:00:00' ), $end->format( 'Y-m-d 23:59:59' ) );
+}
+
+// Fetch weekly counts for posts that have views in the window to keep list smaller
+$weekly_counts = array(); // post_id => [w0..wN]
+$table = $wpdb->prefix . 'aistma_traffic_info';
+$window_start = $week_bounds[0][0];
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+$posts_with_views = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT post_id FROM {$table} WHERE viewed_at >= %s", $window_start ) );
+if ( ! empty( $posts_with_views ) ) {
+    $placeholders_all = implode( ',', array_fill( 0, count( $posts_with_views ), '%d' ) );
+    // Initialize
+    foreach ( $posts_with_views as $pid ) {
+        $weekly_counts[ (int) $pid ] = array_fill( 0, $weeks_window, 0 );
+    }
+    // One query per week (keeps SQL simple and index-friendly)
+    foreach ( $week_bounds as $wi => $bounds ) {
+        list( $ws, $we ) = $bounds;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+        $rows_w = $wpdb->get_results( $wpdb->prepare(
+            "SELECT post_id, COUNT(*) AS views
+             FROM {$table}
+             WHERE viewed_at BETWEEN %s AND %s AND post_id IN ($placeholders_all)
+             GROUP BY post_id",
+             array_merge( array( $ws, $we ), array_map( 'intval', $posts_with_views ) )
+        ) );
+        foreach ( (array) $rows_w as $rw ) {
+            $pid = (int) $rw->post_id;
+            $weekly_counts[ $pid ][ $wi ] = (int) $rw->views;
+        }
+    }
+}
 ?>
 <div class="wrap">
 	<div class="aistma-style-settings">
@@ -137,21 +235,7 @@ $version = $plugin_data['Version'];
 <!-- Story Generation Heatmap -->
 <div class="aistma-heatmap-section">
 	<h3><?php esc_html_e('Story Generation Activity', 'ai-story-maker'); ?></h3>
-	
-	<!-- Debug Information (remove in production) -->
-	<?php if (current_user_can('manage_options')): ?>
-	<div class="aistma-debug-info" style="background: #f0f0f0; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 12px;">
-		<strong>Debug Info:</strong><br>
-		Total Published Posts: <?php echo esc_html($debug_info['total_posts']); ?><br>
-		AI Generated Posts: <?php echo esc_html($debug_info['ai_generated_posts']); ?><br>
-		Posts in Heatmap: <?php echo esc_html($debug_info['story_data_count']); ?><br>
-		Total Stories Count: <?php echo esc_html($debug_info['total_stories']); ?><br>
-		<strong>Recent Posts:</strong><br>
-		<?php foreach ($debug_info['recent_posts'] as $post): ?>
-			- <?php echo esc_html($post->post_title); ?> (<?php echo esc_html($post->post_date); ?>)<br>
-		<?php endforeach; ?>
-	</div>
-	<?php endif; ?>
+		
 	
 	<div class="aistma-heatmap-container">
 		<div class="aistma-heatmap-header">
@@ -224,6 +308,99 @@ $version = $plugin_data['Version'];
 				</div>
 			</div>
 		</div>
+
+		<!-- Recent Posts x Days Heatmap -->
+        <div class="aistma-heatmap-calendar" style="margin-top:20px;">
+			<h4><?php esc_html_e('Recent Posts Activity (last 14 days)', 'ai-story-maker'); ?></h4>
+			<div class="aistma-heatmap-grid">
+				<div class="aistma-heatmap-container-horizontal">
+					<!-- Column headers: dates -->
+                    <div class="aistma-heatmap-dates" style="grid-template-columns: 220px repeat(<?php echo (int) count( $date_labels ); ?>, 16px);">
+						<div class="post-label">&nbsp;</div>
+						<?php foreach ( $date_labels as $dlabel ) : ?>
+							<div class="date-vertical"><?php echo esc_html( date_i18n( 'M j', strtotime( $dlabel ) ) ); ?></div>
+						<?php endforeach; ?>
+					</div>
+					<!-- Rows: each recent post -->
+                    <?php foreach ( $recent_posts_list as $rp ) : $pid = (int) $rp->ID; ?>
+                        <div class="aistma-heatmap-row" style="grid-template-columns: 220px repeat(<?php echo (int) count( $date_labels ); ?>, 16px);">
+							<div class="post-label"><a href="<?php echo esc_url( get_permalink( $pid ) ); ?>" target="_blank"><?php echo esc_html( wp_html_excerpt( $rp->post_title ?: __('(no title)', 'ai-story-maker'), 40, '…' ) ); ?></a></div>
+							<?php for ( $i = 0; $i < count( $date_labels ); $i++ ) :
+								$views = isset( $post_views_by_day[ $pid ][ $i ] ) ? (int) $post_views_by_day[ $pid ][ $i ] : 0;
+								$intensity = 'intensity-0';
+								if ( $views > 0 ) {
+									if ( $views <= 2 ) $intensity = 'intensity-1';
+									elseif ( $views <= 5 ) $intensity = 'intensity-2';
+									elseif ( $views <= 10 ) $intensity = 'intensity-3';
+									else $intensity = 'intensity-4';
+								}
+							?>
+							<div class="aistma-heatmap-day <?php echo esc_attr( $intensity ); ?>" title="<?php echo esc_attr( $views . ' views' ); ?>"></div>
+							<?php endfor; ?>
+						</div>
+					<?php endforeach; ?>
+				</div>
+			</div>
+		</div>
+
+		<!-- Debug Information moved below the heatmap (visible to admins only) -->
+		<?php if ( current_user_can( 'manage_options' ) ) : ?>
+			<div class="aistma-debug-info">
+
+
+				<div class="aistma-debug-recent">
+					<strong><?php esc_html_e( 'Recent Posts', 'ai-story-maker' ); ?>:</strong>
+					<?php
+						$recent_links = array();
+						foreach ( $debug_info['recent_posts'] as $recent_post ) {
+							$permalink  = get_permalink( $recent_post->ID );
+							$title      = $recent_post->post_title ? $recent_post->post_title : __( '(no title)', 'ai-story-maker' );
+							$recent_links[] = '<a href="' . esc_url( $permalink ) . '" target="_blank">' . esc_html( $title ) . '</a>';
+						}
+						echo wp_kses_post( implode( ', ', $recent_links ) );
+					?>
+				</div>
+
+				<!-- Views by Week (last 5 weeks) -->
+				<div class="aistma-views-tabs" style="margin-top:15px;">
+					<div class="tabs-header">
+						<button class="tab-btn active" data-tab="summary"><?php esc_html_e('Summary', 'ai-story-maker'); ?></button>
+						<button class="tab-btn" data-tab="weekly"><?php esc_html_e('Weekly Views (5 weeks)', 'ai-story-maker'); ?></button>
+					</div>
+					<div class="tabs-body">
+						<div class="tab-pane active" id="tab-summary">
+							<p><?php esc_html_e('The table below shows total views per post by ISO week for the last 5 weeks.', 'ai-story-maker'); ?></p>
+						</div>
+						<div class="tab-pane" id="tab-weekly">
+							<table class="widefat fixed striped">
+								<thead>
+									<tr>
+										<th><?php esc_html_e('Post', 'ai-story-maker'); ?></th>
+										<?php foreach ( $week_labels as $wl ) : ?>
+											<th><?php echo esc_html( $wl ); ?></th>
+										<?php endforeach; ?>
+									</tr>
+								</thead>
+								<tbody>
+									<?php if ( empty( $weekly_counts ) ) : ?>
+										<tr><td colspan="<?php echo esc_attr( 1 + count( $week_labels ) ); ?>"><?php esc_html_e('No views recorded in the selected window.', 'ai-story-maker'); ?></td></tr>
+									<?php else : ?>
+										<?php foreach ( $weekly_counts as $pid => $wcounts ) : ?>
+											<tr>
+												<td><a href="<?php echo esc_url( get_permalink( $pid ) ); ?>" target="_blank"><?php echo esc_html( get_the_title( $pid ) ?: __( '(no title)', 'ai-story-maker' ) ); ?></a></td>
+												<?php foreach ( $wcounts as $c ) : ?>
+													<td><?php echo esc_html( (int) $c ); ?></td>
+												<?php endforeach; ?>
+											</tr>
+										<?php endforeach; ?>
+									<?php endif; ?>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+		<?php endif; ?>
 	</div>
 </div>
 
@@ -258,6 +435,18 @@ document.addEventListener('DOMContentLoaded', function() {
 		day.setAttribute('tabindex', '0');
 		day.setAttribute('role', 'button');
 		day.setAttribute('aria-label', `Day with ${day.getAttribute('data-stories')} stories generated`);
+	});
+
+	// Simple tabs logic for Weekly Views section
+	const tabBtns = document.querySelectorAll('.aistma-views-tabs .tab-btn');
+	const tabPanes = document.querySelectorAll('.aistma-views-tabs .tab-pane');
+	tabBtns.forEach(btn => {
+		btn.addEventListener('click', () => {
+			tabBtns.forEach(b => b.classList.remove('active'));
+			tabPanes.forEach(p => p.classList.remove('active'));
+			btn.classList.add('active');
+			document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+		});
 	});
 });
 </script>

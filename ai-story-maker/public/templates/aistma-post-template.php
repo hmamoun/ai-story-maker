@@ -28,6 +28,12 @@ function aistma_enqueue_story_style() {
 }
 aistma_enqueue_story_style();
 ?>
+<?php
+// Log the view early in the template lifecycle.
+if ( class_exists( '\\exedotcom\\aistorymaker\\AISTMA_Traffic_Logger' ) ) {
+    exedotcom\aistorymaker\AISTMA_Traffic_Logger::log_post_view( get_the_ID() );
+}
+?>
 <main class="ai-story-container">
 	<article class="ai-story-article">
 		<header class="ai-story-header">

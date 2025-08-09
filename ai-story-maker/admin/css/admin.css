@@ -749,3 +749,118 @@ tr:hover .row-actions {
 		margin-right: 5px;
 	}
 }
+
+/* Debug info cards below heatmap */
+.aistma-debug-info {
+    background: #f8f9fa;
+    border: 1px solid #e1e1e1;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-top: 16px;
+}
+
+/* Horizontal heatmap (recent posts x days) */
+.aistma-heatmap-container-horizontal {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-x: auto;
+}
+
+.aistma-heatmap-dates,
+.aistma-heatmap-row {
+    display: grid;
+    align-items: center;
+    gap: 2px;
+}
+
+.aistma-heatmap-dates .date-vertical {
+    width: 16px;
+    font-size: 10px;
+    color: #666;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    text-align: left;
+}
+
+.aistma-heatmap-row .aistma-heatmap-day {
+    width: 12px;
+    height: 12px;
+}
+
+.aistma-heatmap-row .post-label,
+.aistma-heatmap-dates .post-label {
+    width: 220px;
+    text-align: left;
+    font-size: 12px;
+    color: #333;
+    margin-right: 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.aistma-views-tabs .tabs-header {
+    display: flex;
+    gap: 8px;
+    margin: 10px 0;
+}
+
+.aistma-views-tabs .tab-btn {
+    border: 1px solid #ddd;
+    background: #f7f7f7;
+    padding: 6px 10px;
+    cursor: pointer;
+}
+
+.aistma-views-tabs .tab-btn.active {
+    background: #0073aa;
+    color: #fff;
+    border-color: #0073aa;
+}
+
+.aistma-views-tabs .tab-pane { display: none; }
+.aistma-views-tabs .tab-pane.active { display: block; }
+
+.aistma-debug-cards {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.aistma-debug-card {
+    background: #ffffff;
+    border: 1px solid #e6e6e6;
+    border-radius: 8px;
+    padding: 10px 14px;
+    min-width: 140px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.aistma-debug-card .debug-card-number {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0073aa;
+}
+
+.aistma-debug-card .debug-card-caption {
+    font-size: 11px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.aistma-debug-recent {
+    font-size: 12px;
+}
+
+.aistma-debug-recent a {
+    text-decoration: none;
+}
+
+.aistma-debug-recent a:hover {
+    text-decoration: underline;
+}

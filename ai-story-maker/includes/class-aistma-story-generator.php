@@ -79,7 +79,6 @@ class AISTMA_Story_Generator {
 	 */
 	public static function generate_ai_stories_with_lock( $force = false ) {
 		$instance = new self();
-
 		$lock_key = 'aistma_generating_lock';
 		if ( ! $force && get_transient( $lock_key ) ) {
 			$instance->aistma_log_manager->log( 'info', 'Story generation skipped due to active lock.' );
@@ -100,7 +99,7 @@ class AISTMA_Story_Generator {
 				if ( empty( $openai_api_key ) ) {
 					$error_message = isset( $subscription_status['error'] ) 
 						? 'Subscription check failed: ' . $subscription_status['error'] . '. Also, no OpenAI API key found.'
-						: 'No valid subscription found and no OpenAI API key configured. Please either purchase a subscription or configure an OpenAI API key to generate stories.';
+						: 'No valid subscription found and no OpenAI API key configured.';
 					
 					$instance->aistma_log_manager::log( 'error', $error_message );
 					throw new \RuntimeException( $error_message );
@@ -110,7 +109,7 @@ class AISTMA_Story_Generator {
 			}
 		} catch ( \RuntimeException $e ) {
 			$error = $e->getMessage();
-			$instance->aistma_log_manager::log( 'error', $error );
+			//$instance->aistma_log_manager::log( 'error', $error );
 			throw new \RuntimeException( esc_html( $error ) );
 		}
 
@@ -1060,7 +1059,15 @@ class AISTMA_Story_Generator {
 			);
 			return $this->subscription_status;
 		}
-
+		// if valid but status is "active_no_credits" then set the status to false and set the message to "No credits remaining"
+		if ( isset( $data['valid'] ) && $data['valid'] && isset( $data['status'] ) && $data['status'] === 'active_no_credits' ) {
+			$this->subscription_status = array(
+				'valid' => false,
+				'message' => 'No credits remaining',
+				'domain' => $domain,
+			);
+			return $this->subscription_status;
+		}
 		if ( isset( $data['valid'] ) && $data['valid'] ) {
 			$this->aistma_log_manager::log( 'info', 'Subscription found for domain: ' . $domain . ' - Credits remaining: ' . ( $data['credits_remaining'] ?? 0 ) );
 			$this->subscription_status = array(

@@ -35,8 +35,14 @@ class AISTMA_Plugin {
 				'includes/class-aistma-story-generator.php',
 				'includes/shortcode-story-scroller.php',
 				'includes/class-aistma-log-manager.php',
+				'includes/class-aistma-traffic-logger.php',
 			)
 		);
+
+		// Log traffic on front-end single post views.
+		if ( ! is_admin() ) {
+			add_action( 'template_redirect', array( '\\exedotcom\\aistorymaker\\AISTMA_Traffic_Logger', 'maybe_log_current_view' ), 5 );
+		}
 		add_action( 'admin_post_aistma_clear_logs', array( AISTMA_Log_Manager::class, 'aistma_clear_logs' ) );
 	}
 
@@ -100,6 +106,11 @@ class AISTMA_Plugin {
 
 		if ( function_exists( 'ai_storymaker_aistma_create_log_table' ) ) {
 			ai_storymaker_aistma_create_log_table();
+		}
+
+		// Ensure traffic logging table exists
+		if ( class_exists( __NAMESPACE__ . '\\AISTMA_Traffic_Logger' ) ) {
+			AISTMA_Traffic_Logger::ensure_tables();
 		}
 
 		if ( ! wp_next_scheduled( 'aistma_generate_story_event' ) ) {

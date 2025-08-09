@@ -106,11 +106,12 @@ $subscription_url = add_query_arg(
 
 <div class="aistma-subscribe-button-container">
     <a href="<?php echo esc_url( $subscription_url ); ?>" target="_blank" class="button button-primary button-hero">
-        <?php esc_html_e( 'Subscribe', 'ai-story-maker' ); ?>
+        <?php esc_html_e( 'Go to subscription page', 'ai-story-maker' ); ?>
     </a>
     <p class="aistma-subscribe-description">
-        <?php esc_html_e( 'Click the Subscribe button to view all available plans and choose the one that best fits your needs.', 'ai-story-maker' ); ?>
-    </p>
+  		<?php esc_html_e( 'Click the Subscribe button to view all available plans and choose the one that best fits your needs. This is the plugin\'s secure official page on Exedotcom.ca, where more details on plans are available. The button shows "Go to subscription page".', 'ai-story-maker' ); ?>
+
+	</p>
 </div>
 </div>
 
