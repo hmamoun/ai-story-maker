@@ -526,9 +526,9 @@ jQuery(document).ready(function($) {
      * Setup test details modal
      */
     function setupTestDetailsModal() {
-        $(document).on('click', '.view-test-details', function() {
+        $(document).off('click', '.view-test-details').on('click', '.view-test-details', function() {
             const testId = $(this).data('test-id');
-            // This would load and display test details in modal
+            // Load and display test details in modal
             showTestDetailsModal(testId);
         });
     }
@@ -537,8 +537,53 @@ jQuery(document).ready(function($) {
      * Show test details modal
      */
     function showTestDetailsModal(testId) {
-        // This would be implemented to show test details
-        $('#test-details-modal').show();
+        // Clear previous values
+        $('#modal-test-name').text('');
+        $('#modal-test-description').text('');
+        $('#modal-test-category').text('');
+        $('#modal-test-status').text('');
+        $('#modal-test-duration').text('');
+        $('#modal-test-created').text('');
+        $('#modal-test-result').text('');
+        $('#modal-test-logs').text('');
+
+        $.ajax({
+            url: aistma_test_ajax.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'get_aistma_test_details',
+                nonce: aistma_test_ajax.nonce,
+                id: testId
+            },
+            success: function(response) {
+                if (response.success && response.data) {
+                    const r = response.data;
+                    $('#modal-test-name').text(r.test_name || '');
+                    $('#modal-test-description').text(r.test_description || '');
+                    $('#modal-test-category').text(r.test_category || '');
+                    $('#modal-test-status').text(r.test_status || '');
+                    $('#modal-test-duration').text((r.test_duration != null ? r.test_duration : '') + (r.test_duration != null ? 'ms' : ''));
+                    $('#modal-test-created').text(r.created_at || '');
+                    $('#modal-test-result').text(r.test_result || '');
+
+                    // Logs: may be array or string
+                    if (Array.isArray(r.test_logs)) {
+                        $('#modal-test-logs').text(formatLogs(r.test_logs));
+                    } else if (typeof r.test_logs === 'string') {
+                        $('#modal-test-logs').text(r.test_logs);
+                    } else {
+                        $('#modal-test-logs').text('');
+                    }
+
+                    $('#test-details-modal').show();
+                } else {
+                    showError('Error loading test details: ' + (response.data || 'Unknown error'));
+                }
+            },
+            error: function() {
+                showError('Network error occurred while loading test details');
+            }
+        });
     }
     
     /**

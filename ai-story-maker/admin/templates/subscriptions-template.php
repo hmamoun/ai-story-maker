@@ -81,12 +81,17 @@ $current_user_email = $current_user->user_email;
 </script>
 <div class="aistma-packages-container">
     <?php foreach ( $packages as $package ) : ?>
-        <div class="aistma-package-box">
+        <div 
+            class="aistma-package-box"
+            data-package-name="<?php echo esc_attr( isset( $package['name'] ) ? $package['name'] : '' ); ?>"
+            data-package-id="<?php echo esc_attr( isset( $package['id'] ) ? $package['id'] : '' ); ?>"
+        >
             <div class="aistma-package-title"><?php echo esc_html( $package['name'] ); ?></div>
             
             <div class="aistma-package-meta">
                 <span><strong>Price:</strong> $<?php echo esc_html( $package['price'] ); ?></span>
                 <span><strong>Monthly Generated Stories:</strong> <?php echo esc_html( $package['credits'] ); ?></span>
+                <div class="aistma-current-plan-line" style="display:none;"></div>
             </div>
         </div>
     <?php endforeach; ?>

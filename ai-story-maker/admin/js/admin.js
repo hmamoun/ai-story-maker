@@ -349,78 +349,109 @@ function aistma_get_subscription_status() {
         .then(response => response.json())
         .then(data => {
             if (data.valid) {
-                console.log('Subscription found:', data);
-                
-                // Create or update subscription status display
-                let statusElement = document.getElementById('aistma-subscription-status');
-                if (!statusElement) {
-                    statusElement = document.createElement('div');
-                    statusElement.id = 'aistma-subscription-status';
-                    statusElement.style.margin = '10px 0';
-                    
-                    // Insert at the top of the packages container
-                    const packagesContainer = document.querySelector('.aistma-packages-container');
-                    if (packagesContainer) {
-                        packagesContainer.parentNode.insertBefore(statusElement, packagesContainer);
+                // Hide any old notice if present
+                const oldStatus = document.getElementById('aistma-subscription-status');
+                if (oldStatus) oldStatus.remove();
+
+                // Helper: format yyyy-MMM-dd
+                const formatDateYYYYMMMDD = (input) => {
+                    if (!input) return 'N/A';
+                    let d = null;
+                    if (typeof input === 'string' || typeof input === 'number') {
+                        d = new Date(input);
+                    } else if (typeof input === 'object') {
+                        const raw = input.raw_date || input.date || input.formatted_date || input.next_refill_date || input;
+                        d = new Date(raw);
                     }
-                }
-                
-                // Determine status class and message based on subscription details
-                let statusClass = 'notice-info';
-                let statusMessage = '';
-                
-                if (data.status === 'active_no_credits') {
-                    statusClass = 'notice-warning';
-                    statusMessage = `
-                        <strong>⚠️ Active Subscription - Credits Depleted</strong><br>
-                        Domain: <strong>${data.domain}</strong><br>
-                        Package: <strong>${data.package_name}</strong><br>
-                        Credits Used: <strong>${data.credits_used}</strong> / <strong>${data.credits_total}</strong><br>
-                        Remaining Credits: <strong>0</strong><br>
-                        Status: <strong>Waiting for next billing cycle</strong><br>
-                        Next Billing: <strong>${data.next_billing_date ? data.next_billing_date.formatted_date : 'N/A'}</strong><br>
-                        Days Until Billing: <strong>${data.next_billing_date ? data.next_billing_date.days_until_billing : 'N/A'}</strong><br>
-                        Next Refill: <strong>${data.next_refill ? new Date(data.next_refill.next_refill_date).toLocaleDateString() : 'Unknown'}</strong><br>
-                        <em>${data.next_refill ? data.next_refill.refill_message : ''}</em>
-                    `;
-                } else if (data.is_free_subscription) {
-                    statusClass = 'notice-success';
-                    statusMessage = `
-                        <strong>✅ Free Subscription Active</strong><br>
-                        Domain: <strong>${data.domain}</strong><br>
-                        Package: <strong>${data.package_name}</strong><br>
-                        Credits Used: <strong>${data.credits_used}</strong><br>
-                        Status: <strong>Unlimited usage</strong><br>
-                        Next Refill: <strong>Daily at midnight</strong><br>
-                        Billing: <strong>${data.next_billing_date ? data.next_billing_date.message : 'N/A'}</strong>
-                    `;
+                    if (!d || isNaN(d.getTime())) return (typeof input === 'object' && input.formatted_date) ? input.formatted_date : 'N/A';
+                    const yyyy = d.getFullYear();
+                    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                    const mmm = monthNames[d.getMonth()];
+                    const dd = String(d.getDate()).padStart(2, '0');
+                    return `${yyyy}-${mmm}-${dd}`;
+                };
+
+                // Locate matching plan card by name or id with safe fallback
+                const safeQueryByData = (attr, value) => {
+                    if (!value) return null;
+                    try {
+                        if (window.CSS && typeof CSS.escape === 'function') {
+                            return document.querySelector(`.aistma-package-box[${attr}="${CSS.escape(String(value))}"]`);
+                        }
+                    } catch (_) { /* ignore */ }
+                    const boxes = document.querySelectorAll('.aistma-package-box');
+                    for (const el of boxes) {
+                        if (el.getAttribute(attr) === String(value)) return el;
+                    }
+                    return null;
+                };
+
+                let card = safeQueryByData('data-package-id', data.package_id);
+                if (!card) card = safeQueryByData('data-package-name', data.package_name);
+
+                // Compute concise line
+                const nextBilling = formatDateYYYYMMMDD(data.next_billing_date);
+                const remainingDays = data.next_billing_date && (typeof data.next_billing_date.days_until_billing !== 'undefined') ? data.next_billing_date.days_until_billing : 'N/A';
+                const creditsUsed = typeof data.credits_used !== 'undefined' ? data.credits_used : 'N/A';
+                const line = `Your current plan, stories generated: (${creditsUsed}) next billing (${nextBilling}), remaining days (${remainingDays}), stories remaining (${data.credits_total})`;
+
+                if (card) {
+                    // Remove any existing highlight first
+                    document.querySelectorAll('.aistma-package-box.aistma-current-package').forEach(el => {
+                        el.classList.remove('aistma-current-package');
+                        el.removeAttribute('aria-current');
+                    });
+                    // Add highlight and ARIA marker
+                    card.classList.add('aistma-current-package');
+                    card.setAttribute('aria-current', 'true');
+
+                    const lineEl = card.querySelector('.aistma-current-plan-line');
+                    if (lineEl) {
+                        lineEl.textContent = line;
+                        lineEl.style.display = 'block';
+                        lineEl.style.marginTop = '8px';
+                        lineEl.style.fontWeight = '600';
+                        lineEl.style.color = '#0073aa';
+                    }
+                    // Optional: brief focus animation and ensure visibility
+                    try {
+                        card.animate([
+                            { transform: 'scale(1.0)' },
+                            { transform: 'scale(1.02)' },
+                            { transform: 'scale(1.0)' }
+                        ], { duration: 400 });
+                    } catch (_) { /* no-op if Web Animations API not available */ }
+                    // Scroll into view if off-screen
+                    if (typeof card.scrollIntoView === 'function') {
+                        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
                 } else {
-                    statusClass = 'notice-success';
-                    statusMessage = `
-                        <strong>✅ Active Subscription Found!</strong><br>
-                        Domain: <strong>${data.domain}</strong><br>
-                        Package: <strong>${data.package_name}</strong><br>
-                        Credits Used: <strong>${data.credits_used}</strong> / <strong>${data.credits_total}</strong><br>
-                        Remaining Credits: <strong>${data.credits_remaining}</strong><br>
-                        Package ID: <strong>${data.package_id}</strong><br>
-                        Created: <strong>${new Date(data.created_at).toLocaleDateString()}</strong><br>
-                        Next Billing: <strong>${data.next_billing_date ? data.next_billing_date.formatted_date : 'N/A'}</strong><br>
-                        Days Until Billing: <strong>${data.next_billing_date ? data.next_billing_date.days_until_billing : 'N/A'}</strong>
-                    `;
+                    // Fallback: inject concise line above packages
+                    let fallback = document.getElementById('aistma-subscription-status');
+                    if (!fallback) {
+                        fallback = document.createElement('div');
+                        fallback.id = 'aistma-subscription-status';
+                        const packagesContainer = document.querySelector('.aistma-packages-container');
+                        if (packagesContainer) {
+                            packagesContainer.parentNode.insertBefore(fallback, packagesContainer);
+                        }
+                    }
+                    fallback.className = 'notice notice-success';
+                    fallback.textContent = line;
                 }
-                
-                // Update the status display
-                statusElement.className = `notice ${statusClass}`;
-                statusElement.innerHTML = statusMessage;
-                
             } else {
-                console.log('No active subscription found');
-                
-                // Remove any existing status display
+                // Remove concise line if previously set
+                document.querySelectorAll('.aistma-current-plan-line').forEach(el => {
+                    el.style.display = 'none';
+                    el.textContent = '';
+                });
+                // Remove highlight if present
+                document.querySelectorAll('.aistma-package-box.aistma-current-package').forEach(el => {
+                    el.classList.remove('aistma-current-package');
+                    el.removeAttribute('aria-current');
+                });
                 const statusElement = document.getElementById('aistma-subscription-status');
-                if (statusElement) {
-                    statusElement.remove();
-                }
+                if (statusElement) statusElement.remove();
             }
         })
         .catch(error => {

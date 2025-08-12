@@ -25,6 +25,7 @@ class AISTMA_History_Manager {
         add_action('wp_ajax_get_aistma_test_history', array($this, 'ajax_get_test_history'));
         add_action('wp_ajax_export_aistma_test_history', array($this, 'ajax_export_test_history'));
         add_action('wp_ajax_clear_aistma_test_history', array($this, 'ajax_clear_test_history'));
+        add_action('wp_ajax_get_aistma_test_details', array($this, 'ajax_get_test_details'));
     }
     
     /**
@@ -227,6 +228,29 @@ class AISTMA_History_Manager {
         $test_names = $wpdb->get_col($query);
         
         return $test_names;
+    }
+
+    /**
+     * Get single test details by ID
+     */
+    public function get_test_details($id) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'aistma_test_history';
+
+        $record = $wpdb->get_row(
+            $wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $id),
+            ARRAY_A
+        );
+
+        if ($record && !empty($record['test_logs'])) {
+            $decoded_logs = json_decode($record['test_logs'], true);
+            // Only replace if JSON decode succeeded; otherwise leave raw string
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $record['test_logs'] = $decoded_logs;
+            }
+        }
+
+        return $record;
     }
     
     /**
@@ -505,6 +529,29 @@ class AISTMA_History_Manager {
         echo $export_data;
         exit;
     }
+
+    /**
+     * AJAX handler for getting single test details
+     */
+    public function ajax_get_test_details() {
+        check_ajax_referer('aistma_test_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Insufficient permissions', 'aistma-test-suite'));
+        }
+
+        $id = intval($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            wp_send_json_error(__('Invalid test ID', 'aistma-test-suite'));
+        }
+
+        $record = $this->get_test_details($id);
+        if ($record) {
+            wp_send_json_success($record);
+        } else {
+            wp_send_json_error(__('Test not found', 'aistma-test-suite'));
+        }
+    }
     
     /**
      * AJAX handler for clearing test history
@@ -516,13 +563,15 @@ class AISTMA_History_Manager {
             wp_die(__('Insufficient permissions', 'aistma-test-suite'));
         }
         
-        $filters = array(
+        // Build filters and drop empty values so we can detect truly empty filters (meaning clear all)
+        $raw_filters = array(
             'test_name' => sanitize_text_field($_POST['test_name'] ?? ''),
             'category' => sanitize_text_field($_POST['category'] ?? ''),
             'status' => sanitize_text_field($_POST['status'] ?? ''),
             'start_date' => sanitize_text_field($_POST['start_date'] ?? ''),
             'end_date' => sanitize_text_field($_POST['end_date'] ?? '')
         );
+        $filters = array_filter($raw_filters, function($v) { return $v !== null && $v !== ''; });
         
         $success = $this->clear_test_history($filters);
         

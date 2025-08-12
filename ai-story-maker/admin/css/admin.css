@@ -221,7 +221,7 @@
 	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 	transition: all 0.3s ease;
 	position: relative;
-	overflow: hidden;
+    overflow: hidden;
 }
 
 .aistma-package-box::before {
@@ -234,10 +234,32 @@
 	background: linear-gradient(90deg, #ef06d4, #20c997);
 }
 
-.aistma-package-box:hover {
-	/* box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1); */
-	/* transform: translateY(-5px); */
-	/* border-color: #28a745; */
+.aistma-package-box:hover { box-shadow: 0 8px 16px rgba(0,0,0,0.08); }
+
+/* Highlight for current plan */
+.aistma-package-box.aistma-current-package {
+    border-color: #0073aa;
+    box-shadow: 0 0 0 3px rgba(0, 115, 170, 0.15), 0 8px 16px rgba(0, 0, 0, 0.08);
+}
+
+.aistma-package-box.aistma-current-package::after {
+    content: 'Current';
+    position: absolute;
+    top: 10px;
+    left: -36px;
+    transform: rotate(-45deg);
+    background: #0073aa;
+    color: #fff;
+    padding: 6px 50px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    pointer-events: none;
+}
+
+.aistma-package-box.aistma-current-package .aistma-current-plan-line {
+    color: #005a87 !important;
 }
 
 .aistma-package-title {

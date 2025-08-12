@@ -1078,6 +1078,7 @@ class AISTMA_Story_Generator {
 				'package_name' => $data['package_name'] ?? '',
 				'price' => floatval( $data['price'] ?? 0 ),
 				'created_at' => $data['created_at'] ?? '',
+				'next_billing_date' => $data['next_billing_date'] ?? '',
 			);
 		} else {
 			//$this->aistma_log_manager::log( 'info', 'No active subscription found for domain: ' . $domain );

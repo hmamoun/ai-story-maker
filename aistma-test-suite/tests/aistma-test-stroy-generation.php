@@ -1,9 +1,13 @@
 <?php
 /**
- * Story Generation Test (Master API mocked)
+ * Live Story Generation Test (Active Prompts)
  *
- * Verifies that generating a story creates a post with title, excerpt, content, image tag in content, and tags.
- * Uses pre_http_request to mock Master API endpoints so the test is deterministic and offline-capable.
+ * Triggers real story generation for all currently ACTIVE prompts and verifies
+ * that posts were created with excerpt, tags, and photos (featured image or inline <img>).
+ *
+ * Requirements:
+ * - Valid subscription (Master API). Live calls are made (no HTTP mocking).
+ * - Active prompts configured in option `aistma_prompts`.
  *
  * @package AISTMA_Test_Suite
  * @since 1.0.0
@@ -13,12 +17,12 @@ class AISTMA_Test_Story_Generation extends AISTMA_Test_Base {
     /**
      * Test name
      */
-    protected $test_name = 'AI Story Generation (mocked Master API)';
+    protected $test_name = 'AI Story Generation (live, active prompts)';
 
     /**
      * Test description
      */
-    protected $test_description = 'Generates a story and asserts title, excerpt, content (with image), and tags are saved to the post.';
+    protected $test_description = 'Runs live generation for active prompts and asserts posts have excerpt, tags, and photos.';
 
     /**
      * Test category
@@ -32,157 +36,97 @@ class AISTMA_Test_Story_Generation extends AISTMA_Test_Base {
         $this->check_wordpress_loaded();
         $this->check_aistma_active();
 
-        // Ensure constants needed by generator are present
-        if (!defined('AISTMA_MASTER_URL')) {
-            define('AISTMA_MASTER_URL', home_url());
-        }
-
         // Verify required classes exist
         $this->check_class_exists('exedotcom\\aistorymaker\\AISTMA_Story_Generator');
 
         $generator = new \exedotcom\aistorymaker\AISTMA_Story_Generator();
+        
+        // Ensure we have a valid subscription; otherwise this live test cannot proceed safely
+        $subscription = $generator->aistma_get_subscription_status();
+        if (empty($subscription['valid'])) {
+            throw new Exception('Live generation requires an active subscription (Master API). Please configure `AISTMA_MASTER_URL` and ensure subscription is valid.');
+        }
 
-        // Unique test identifiers
-        $unique_suffix = wp_generate_uuid4();
-        $expected = array(
-            'title'    => 'AISTMA Test Story ' . $unique_suffix,
-            'excerpt'  => 'This is a concise summary for the mocked story.',
-            'content'  => 'This is the main body for the mocked story. It should be rich and informative.',
-            'image_url'=> 'https://via.placeholder.com/640x360.png?text=AISTMA+Test',
-            'tags'     => array('AI', 'Healthcare', 'Innovation'),
-        );
+        // Load current prompts and ensure there are active ones
+        $raw_settings = get_option('aistma_prompts', '');
+        $settings = $raw_settings ? json_decode($raw_settings, true) : array();
+        if (json_last_error() !== JSON_ERROR_NONE || empty($settings['prompts']) || !is_array($settings['prompts'])) {
+            throw new Exception('Prompts setting (`aistma_prompts`) is missing or malformed.');
+        }
+        $active_prompts = array_values(array_filter($settings['prompts'], function($p){
+            if (!is_array($p)) return false;
+            if (empty($p['text']) || empty($p['prompt_id'])) return false;
+            return !isset($p['active']) || (int)$p['active'] !== 0;
+        }));
+        if (empty($active_prompts)) {
+            throw new Exception('No active prompts found. Activate at least one prompt in settings.');
+        }
 
-        $domain = parse_url(home_url(), PHP_URL_HOST) ?: 'localhost';
-
-        // Mock Master API over WP HTTP API
-        $mock = function($preempt, $args, $url) use ($domain, $expected) {
-            if (strpos($url, '/wp-json/exaig/v1/verify-subscription') !== false) {
-                $body = wp_json_encode(array(
-                    'valid' => true,
-                    'domain' => $domain,
-                    'credits_remaining' => 100,
-                    'package_id' => 'pkg_test',
-                    'package_name' => 'Test Package',
-                    'price' => 0,
-                    'created_at' => gmdate('c'),
-                ));
-                return array(
-                    'headers'  => array('Content-Type' => 'application/json'),
-                    'body'     => $body,
-                    'response' => array('code' => 200, 'message' => 'OK'),
-                    'cookies'  => array(),
-                );
-            }
-
-            if (strpos($url, '/wp-json/exaig/v1/generate-story') !== false) {
-                $content_html = '<p>' . esc_html($expected['content']) . '</p>'
-                    . '<figure><img src="' . esc_url($expected['image_url']) . '" alt="test image" /></figure>';
-
-                $body = wp_json_encode(array(
-                    'success' => true,
-                    'content' => array(
-                        'title' => $expected['title'],
-                        'content' => $content_html,
-                        'excerpt' => $expected['excerpt'],
-                        'references' => array(
-                            array('title' => 'Reference 1', 'url' => 'https://example.com')
-                        ),
-                        'tags' => $expected['tags'],
-                    ),
-                    'usage' => array(
-                        'total_tokens' => 321,
-                        'request_id' => 'req_' . wp_generate_uuid4(),
-                    ),
-                ));
-
-                return array(
-                    'headers'  => array('Content-Type' => 'application/json'),
-                    'body'     => $body,
-                    'response' => array('code' => 200, 'message' => 'OK'),
-                    'cookies'  => array(),
-                );
-            }
-
-            return $preempt;
-        };
-
-        add_filter('pre_http_request', $mock, 10, 3);
-
-        $created_post_id = 0;
+        $created_post_ids = array();
         try {
-            // Minimal prompt/default settings; Master API will be used due to mocked valid subscription
-            $prompt = array(
-                'prompt_id'    => 'test_' . time(),
-                'text'         => 'Write a short article about AI (mocked).',
-                'category'     => 'Technology',
-                'photos'       => 0,
-                'auto_publish' => 0,
+            // Start marker to filter posts created by this run
+            $started_at = current_time('timestamp', true); // GMT timestamp
+
+            $this->log_info('Triggering live story generation for active prompts (' . count($active_prompts) . ').');
+            \exedotcom\aistorymaker\AISTMA_Story_Generator::generate_ai_stories_with_lock(true);
+
+            // Collect posts created after start marker that have AI meta
+            $query_args = array(
+                'post_type'      => 'post',
+                'post_status'    => array('draft','publish'),
+                'posts_per_page' => 20,
+                'orderby'        => 'date',
+                'order'          => 'DESC',
+                'date_query'     => array(
+                    array(
+                        'after'     => gmdate('Y-m-d H:i:s', $started_at - 5),
+                        'inclusive' => true,
+                        'column'    => 'post_date_gmt',
+                    ),
+                ),
+                'meta_query'     => array(
+                    array(
+                        'key'     => 'ai_story_maker_request_id',
+                        'compare' => 'EXISTS',
+                    ),
+                ),
             );
+            $posts = get_posts($query_args);
+            if (empty($posts)) {
+                throw new Exception('No AI-generated posts were created. Ensure prompts are active and subscription has credits.');
+            }
 
-            $defaults = array(
-                'model' => 'gpt-4-turbo',
-                'system_content' => 'You are a professional writer.',
-                'timeout' => 15,
-            );
+            $validated = 0;
+            foreach ($posts as $p) {
+                $pid = (int) $p->ID;
+                $created_post_ids[] = $pid;
 
-            $this->log_info('Triggering story generation via AISTMA_Story_Generator (mocked Master API).');
-            $generator->generate_ai_story($prompt['prompt_id'], $prompt, $defaults, 'sk-test', '');
-
-            // Locate the created post by unique title
-            $post = get_page_by_title($expected['title'], OBJECT, 'post');
-            if (!$post) {
-                // Fallback: query latest posts and find a matching slug fragment
-                $recent = get_posts(array('numberposts' => 5, 'post_status' => array('draft','publish')));
-                foreach ($recent as $p) {
-                    if ($p->post_title === $expected['title']) {
-                        $post = $p;
-                        break;
-                    }
+                // Excerpt must exist
+                if (empty(trim($p->post_excerpt))) {
+                    throw new Exception('Post ID ' . $pid . ' has empty excerpt.');
                 }
-            }
 
-            if (!$post) {
-                throw new Exception('Post was not created by story generation.');
-            }
-            $created_post_id = (int) $post->ID;
-
-            // Assertions
-            if (trim($post->post_title) !== $expected['title']) {
-                throw new Exception('Post title does not match expected.');
-            }
-
-            if (empty($post->post_excerpt)) {
-                throw new Exception('Post excerpt is empty.');
-            }
-
-            if (strpos($post->post_content, $expected['content']) === false) {
-                throw new Exception('Post content does not include expected body text.');
-            }
-
-            if (!preg_match('/<img[^>]+src=\\"[^\\"]+\\"/i', $post->post_content)) {
-                throw new Exception('Post content does not contain an <img> tag.');
-            }
-
-            $tag_names = wp_get_post_tags($created_post_id, array('fields' => 'names'));
-            $missing_tags = array();
-            foreach ($expected['tags'] as $tag) {
-                if (!in_array($tag, $tag_names, true)) {
-                    $missing_tags[] = $tag;
+                // Tags must exist (Master API path adds tags)
+                $tag_names = wp_get_post_tags($pid, array('fields' => 'names'));
+                if (empty($tag_names)) {
+                    throw new Exception('Post ID ' . $pid . ' has no tags.');
                 }
-            }
-            if (!empty($missing_tags)) {
-                throw new Exception('Missing expected tags: ' . implode(', ', $missing_tags));
+
+                // Photo: featured image or inline <img>
+                $has_thumb = function_exists('has_post_thumbnail') ? has_post_thumbnail($pid) : false;
+                $has_img_in_content = (bool) preg_match('/<img[^>]+src=["\']([^"\']+)["\']/i', $p->post_content);
+                if (!$has_thumb && !$has_img_in_content) {
+                    throw new Exception('Post ID ' . $pid . ' has no featured image or inline image.');
+                }
+
+                $validated++;
             }
 
-            $this->log_info('✅ Story generated and validated. Post ID: ' . $created_post_id);
-            return 'Story generated with title, excerpt, image in content, and tags. Post ID: ' . $created_post_id;
+            $this->log_info('✅ Validated ' . $validated . ' AI-generated post(s).');
+            return 'Validated ' . $validated . ' AI-generated post(s) with excerpt, tags, and photos.';
 
         } finally {
-            remove_filter('pre_http_request', $mock, 10);
-            // Cleanup created post to keep environment tidy
-            if (!empty($created_post_id)) {
-                wp_delete_post($created_post_id, true);
-            }
+            // Intentionally keep generated posts for inspection; no cleanup here.
         }
     }
 }
