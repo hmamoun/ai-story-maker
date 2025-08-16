@@ -33,6 +33,9 @@ class AISTMA_Log_Manager {
 	public function __construct() {
 		//add_action( 'admin_init', array( __CLASS__, 'aistma_create_log_table' ) );
 		$this->aistma_create_log_table();
+		
+		// Fix any existing empty log types
+		self::aistma_fix_empty_log_types();
 	}
 
 	/**
@@ -69,6 +72,12 @@ class AISTMA_Log_Manager {
 
 		global $wpdb;
 		$table = $wpdb->prefix . 'aistma_log_table';
+		
+		// Replace empty or null type with 'info'
+		if ( empty( $type ) || is_null( $type ) || '' === trim( $type ) ) {
+			$type = 'info';
+		}
+		
 		// Log table is a custom table.
      // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$wpdb->insert(
@@ -82,29 +91,75 @@ class AISTMA_Log_Manager {
 			array( '%s', '%s', '%s', '%s' )
 		);
 		wp_cache_delete( 'aistma_log_table' );
+		wp_cache_delete( 'aistma_log_table_all' );
+		wp_cache_delete( 'aistma_log_table_filtered' );
 	}
 
-	/**
+		/**
 	 * Render logs table in admin.
 	 *
 	 * @return void
 	 */
 	public static function aistma_log_table_render() {
 		global $wpdb;
-		$logs = wp_cache_get( 'aistma_log_table' );
+		
+		// Check if we should show all logs or only success and error
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading filter preference for display only
+		$show_all_logs = isset( $_GET['show_all_logs'] ) && '1' === $_GET['show_all_logs'];
+		
+		// Create cache key based on filter
+		$cache_key = $show_all_logs ? 'aistma_log_table_all' : 'aistma_log_table_filtered';
+		$logs = wp_cache_get( $cache_key );
 
 		if ( false === $logs ) {
+			// Build query based on filter
+			$where_clause = $show_all_logs ? '' : "WHERE log_type IN ('success', 'error')";
+			
 			// Log table is a custom table.
-         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-			$logs = $wpdb->get_results( "SELECT * FROM `{$wpdb->prefix}aistma_log_table` ORDER BY created_at DESC LIMIT 0, 25" );
-			wp_cache_set( 'aistma_log_table', $logs, '', 300 );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$logs = $wpdb->get_results( "SELECT * FROM `{$wpdb->prefix}aistma_log_table` {$where_clause} ORDER BY created_at DESC LIMIT 0, 25" );
+			wp_cache_set( $cache_key, $logs, '', 300 );
 		}
 
-		// Make logs available to the template.
+		// Make logs available to the template and handle empty log types
 		$logs = is_array( $logs ) ? $logs : array();
+		
+		// Process logs to replace empty types with 'info'
+		foreach ( $logs as $log ) {
+			if ( empty( $log->log_type ) || is_null( $log->log_type ) || '' === trim( $log->log_type ) ) {
+				$log->log_type = 'info';
+			}
+		}
 
 		// Include the template.
 		include plugin_dir_path( __FILE__ ) . '../admin/templates/log-table-template.php';
+	}
+
+	/**
+	 * Fix empty log types by setting them to 'info'.
+	 *
+	 * @return int Number of rows updated
+	 */
+	public static function aistma_fix_empty_log_types() {
+		global $wpdb;
+		$table = $wpdb->prefix . 'aistma_log_table';
+		
+		// Update empty, null, or whitespace-only log types to 'info'
+		// Log table is a custom table.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$updated = $wpdb->query( 
+			$wpdb->prepare(
+				"UPDATE `{$table}` SET log_type = %s WHERE log_type IS NULL OR log_type = '' OR TRIM(log_type) = ''",
+				'info'
+			)
+		);
+		
+		// Clear cache after update
+		wp_cache_delete( 'aistma_log_table' );
+		wp_cache_delete( 'aistma_log_table_all' );
+		wp_cache_delete( 'aistma_log_table_filtered' );
+		
+		return $updated;
 	}
 
 	/**

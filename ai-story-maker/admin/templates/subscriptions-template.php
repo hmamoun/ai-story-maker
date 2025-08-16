@@ -80,44 +80,60 @@ $current_user_email = $current_user->user_email;
 	});
 </script>
 <div class="aistma-packages-container">
-    <?php foreach ( $packages as $package ) : ?>
-        <div 
-            class="aistma-package-box"
+    <?php foreach ( $packages as $package ) : 
+        // Build the subscription URL with package ID, domain, port, and email
+        $package_subscription_url = add_query_arg(
+            array(
+                'domain' => rawurlencode($current_domain),
+                'port' => $current_port ? rawurlencode($current_port) : '',
+                'email' => rawurlencode($current_user_email),
+                'package_name' => rawurlencode($package['name']),
+            ),
+            $base_url
+        );
+    ?>
+        <a 
+            href="<?php echo esc_url( $package_subscription_url ); ?>"
+            target="_blank"
+            class="aistma-package-box aistma-package-clickable"
             data-package-name="<?php echo esc_attr( isset( $package['name'] ) ? $package['name'] : '' ); ?>"
-            data-package-id="<?php echo esc_attr( isset( $package['id'] ) ? $package['id'] : '' ); ?>"
-        >
+          >
             <div class="aistma-package-title"><?php echo esc_html( $package['name'] ); ?></div>
             
             <div class="aistma-package-meta">
                 <span><strong>Price:</strong> $<?php echo esc_html( $package['price'] ); ?></span>
-                <span><strong>Monthly Generated Stories:</strong> <?php echo esc_html( $package['credits'] ); ?></span>
+				<span><strong>
+    <?php 
+    $stories_count = intval($package['stories']);
+    $interval_count = intval($package['interval_count']);
+    $interval = $package['interval'];
+    
+    // Handle stories display - hide if only 1 story, use singular if 1, plural if more
+    if ($stories_count > 1) {
+        echo esc_html($stories_count . ' stories');
+    } else {
+        echo esc_html('1 story');
+    }
+    
+    echo ' every ';
+    
+    // Handle interval display - singular if count is 1, plural if more
+    if ($interval_count > 1) {
+        echo esc_html($interval_count . ' ' . $interval . 's');
+    } else {
+        echo esc_html($interval);
+    }
+    ?>
+</span>
                 <div class="aistma-current-plan-line" style="display:none;"></div>
             </div>
-        </div>
+        </a>
     <?php endforeach; ?>
 </div>
 
-<?php
-// Build the subscription URL with the same GET values
-$subscription_url = add_query_arg(
-    array(
-        'domain' => rawurlencode($current_domain),
-        'port' => $current_port ? rawurlencode($current_port) : '',
-		'email' => rawurlencode($current_user_email),
-    ),
-    $base_url
-);
-?>
-
-<div class="aistma-subscribe-button-container">
-    <a href="<?php echo esc_url( $subscription_url ); ?>" target="_blank" class="button button-primary button-hero">
-        <?php esc_html_e( 'Go to subscription page', 'ai-story-maker' ); ?>
-    </a>
-    <p class="aistma-subscribe-description">
-  		<?php esc_html_e( 'Click the Subscribe button to view all available plans and choose the one that best fits your needs. This is the plugin\'s secure official page on Exedotcom.ca, where more details on plans are available. The button shows "Go to subscription page".', 'ai-story-maker' ); ?>
-
-	</p>
-</div>
+<p class="aistma-subscribe-description">
+	<?php esc_html_e( 'Click on any package above to go directly to the subscription page for that specific plan. This will take you to the plugin\'s secure official page on Exedotcom.ca with more details.', 'ai-story-maker' ); ?>
+</p>
 </div>
 
 <div id="tab-api_keys" class="aistma-tab-content" style="display: <?php echo ( $active_tab === 'api_keys' ) ? 'block' : 'none'; ?>;">

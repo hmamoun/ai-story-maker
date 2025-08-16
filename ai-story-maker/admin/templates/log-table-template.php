@@ -13,6 +13,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 <div class="wrap">
 	<div class="aistma-style-settings">
 		<h2><?php esc_html_e( 'AI Story Maker Logs', 'ai-story-maker' ); ?></h2>
+		
+		<div class="aistma-log-filter-container">
+			<label>
+				<input type="checkbox" id="aistma-show-all-logs" <?php checked( isset( $_GET['show_all_logs'] ) && '1' === $_GET['show_all_logs'] ); ?>>
+				<?php esc_html_e( 'Show all logs (by default only success and error events are shown)', 'ai-story-maker' ); ?>
+			</label>
+		</div>
+		
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 			<?php wp_nonce_field( 'aistma_clear_logs_action', 'aistma_clear_logs_nonce' ); ?>
 			<input type="hidden" name="redirect_to" value="<?php echo esc_url( admin_url( 'admin.php?page=aistma-settings&tab=log' ) ); ?>">
@@ -36,9 +44,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<tr>
 							<td><?php echo esc_html( $log->id ); ?></td>
 							<td>
-								<strong style="color:<?php echo ( 'error' === $log->log_type ) ? 'red' : 'green'; ?>;">
-						<?php echo esc_html( $log->log_type ); ?>
-								</strong>
+								<span class="log-type-<?php echo esc_attr( $log->log_type ); ?>">
+									<?php echo esc_html( ucfirst( $log->log_type ) ); ?>
+								</span>
 							</td>
 							<td><?php echo esc_html( $log->message ); ?></td>
 							<td><?php echo esc_html( ! empty( $log->request_id ) ? $log->request_id : 'N/A' ); ?></td>

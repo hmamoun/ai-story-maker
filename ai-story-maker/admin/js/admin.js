@@ -391,9 +391,14 @@ function aistma_get_subscription_status() {
 
                 // Compute concise line
                 const nextBilling = formatDateYYYYMMMDD(data.next_billing_date);
-                const remainingDays = data.next_billing_date && (typeof data.next_billing_date.days_until_billing !== 'undefined') ? data.next_billing_date.days_until_billing : 'N/A';
+                // days remaining is the difference in days between today and next billing date
+                const remainingDays = nextBilling ? Math.ceil((new Date(nextBilling) - new Date()) / (1000 * 60 * 60 * 24)) : 'N/A';
                 const creditsUsed = typeof data.credits_used !== 'undefined' ? data.credits_used : 'N/A';
-                const line = `Your current plan, stories generated: (${creditsUsed}) next billing (${nextBilling}), remaining days (${remainingDays}), stories remaining (${data.credits_total})`;
+                
+                // storiesRemaining is the total credits - credits used
+                const storiesRemaining = typeof data.credits_total !== 'undefined' ? data.credits_total - data.credits_used : 'N/A';
+                //  const line = `Your current plan, stories generated during this cycle: (${creditsUsed}) next billing (${nextBilling}), remaining days (${remainingDays}), stories remaining (${data.credits_total})`;
+                const line = `This cycle: ${creditsUsed} stories created.  ${storiesRemaining} stories remaining. Next billing: ${nextBilling}. ${remainingDays} days left.`;
 
                 if (card) {
                     // Remove any existing highlight first
@@ -474,3 +479,23 @@ function aistma_get_subscription_status() {
             statusElement.innerHTML = '<strong>Error:</strong> Could not check subscription status. Please try again later.';
         });
 }
+
+// Log filtering functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const showAllLogsCheckbox = document.getElementById('aistma-show-all-logs');
+    
+    if (showAllLogsCheckbox) {
+        showAllLogsCheckbox.addEventListener('change', function() {
+            const currentUrl = new URL(window.location.href);
+            
+            if (this.checked) {
+                currentUrl.searchParams.set('show_all_logs', '1');
+            } else {
+                currentUrl.searchParams.delete('show_all_logs');
+            }
+            
+            // Redirect to the updated URL
+            window.location.href = currentUrl.toString();
+        });
+    }
+});

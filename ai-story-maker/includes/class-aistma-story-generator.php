@@ -568,7 +568,7 @@ class AISTMA_Story_Generator {
 			update_post_meta( $post_id, 'ai_story_maker_total_tokens', $total_tokens ?? 'N/A' );
 			update_post_meta( $post_id, 'ai_story_maker_request_id', $request_id ?? 'N/A' );
 			update_post_meta( $post_id, 'ai_story_maker_generated_via', 'master_api' );
-			$this->aistma_log_manager->log( 'success', 'AI-generated news article created via Master API: ' . get_permalink( $post_id ), $request_id );
+			// $this->aistma_log_manager->log( 'success', 'AI-generated news article created via Master API: ' . get_permalink( $post_id ), $request_id );
 		}
 
 		// Log usage from Master API response

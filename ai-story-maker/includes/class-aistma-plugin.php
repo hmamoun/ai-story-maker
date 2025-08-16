@@ -119,7 +119,7 @@ class AISTMA_Plugin {
 				$next_schedule_timestamp = time() + $n * DAY_IN_SECONDS;
 				wp_schedule_event( $next_schedule_timestamp, 'daily', 'aistma_generate_story_event' );
 				/* translators: Formatting the date for the next schedule to be come readable. */
-				$log_manager->log( 'info', sprintf( __( 'Set next schedule to %s', 'ai-story-maker' ), self::format_date_for_display( $next_schedule_timestamp ) ) );
+				// $log_manager->log( 'info', sprintf( __( 'Set next schedule to %s', 'ai-story-maker' ), self::format_date_for_display( $next_schedule_timestamp ) ) );
 			}
 		}
 	}
