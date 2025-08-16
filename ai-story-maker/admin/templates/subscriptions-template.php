@@ -87,7 +87,8 @@ $current_user_email = $current_user->user_email;
                 'domain' => rawurlencode($current_domain),
                 'port' => $current_port ? rawurlencode($current_port) : '',
                 'email' => rawurlencode($current_user_email),
-                'package_name' => rawurlencode($package['name']),
+                // Send package name as plain value; add_query_arg will urlencode
+                'package_name' => isset($package['name']) ? $package['name'] : '',
             ),
             $base_url
         );
@@ -102,7 +103,7 @@ $current_user_email = $current_user->user_email;
             
             <div class="aistma-package-meta">
                 <span><strong>Price:</strong> $<?php echo esc_html( $package['price'] ); ?></span>
-				<span><strong>
+				<span>
     <?php 
     $stories_count = intval($package['stories']);
     $interval_count = intval($package['interval_count']);

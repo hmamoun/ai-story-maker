@@ -325,10 +325,21 @@
 
 /* Enhanced Package Boxes */
 .aistma-packages-container {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+	display: flex !important;
+	flex-direction: row;
 	gap: 25px;
 	padding: 20px 0;
+	flex-wrap: nowrap !important; /* keep in one row */
+	align-items: stretch; /* equal heights */
+	justify-content: flex-start;
+	overflow-x: auto; /* allow horizontal scroll if many cards */
+	-webkit-overflow-scrolling: touch;
+}
+
+/* Ensure uniform card sizing and single-row layout */
+.aistma-packages-container > .aistma-package-box {
+	flex: 0 0 320px !important;
+
 }
 
 .aistma-package-box {
@@ -664,10 +675,12 @@ tr:hover .row-actions {
 		grid-template-columns: 1fr;
 		gap: 20px;
 	}
-	
+
 	.aistma-packages-container {
-		grid-template-columns: 1fr;
+		display: flex;
+		flex-direction: column;
 		gap: 20px;
+		overflow-x: visible;
 	}
 	
 	.aistma-setting-item {
