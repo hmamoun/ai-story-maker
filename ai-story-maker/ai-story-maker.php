@@ -5,6 +5,7 @@
  * Description: AI-powered content generator for WordPress — create engaging stories with a single click.
  * Version: 2.0.0
  * Author: Hayan Mamoun
+ * Contributors: hmamoun
  * Author URI: https://exedotcom.ca
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
