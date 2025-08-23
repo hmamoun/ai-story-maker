@@ -1,0 +1,64 @@
+<?php
+/**
+ * Admin Log Table Template
+ *
+ * @package AI Story Maker
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+
+?>
+<div class="wrap">
+	<div class="aistma-style-settings">
+		<h2><?php esc_html_e( 'AI Story Maker Logs', 'ai-story-maker' ); ?></h2>
+		
+		<div class="aistma-log-filter-container">
+			<label>
+				<input type="checkbox" id="aistma-show-all-logs" <?php checked( isset( $_GET['show_all_logs'] ) && '1' === $_GET['show_all_logs'] ); ?>>
+				<?php esc_html_e( 'Show all logs (by default only success and error events are shown)', 'ai-story-maker' ); ?>
+			</label>
+		</div>
+		
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<?php wp_nonce_field( 'aistma_clear_logs_action', 'aistma_clear_logs_nonce' ); ?>
+			<input type="hidden" name="redirect_to" value="<?php echo esc_url( admin_url( 'admin.php?page=aistma-settings&tab=log' ) ); ?>">
+			<input type="hidden" name="action" value="aistma_clear_logs">
+			<input type="submit" class="button button-secondary" value="<?php esc_attr_e( 'Clear Logs', 'ai-story-maker' ); ?>">
+		</form>
+
+		<table class="widefat">
+			<thead>
+				<tr>
+					<th><?php esc_html_e( 'ID', 'ai-story-maker' ); ?></th>
+					<th><?php esc_html_e( 'Type', 'ai-story-maker' ); ?></th>
+					<th><?php esc_html_e( 'Message', 'ai-story-maker' ); ?></th>
+					<th><?php esc_html_e( 'Request ID', 'ai-story-maker' ); ?></th>
+					<th><?php esc_html_e( 'Timestamp', 'ai-story-maker' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php if ( ! empty( $logs ) ) : ?>
+					<?php foreach ( $logs as $log ) : ?>
+						<tr>
+							<td><?php echo esc_html( $log->id ); ?></td>
+							<td>
+								<span class="log-type-<?php echo esc_attr( $log->log_type ); ?>">
+									<?php echo esc_html( ucfirst( $log->log_type ) ); ?>
+								</span>
+							</td>
+							<td><?php echo esc_html( $log->message ); ?></td>
+							<td><?php echo esc_html( ! empty( $log->request_id ) ? $log->request_id : 'N/A' ); ?></td>
+							<td><?php echo esc_html( $log->created_at ); ?></td>
+						</tr>
+					<?php endforeach; ?>
+				<?php else : ?>
+					<tr>
+						<td colspan="5"><?php esc_html_e( 'No logs found.', 'ai-story-maker' ); ?></td>
+					</tr>
+				<?php endif; ?>
+			</tbody>
+		</table>
+	</div>
+</div>

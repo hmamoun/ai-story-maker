@@ -1,0 +1,111 @@
+/*
+
+Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
+Description: AI-powered content generator for WordPress — create engaging stories with a single click.
+Version: 0.1.0
+Author: Hayan Mamoun
+Author URI: https://exedotcom.ca
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: ai-story-maker
+Domain Path: /languages
+Requires PHP: 7.4
+Requires at least: 5.8
+Tested up to: 6.7
+*/
+.aistma-story-scroller {
+	width: 100%;
+	color:var(--wp--preset--color--background, #fff);
+	padding: 10px 0;
+
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	z-index: 1000;
+}
+
+.aistma-story-items {
+	display: flex;
+	gap: 20px;
+	white-space: nowrap;
+	animation: scroll-news 20s linear infinite;
+}
+
+.story-item a {
+	color:var(--wp--preset--color--background, #fff);
+	text-decoration: none;
+	font-weight: bold;
+}
+
+@keyframes scroll-news {
+	from {
+		transform: translateX(100%);
+	}
+	to {
+		transform: translateX(-100%);
+	}
+}
+
+
+
+	.ai-story-container {
+		display: flex;
+		max-width: 1000px;
+		margin: auto;
+		padding: 20px;
+		background: white; /* Added background color */
+	}
+	.ai-story-article {
+		flex: 2;
+		padding-right: 20px;
+	}
+	.ai-story-header h1 {
+		font-size: 2rem;
+		color: #333;
+	}
+	.ai-story-meta {
+		color: #777;
+		font-size: 0.9rem;
+	}
+	.ai-story-content {
+		font-size: 1.1rem;
+		line-height: 1.6;
+	}
+	.ai-news-references {
+		margin-top: 30px;
+		padding: 15px;
+		background: #f9f9f9;
+		border-left: 5px solid #0073aa;
+	}
+	.ai-story-sidebar {
+		flex: 1;
+		background: #f4f4f4;
+		padding: 15px;
+		border-left: 1px solid #ddd;
+	}
+	.search-form {
+		margin-bottom: 20px;
+	}
+	.search-field {
+		width: 100%;
+		padding: 8px;
+	}
+	.ai-story-related h2 {
+		font-size: 1.5rem;
+	}
+	.ai-news-list {
+		list-style: none;
+		padding: 0;
+	}
+	.ai-news-list li {
+		margin-bottom: 5px;
+	}
+	.ai-news-list li a {
+		text-decoration: none;
+		color: #0073aa;
+	}
+
+
+	.ai-story-maker-footer {
+		font-size: 0.9em; text-align: center; margin-top: 2em; color: #777;
+	}

@@ -1,0 +1,1162 @@
+/*
+ * -----------------------------------------------------------------------------
+ * File: admin.css
+ * Path: /Users/ano/Documents/repos/ai-story-maker/ai-story-maker/admin/css/admin.css
+ *
+ * Description:
+ * This stylesheet provides style definitions for the AI Story Maker admin
+ * settings interface. It contains styling for the settings container, forms,
+ * input fields, labels, and specific row states such as newly added prompts
+ * and rows marked for deletion.
+ * -----------------------------------------------------------------------------
+ */
+
+/* Container for AI Story Maker settings */
+.aistma-style-settings {
+	padding: 20px;
+	background: #fff;
+	border-radius: 5px;
+	box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+	max-width: 1200px;
+	margin: 20px 0;
+}
+
+/* Header styles within settings */
+.aistma-style-settings h2 {
+	border-bottom: 2px solid #0073aa;
+	padding-bottom: 10px;
+	margin-bottom: 20px;
+}
+
+/* Label styling for form fields */
+.aistma-style-settings label {
+	font-weight: bold;
+	display: block;
+	margin-top: 15px;
+}
+
+/* Input text fields */
+.aistma-style-settings input[type="text"] {
+	width: 90%;
+	padding: 8px;
+	margin-top: 5px;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+}
+
+/* Select field styling */
+.aistma-style-settings select {
+	-webkit-appearance: none;
+		-moz-appearance: none;
+			appearance: none;
+	background: #ccc;
+	height: 32px;
+	line-height: 32px;
+	padding: 0 8px;
+	border: 1px solid #ccc;
+}
+
+/* Styling for inline fields grouping */
+.aistma-style-settings .inline-fields {
+	display: flex;
+	gap: 10px;
+}
+
+.aistma-style-settings .inline-fields input {
+	flex: 1;
+}
+
+/* Submit button styling */
+.aistma-style-settings .submit-button {
+	margin-top: 20px;
+}
+
+.wp-core-ui .button-primary {
+	display: block;
+	margin: auto;
+}
+#add-prompt {
+	display: block ;
+	margin-right: 0;
+}
+
+/* Style for deleted prompt text */
+.deleted-prompt {
+	text-decoration: line-through;
+	color: red;
+}
+
+/* New row styling */
+.new-prompt-row {
+	background-color: #e0f7fa !important;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Row marked for deletion */
+.marked-for-deletion {
+	background-color: #ffccbc !important;
+	transition: opacity 0.5s ease, background-color 0.5s ease;
+	opacity: 0.5;
+}
+
+.wp-list-table td[data-field="category"],
+.wp-list-table td[data-field="photos"],
+.wp-list-table td[data-field="active"] {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	text-align: center;
+}
+
+/* Enhanced Tab Navigation Styles */
+.nav-tab-wrapper {
+	border-bottom: 2px solid #0073aa;
+	margin-bottom: 20px;
+}
+
+.nav-tab {
+	transition: all 0.3s ease;
+	border-radius: 4px 4px 0 0;
+	margin-right: 5px;
+}
+
+.nav-tab:hover {
+	background-color: #f1f1f1;
+	border-color: #0073aa;
+}
+
+.nav-tab-active {
+	background-color: #0073aa;
+	color: #fff;
+	border-color: #0073aa;
+}
+
+/* Enhanced Settings Grid Layout */
+.aistma-settings-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+	gap: 25px;
+	margin: 25px 0;
+}
+
+/* Compact Vertical Settings Layout */
+.aistma-settings-vertical {
+	display: flex;
+	flex-direction: column;
+	gap: 15px;
+	margin: 20px 0;
+	max-width: 800px;
+}
+
+.aistma-setting-item {
+	background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+	border: 1px solid #e1e1e1;
+	border-radius: 12px;
+	padding: 25px;
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+	transition: all 0.3s ease;
+	position: relative;
+	overflow: hidden;
+}
+
+/* Compact setting item for vertical layout */
+.aistma-setting-item-compact {
+	background: #ffffff;
+	border: 1px solid #ddd;
+	border-radius: 6px;
+	padding: 15px 20px;
+	margin-bottom: 12px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	transition: all 0.2s ease;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	min-height: 60px;
+}
+
+.aistma-setting-item-compact:hover {
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+	border-color: #0073aa;
+}
+
+.aistma-setting-item-compact .setting-label {
+	flex: 1;
+	margin-right: 20px;
+}
+
+.aistma-setting-item-compact .setting-label h4 {
+	margin: 0 0 5px 0;
+	font-size: 14px;
+	font-weight: 600;
+	color: #2c3e50;
+}
+
+.aistma-setting-item-compact .setting-label p {
+	margin: 0;
+	font-size: 12px;
+	color: #666;
+	line-height: 1.4;
+}
+
+.aistma-setting-item-compact .setting-control {
+	flex-shrink: 0;
+	min-width: 200px;
+}
+
+.aistma-setting-item-compact .setting-control select {
+	width: 100%;
+	padding: 8px 12px;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	background: #fff;
+	font-size: 13px;
+}
+
+.aistma-setting-item-compact .setting-control input[type="text"] {
+	width: 100%;
+	padding: 8px 12px;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	font-size: 13px;
+}
+
+.aistma-setting-item-compact .setting-control input[type="checkbox"] {
+	transform: scale(1.1);
+	margin-right: 8px;
+}
+
+/* Full-width setting items for checkboxes */
+.aistma-setting-item-full {
+	background: #ffffff;
+	border: 1px solid #ddd;
+	border-radius: 6px;
+	padding: 15px 20px;
+	margin-bottom: 12px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	transition: all 0.2s ease;
+}
+
+.aistma-setting-item-full:hover {
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+	border-color: #0073aa;
+}
+
+.aistma-setting-item-full label {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	font-weight: 500;
+	color: #2c3e50;
+	cursor: pointer;
+}
+
+.aistma-setting-item-full input[type="checkbox"] {
+	transform: scale(1.1);
+	margin-top: 2px;
+	flex-shrink: 0;
+}
+
+.aistma-setting-item-full .checkbox-content {
+	flex: 1;
+}
+
+.aistma-setting-item-full .checkbox-description {
+	margin-top: 8px;
+	font-size: 12px;
+	color: #666;
+	line-height: 1.4;
+	font-weight: normal;
+}
+
+.aistma-setting-item::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 3px;
+	background: linear-gradient(90deg, #0073aa, #005a87);
+}
+
+.aistma-setting-item:hover {
+	box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+	transform: translateY(-3px);
+	border-color: #0073aa;
+}
+
+.aistma-setting-item label {
+	font-weight: 600;
+	color: #2c3e50;
+	margin-bottom: 12px;
+	display: block;
+	font-size: 14px;
+}
+
+.aistma-setting-item p {
+	margin: 12px 0;
+	line-height: 1.6;
+	color: #555;
+	font-size: 13px;
+}
+
+.aistma-setting-item select {
+	width: 100%;
+	max-width: 250px;
+	margin-top: 12px;
+	padding: 10px 12px;
+	border: 2px solid #ddd;
+	border-radius: 6px;
+	background: #fff;
+	font-size: 14px;
+	transition: border-color 0.3s ease;
+}
+
+.aistma-setting-item select:focus {
+	border-color: #0073aa;
+	outline: none;
+	box-shadow: 0 0 0 3px rgba(0, 115, 170, 0.1);
+}
+
+.aistma-setting-item input[type="checkbox"] {
+	margin-right: 10px;
+	transform: scale(1.2);
+}
+
+/* Enhanced Package Boxes */
+.aistma-packages-container {
+	display: flex !important;
+	flex-direction: row;
+	gap: 25px;
+	padding: 20px 0;
+	flex-wrap: nowrap !important; /* keep in one row */
+	align-items: stretch; /* equal heights */
+	justify-content: flex-start;
+	overflow-x: auto; /* allow horizontal scroll if many cards */
+	-webkit-overflow-scrolling: touch;
+}
+
+/* Ensure uniform card sizing and single-row layout */
+.aistma-packages-container > .aistma-package-box {
+	flex: 0 0 320px !important;
+
+}
+
+.aistma-package-box {
+	border: 2px solid #e1e1e1;
+	border-radius: 12px;
+	padding: 25px;
+	background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+	transition: all 0.3s ease;
+	position: relative;
+    overflow: hidden;
+    display: block;
+    text-decoration: none;
+    color: inherit;
+}
+
+/* Enhanced clickable package boxes */
+.aistma-package-clickable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.aistma-package-clickable:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
+    border-color: #0073aa;
+    text-decoration: none;
+    color: inherit;
+}
+
+.aistma-package-clickable:focus {
+    outline: 2px solid #0073aa;
+    outline-offset: 2px;
+    text-decoration: none;
+    color: inherit;
+}
+
+.aistma-package-clickable:active {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.aistma-package-clickable::after {
+    content: 'Click to subscribe';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 115, 170, 0.95);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.aistma-package-clickable:hover::after {
+    opacity: 1;
+}
+
+.aistma-package-box::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 4px;
+	background: linear-gradient(90deg, #ef06d4, #20c997);
+}
+
+/* Removed - replaced with .aistma-package-clickable:hover styles */
+
+/* Highlight for current plan */
+.aistma-package-box.aistma-current-package {
+    border-color: #0073aa;
+    box-shadow: 0 0 0 3px rgba(0, 115, 170, 0.15), 0 8px 16px rgba(0, 0, 0, 0.08);
+}
+
+.aistma-package-box.aistma-current-package::after {
+    content: 'Current';
+    position: absolute;
+    top: 10px;
+    left: -36px;
+    transform: rotate(-45deg);
+    background: #0073aa;
+    color: #fff;
+    padding: 6px 50px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    pointer-events: none;
+}
+
+.aistma-package-box.aistma-current-package .aistma-current-plan-line {
+    color: #005a87 !important;
+}
+
+.aistma-package-title {
+	font-size: 22px;
+	font-weight: 700;
+	margin-bottom: 15px;
+	color: #2c3e50;
+	text-align: center;
+}
+
+.aistma-package-description {
+	font-size: 14px;
+	color: #555;
+	white-space: pre-wrap;
+	margin-bottom: 20px;
+	line-height: 1.2;
+}
+
+.aistma-package-meta {
+	font-size: 13px;
+	color: #666;
+	text-align: center;
+}
+
+.aistma-package-meta span {
+	display: block;
+	margin: 8px 0;
+	font-weight: 500;
+}
+
+.aistma-package-meta .button {
+	margin-top: 15px;
+	width: 100%;
+	padding: 12px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+/* Enhanced Generate Stories Section */
+.aistma-generate-stories-section {
+	background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+	border: 2px solid #e1e1e1;
+	border-radius: 12px;
+	padding: 30px;
+	margin: 30px 0;
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+	text-align: center;
+}
+
+.aistma-generate-stories-section h3 {
+	color: #2c3e50;
+	margin-bottom: 15px;
+	border-bottom: 2px solid #0073aa;
+	padding-bottom: 15px;
+	font-size: 20px;
+}
+
+.aistma-generate-stories-section p {
+	margin-bottom: 20px;
+	line-height: 1.6;
+	color: #555;
+	font-size: 14px;
+}
+
+.aistma-generate-stories-section button {
+	margin-top: 15px;
+	padding: 12px 24px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+/* Enhanced API Keys Section */
+.aistma-subscribe-or-api-keys-content-wrapper {
+	min-height: 100px;
+	border: 2px solid #e1e1e1;
+	margin-bottom: 25px;
+	padding: 25px;
+	border-radius: 12px;
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+	background: #fff;
+}
+
+.aistma-subscribe-or-api-keys-content-wrapper h2 {
+	color: #2c3e50;
+	margin-bottom: 15px;
+	border-bottom: 2px solid #0073aa;
+	padding-bottom: 10px;
+}
+
+.aistma-subscribe-or-api-keys-content-wrapper p {
+	margin-bottom: 20px;
+	line-height: 1.6;
+	color: #555;
+}
+
+.aistma-subscribe-or-api-keys-content-wrapper label {
+	font-weight: 600;
+	color: #2c3e50;
+	margin-bottom: 8px;
+	display: block;
+}
+
+.aistma-subscribe-or-api-keys-content-wrapper input[type="text"] {
+	width: 100%;
+	padding: 12px;
+	margin-bottom: 15px;
+	border: 2px solid #ddd;
+	border-radius: 6px;
+	font-size: 14px;
+	transition: border-color 0.3s ease;
+}
+
+.aistma-subscribe-or-api-keys-content-wrapper input[type="text"]:focus {
+	border-color: #0073aa;
+	outline: none;
+	box-shadow: 0 0 0 3px rgba(0, 115, 170, 0.1);
+}
+
+.aistma-subscribe-or-api-keys-content-wrapper .inline-fields {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 15px;
+	margin-bottom: 15px;
+}
+
+/* Enhanced Messages */
+#aistma-settings-message {
+	padding: 12px 15px;
+	border-radius: 6px;
+	margin: 15px 0;
+	font-weight: 500;
+	transition: all 0.3s ease;
+}
+
+/* Orders Management Styles */
+.status-active {
+	color: #46b450;
+	font-weight: bold;
+}
+
+.status-inactive {
+	color: #dc3232;
+	font-weight: bold;
+}
+
+.status-revoked {
+	color: #999;
+	font-weight: bold;
+}
+
+.row-actions {
+	visibility: hidden;
+}
+
+tr:hover .row-actions {
+	visibility: visible;
+}
+
+.row-actions .disable a {
+	color: #dc3232;
+}
+
+.row-actions .enable a {
+	color: #46b450;
+}
+
+.row-actions .revoke a {
+	color: #999;
+}
+
+.row-actions span:not(:last-child)::after {
+	content: ' | ';
+	color: #999;
+}
+
+/* Search form styling */
+.search-form {
+	margin-bottom: 20px;
+	padding: 15px;
+	background: #f9f9f9;
+	border: 1px solid #e1e1e1;
+	border-radius: 4px;
+}
+
+.search-form input[type="search"],
+.search-form select,
+.search-form input[type="date"] {
+	margin-right: 10px;
+	padding: 5px 8px;
+	border: 1px solid #ddd;
+	border-radius: 3px;
+}
+
+.search-form input[type="submit"] {
+	margin-right: 10px;
+}
+
+/* Tablenav styling */
+.tablenav-pages {
+	margin: 10px 0;
+}
+
+.tablenav-pages .pagination-links {
+	display: inline-block;
+}
+
+.tablenav-pages .pagination-links a,
+.tablenav-pages .pagination-links span {
+	padding: 5px 10px;
+	margin: 0 2px;
+	border: 1px solid #ddd;
+	text-decoration: none;
+	background: #f9f9f9;
+}
+
+.tablenav-pages .pagination-links a:hover {
+	background: #e1e1e1;
+}
+
+.tablenav-pages .pagination-links .paging-input {
+	background: #0073aa;
+	color: white;
+	border-color: #0073aa;
+}
+
+/* Responsive Design Improvements */
+@media (max-width: 768px) {
+	.aistma-settings-grid {
+		grid-template-columns: 1fr;
+		gap: 20px;
+	}
+
+	.aistma-packages-container {
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
+		overflow-x: visible;
+	}
+	
+	.aistma-setting-item {
+		padding: 20px;
+	}
+	
+	.aistma-package-box {
+		padding: 20px;
+	}
+	
+	.aistma-subscribe-or-api-keys-content-wrapper .inline-fields {
+		grid-template-columns: 1fr;
+		gap: 10px;
+	}
+	
+	.aistma-generate-stories-section {
+		padding: 20px;
+	}
+	
+	.aistma-subscribe-button-container {
+		padding: 20px;
+		margin: 20px 0;
+	}
+	
+	.aistma-subscribe-button-container .button-hero {
+		padding: 12px 30px;
+		font-size: 16px;
+	}
+	
+	/* Compact vertical layout responsive */
+	.aistma-setting-item-compact {
+		flex-direction: column;
+		align-items: stretch;
+		min-height: auto;
+		padding: 15px;
+	}
+	
+	.aistma-setting-item-compact .setting-label {
+		margin-right: 0;
+		margin-bottom: 15px;
+	}
+	
+	.aistma-setting-item-compact .setting-control {
+		min-width: auto;
+	}
+	
+	.aistma-setting-item-full {
+		padding: 15px;
+	}
+}
+
+@media (max-width: 480px) {
+	.aistma-settings-grid {
+		gap: 15px;
+	}
+	
+	.aistma-setting-item {
+		padding: 15px;
+	}
+	
+	.aistma-package-box {
+		padding: 15px;
+	}
+	
+	.aistma-generate-stories-section {
+		padding: 15px;
+	}
+	
+	.nav-tab {
+		font-size: 12px;
+		padding: 8px 12px;
+	}
+	
+	.aistma-subscribe-button-container {
+		padding: 15px;
+	}
+	
+	.aistma-subscribe-button-container .button-hero {
+		padding: 10px 25px;
+		font-size: 14px;
+	}
+	
+	.aistma-subscribe-description {
+		font-size: 13px;
+	}
+}
+
+/* Enhanced Subscribe Button Container */
+.aistma-subscribe-button-container {
+	text-align: center;
+	margin: 30px 0;
+	padding: 30px;
+	background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+	border: 2px solid #e1e1e1;
+	border-radius: 12px;
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.aistma-subscribe-button-container .button-hero {
+	padding: 15px 40px;
+	font-size: 18px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 1px;
+	border-radius: 8px;
+	transition: all 0.3s ease;
+	box-shadow: 0 4px 8px rgba(0, 115, 170, 0.3);
+}
+
+.aistma-subscribe-button-container .button-hero:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 6px 12px rgba(0, 115, 170, 0.4);
+}
+
+.aistma-subscribe-description {
+	margin-top: 15px;
+	color: #666;
+	font-size: 14px;
+	line-height: 1.5;
+	max-width: 500px;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+/* Heatmap Styles */
+.aistma-heatmap-section {
+	margin: 30px 0;
+	padding: 20px;
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.aistma-heatmap-header {
+	margin-bottom: 20px;
+}
+
+.aistma-heatmap-stats {
+	display: flex;
+	gap: 30px;
+	margin-bottom: 20px;
+}
+
+.stat-item {
+	text-align: center;
+}
+
+.stat-number {
+	display: block;
+	font-size: 24px;
+	font-weight: bold;
+	color: #0073aa;
+}
+
+.stat-label {
+	font-size: 12px;
+	color: #666;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.aistma-heatmap-calendar {
+	max-width: 800px;
+}
+
+.aistma-heatmap-legend {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 15px;
+	font-size: 12px;
+	color: #666;
+}
+
+.legend-squares {
+	display: flex;
+	gap: 2px;
+}
+
+.legend-square {
+	width: 12px;
+	height: 12px;
+	border-radius: 2px;
+}
+
+.aistma-heatmap-grid {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+}
+
+.aistma-heatmap-container-vertical {
+	display: flex;
+	gap: 10px;
+	align-items: flex-start;
+}
+
+.aistma-heatmap-weekdays-vertical {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin-right: 10px;
+}
+
+.weekday-vertical {
+	font-size: 10px;
+	color: #666;
+	text-align: center;
+	font-weight: 500;
+	height: 12px;
+	line-height: 12px;
+	width: 30px;
+}
+
+.aistma-heatmap-weeks-vertical {
+	display: flex;
+	gap: 2px;
+	overflow-x: auto;
+	padding-bottom: 5px;
+}
+
+.aistma-heatmap-week-vertical {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.aistma-heatmap-day {
+	width: 12px;
+	height: 12px;
+	border-radius: 2px;
+	position: relative;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.aistma-heatmap-day:hover {
+	transform: scale(1.2);
+	z-index: 10;
+}
+
+.day-tooltip {
+	position: absolute;
+	bottom: 100%;
+	left: 50%;
+	transform: translateX(-50%);
+	background: #333;
+	color: white;
+	padding: 4px 8px;
+	border-radius: 4px;
+	font-size: 11px;
+	white-space: nowrap;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.2s ease;
+	z-index: 1000;
+}
+
+.aistma-heatmap-day:hover .day-tooltip {
+	opacity: 1;
+}
+
+/* Intensity classes */
+.intensity-0 { background-color: #ebedf0; }
+.intensity-1 { background-color: #c6e48b; }
+.intensity-2 { background-color: #7bc96f; }
+.intensity-3 { background-color: #239a3b; }
+.intensity-4 { background-color: #196127; }
+
+/* Heatmap responsive design */
+@media (max-width: 768px) {
+	.aistma-heatmap-stats {
+		flex-direction: column;
+		gap: 15px;
+	}
+	
+	.aistma-heatmap-day {
+		width: 10px;
+		height: 10px;
+	}
+	
+	.weekday-vertical {
+		font-size: 9px;
+		width: 25px;
+	}
+	
+	.aistma-heatmap-container-vertical {
+		gap: 5px;
+	}
+	
+	.aistma-heatmap-weekdays-vertical {
+		margin-right: 5px;
+	}
+}
+
+/* Debug info cards below heatmap */
+.aistma-debug-info {
+    background: #f8f9fa;
+    border: 1px solid #e1e1e1;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-top: 16px;
+}
+
+/* Horizontal heatmap (recent posts x days) */
+.aistma-heatmap-container-horizontal {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-x: auto;
+}
+
+.aistma-heatmap-dates,
+.aistma-heatmap-row {
+    display: grid;
+    align-items: center;
+    gap: 2px;
+}
+
+.aistma-heatmap-dates .date-vertical {
+    width: 16px;
+    font-size: 10px;
+    color: #666;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    text-align: left;
+}
+
+.aistma-heatmap-row .aistma-heatmap-day {
+    width: 12px;
+    height: 12px;
+}
+
+.aistma-heatmap-row .post-label,
+.aistma-heatmap-dates .post-label {
+    width: 220px;
+    text-align: left;
+    font-size: 12px;
+    color: #333;
+    margin-right: 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.aistma-views-tabs .tabs-header {
+    display: flex;
+    gap: 8px;
+    margin: 10px 0;
+}
+
+.aistma-views-tabs .tab-btn {
+    border: 1px solid #ddd;
+    background: #f7f7f7;
+    padding: 6px 10px;
+    cursor: pointer;
+}
+
+.aistma-views-tabs .tab-btn.active {
+    background: #0073aa;
+    color: #fff;
+    border-color: #0073aa;
+}
+
+.aistma-views-tabs .tab-pane { display: none; }
+.aistma-views-tabs .tab-pane.active { display: block; }
+
+.aistma-debug-cards {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.aistma-debug-card {
+    background: #ffffff;
+    border: 1px solid #e6e6e6;
+    border-radius: 8px;
+    padding: 10px 14px;
+    min-width: 140px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.aistma-debug-card .debug-card-number {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0073aa;
+}
+
+.aistma-debug-card .debug-card-caption {
+    font-size: 11px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.aistma-debug-recent {
+    font-size: 12px;
+}
+
+.aistma-debug-recent a {
+    text-decoration: none;
+}
+
+.aistma-debug-recent a:hover {
+    text-decoration: underline;
+}
+
+/* Log Filter Checkbox Styling */
+.aistma-log-filter-container {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.aistma-log-filter-container label {
+    margin: 0;
+    font-weight: 500;
+    color: #555;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.aistma-log-filter-container input[type="checkbox"] {
+    transform: scale(1.1);
+    accent-color: #0073aa;
+}
+
+.aistma-log-filter-container:hover {
+    background: #f0f6ff;
+    border-color: #0073aa;
+}
+
+/* Log table enhancements */
+.aistma-style-settings .widefat th {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-bottom: 2px solid #0073aa;
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.aistma-style-settings .widefat tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.aistma-style-settings .widefat tbody tr:hover {
+    background-color: #f0f6ff;
+}
+
+/* Success and error log type styling */
+.log-type-success {
+    color: #46b450;
+    font-weight: 600;
+}
+
+.log-type-error {
+    color: #dc3232;
+    font-weight: 600;
+}
+
+.log-type-info {
+    color: #0073aa;
+    font-weight: 600;
+}
+
+.log-type-message {
+    color: #666;
+    font-weight: 600;
+}
