@@ -5,7 +5,6 @@
  * Description: AI-powered content generator for WordPress — create engaging stories with a single click.
  * Version: 2.0.0
  * Author: Hayan Mamoun
- * Contributors: hmamoun
  * Author URI: https://exedotcom.ca
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -78,10 +77,15 @@ function aistma_handle_generate_story_event() {
 	AISTMA_Story_Generator::generate_ai_stories_with_lock();
 }
 function aistma_get_master_url(string $path = ''): string {
-    $base_url = defined('AISTMA_MASTER_URL') ? rtrim(AISTMA_MASTER_URL, '/') : 'https://exedotcom.ca';
+    $master_url = getenv('AISTMA_MASTER_URL');
+	$base_url = $master_url? $master_url: 'https://exedotcom.ca';
     return rtrim($base_url, '/') . '/' . ltrim($path, '/');
 }
-
+function aistma_get_api_url(string $path = ''): string {
+    $master_url = getenv('AISTMA_MASTER_API');
+	$base_url = $master_url? $master_url: 'https://exedotcom.ca';
+    return rtrim($base_url, '/') . '/' . ltrim($path, '/');
+}
 function aistma_get_instructions_url(): string {
     $default_url = aistma_get_master_url('wp-json/exaig/v1/aistma-general-instructions');
 	return apply_filters('aistma_instructions_url', $default_url);

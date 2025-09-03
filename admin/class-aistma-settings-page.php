@@ -117,8 +117,10 @@ class AISTMA_Settings_Page {
 	}
 
 	public function aistma_get_available_packages(): string {
+
+		$url      = aistma_get_api_url( 'wp-json/exaig/v1/packages-summary' );
 		$response = wp_remote_get(
-			aistma_get_master_url( 'wp-json/exaig/v1/packages-summary' ),
+			$url,
 			array(
 				'timeout' => 10,
 				'headers' => array(
@@ -127,19 +129,60 @@ class AISTMA_Settings_Page {
 				),
 			)
 		);
-	
+
+		// Prepare the standardized wrapper structure
+		$standard_response = [
+			'headers'       => (object) [],
+			'body'          => '[]',
+			'response'      => [ 'code' => 200, 'message' => 'OK' ],
+			'cookies'       => [],
+			'filename'      => null,
+			'http_response' => [ 'data' => null, 'headers' => null, 'status' => null ],
+		];
+
+		$fallback_package = [
+			'name'           => 'subscription server not available',
+			'description'    => 'Service temporarily unavailable or returned no packages',
+			'price'          => 0,
+			'status'         => 'inactive',
+			'stories'        => 0,
+			'interval'       => 'month',
+			'interval_count' => 1,
+		];
+
 		if ( is_wp_error( $response ) ) {
-			return json_encode( [
-				'status'  => 'error',
-				'message' => $response->get_error_message(),
-			] );
+			// Network/transport error: return wrapper with a single fallback package
+			$standard_response['body'] = wp_json_encode( [ $fallback_package ] );
+			return wp_json_encode( $standard_response );
 		}
-		
+
 		$body = wp_remote_retrieve_body( $response );
 
-		return is_string( $body ) ? $body : json_encode( [] );
+		// If body is not a string, or empty, return the fallback package
+		if ( ! is_string( $body ) || '' === trim( $body ) ) {
+			$standard_response['body'] = wp_json_encode( [ $fallback_package ] );
+			return wp_json_encode( $standard_response );
+		}
+
+		// Try to decode to determine whether packages exist
+		$decoded = json_decode( $body, true );
+		if ( json_last_error() !== JSON_ERROR_NONE ) {
+			// Malformed payload from destination; provide fallback
+			$standard_response['body'] = wp_json_encode( [ $fallback_package ] );
+			return wp_json_encode( $standard_response );
+		}
+
+		// If destination returned no packages, provide one fallback package
+		if ( is_array( $decoded ) && empty( $decoded ) ) {
+			$standard_response['body'] = wp_json_encode( [ $fallback_package ] );
+			return wp_json_encode( $standard_response );
+		}
+
+		// Happy path: wrap the original body as a JSON string
+		$standard_response['body'] = is_string( $body ) ? $body : wp_json_encode( $decoded );
+		return wp_json_encode( $standard_response );
 	}
-	
+
 	/**
 	 * Renders the plugin subscriptions page.
 	 *

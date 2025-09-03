@@ -66,16 +66,49 @@ if ( ! isset( $active_tab ) ) {
 		$current_parsed = wp_parse_url($current_site_url);
 		$current_domain = $current_parsed['host'];
 		$current_port = isset($current_parsed['port']) ? $current_parsed['port'] : null;
-		$packages = json_decode( $response_body, true );
+$packages = json_decode( $response_body, true );
+
+// Server-side subscription status fetch (no frontend AJAX)
+$subscription_status = null;
+try {
+    $generator = new \exedotcom\aistorymaker\AISTMA_Story_Generator();
+    $subscription_status = $generator->aistma_get_subscription_status();
+} catch ( \Throwable $e ) {
+    $subscription_status = null;
+}
+
+$current_package_name = ( is_array( $subscription_status ) && ! empty( $subscription_status['valid'] ) ) ? ( $subscription_status['package_name'] ?? '' ) : '';
+
+// Build concise status line
+$status_line = '';
+if ( is_array( $subscription_status ) && ! empty( $subscription_status['valid'] ) ) {
+    $credits_remaining = isset( $subscription_status['credits_remaining'] ) ? intval( $subscription_status['credits_remaining'] ) : null;
+    $next_billing_raw = $subscription_status['next_billing_date'] ?? '';
+    $next_billing = 'N/A';
+    if ( is_array( $next_billing_raw ) ) {
+        $next_billing = $next_billing_raw['formatted_date'] ?? $next_billing_raw['date'] ?? 'N/A';
+    } elseif ( is_string( $next_billing_raw ) && $next_billing_raw !== '' ) {
+        $ts = strtotime( $next_billing_raw );
+        $next_billing = $ts ? gmdate( 'Y-M-d', $ts ) : $next_billing_raw;
+    }
+    $parts = [];
+    if ( null !== $credits_remaining ) {
+        $parts[] = sprintf( '%d stories remaining', $credits_remaining );
+    }
+    if ( $next_billing && 'N/A' !== $next_billing ) {
+        $parts[] = 'Next billing: ' . $next_billing;
+    }
+    if ( ! empty( $current_package_name ) ) {
+        array_unshift( $parts, 'Current plan: ' . $current_package_name );
+    }
+    $status_line = implode( '. ', $parts ) . '.';
+}
 ?>
-<script>
-	// Check subscription status when page loads
-	document.addEventListener('DOMContentLoaded', function() {
-		if (typeof aistma_get_subscription_status === 'function') {
-			aistma_get_subscription_status();
-		}
-	});
-</script>
+<?php if ( $status_line ) : ?>
+    <div id="aistma-subscription-status" class="notice notice-success" style="margin:10px 0;">
+        <?php echo esc_html( $status_line ); ?>
+    </div>
+<?php endif; ?>
 <div class="aistma-packages-container">
     <?php foreach ( $packages as $package ) : 
 		$action_url = add_query_arg(
