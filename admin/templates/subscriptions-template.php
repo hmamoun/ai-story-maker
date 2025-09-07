@@ -1,7 +1,9 @@
 <?php
 /**
  * Template for the subscriptions page.
- *
+ * called from AISTMA_Settings_Page::aistma_subscriptions_page_render()
+ * which is called from AISTMA_Admin::aistma_admin_render_main_page()
+ * to display the subscription options and api keys
  * @package AI_Story_Maker
  * @since   0.1.0
  */
@@ -15,9 +17,34 @@ if ( ! isset( $active_tab ) ) {
 	$active_tab = 'subscribe';
 }
 
-// Get current user emailf
+// Get current user email
 $current_user = wp_get_current_user();
 $current_user_email = $current_user->user_email;
+
+// Handle posted subscription email and persist it
+$email_update_message = '';
+if ( 'POST' === $_SERVER['REQUEST_METHOD'] && isset( $_POST['aistma_subscription_email_nonce'] ) ) {
+    // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Verified via nonce and sanitized below
+    if ( wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['aistma_subscription_email_nonce'] ) ), 'aistma_subscription_email' ) ) {
+        $posted_email_raw = isset( $_POST['aistma_subscription_email'] ) ? wp_unslash( $_POST['aistma_subscription_email'] ) : '';
+        $posted_email = sanitize_email( $posted_email_raw );
+        if ( ! empty( $posted_email ) && is_email( $posted_email ) ) {
+            update_option( 'aistma_subscription_email', $posted_email );
+            $current_user_email = $posted_email; // reflect immediately
+            $email_update_message = __( 'Subscription email updated.', 'ai-story-maker' );
+        } else {
+            $email_update_message = __( 'Please enter a valid email address.', 'ai-story-maker' );
+        }
+    } else {
+        $email_update_message = __( 'Security check failed. Please try again.', 'ai-story-maker' );
+    }
+}
+
+// Use saved subscription email if available
+$saved_subscription_email = get_option( 'aistma_subscription_email' );
+if ( ! empty( $saved_subscription_email ) ) {
+    $current_user_email = $saved_subscription_email;
+}
 
 ?>
 <div class="wrap">
@@ -25,22 +52,48 @@ $current_user_email = $current_user->user_email;
 	// Add a nonce for AJAX security
 	$ajax_nonce = wp_create_nonce( 'aistma_save_setting' );
     $aistma_api_url = getenv('AISTMA_MASTER_API');
-
     $aistma_master_url = getenv('AISTMA_MASTER_URL');
 	$aistma_api_url = $aistma_api_url  ? $aistma_api_url  : 'https://www.exedotcom.ca/';
+    $aistma_master_url = $aistma_master_url  ? $aistma_master_url  : 'https://www.exedotcom.ca/';
+?>
 
-	?>
- <script type="text/javascript">
+ <style>
+.aistma-subscribed-package {
+    border: 2px solid #0073aa !important;
+    box-shadow: 0 2px 8px rgba(0, 115, 170, 0.15) !important;
+}
+
+.aistma-subscribed-package .aistma-package-title {
+    color: #0073aa !important;
+}
+
+.aistma-subscription-badge {
+    display: inline-block;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.aistma-subscription-details div {
+    margin-bottom: 2px;
+}
+</style>
+
+<script type="text/javascript">
 		window.aistmaSettings = {
 			ajaxUrl: '<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>',
 			nonce: '<?php echo esc_js( $ajax_nonce ); ?>',
 			masterUrl: '<?php echo esc_url( $aistma_master_url ); ?>'
 		};
-	</script> 
+</script> 
 
 
-<div id="aistma-settings-message"></div>
-
+<div id="aistma-settings-message"><?php echo esc_html( $email_update_message ); ?></div>
+<!--  tabs for subscribe and api keys -->
 <h2 class="nav-tab-wrapper" id="aistma-subscribe-or-api-keys-wrapper">
     <a href="javascript:void(0);" data-tab="subscribe" class="nav-tab <?php echo ( $active_tab === 'subscribe' ) ? 'nav-tab-active' : ''; ?>">
         <?php esc_html_e( 'Subscribe [free tier available]', 'ai-story-maker' ); ?>
@@ -54,23 +107,17 @@ $current_user_email = $current_user->user_email;
 <div id="tab-subscribe" class="aistma-tab-content" style="display: <?php echo ( $active_tab === 'subscribe' ) ? 'block' : 'none'; ?>;">
     <h2><?php esc_html_e( 'Subscription', 'ai-story-maker' ); ?></h2>
     <?php
-
-		// Parse the URL to get domain and port
-		$parsed_url = wp_parse_url($aistma_master_url);
-		$domain = $parsed_url['host']; 
-		$port = isset($parsed_url['port']) ? $parsed_url['port'] : null; // null or port number
-		$scheme = $parsed_url['scheme']; // 'https'
-		
 		// Build the base URL
-		$slug = 'ai-story-maker-plans';
-		$base_url = $aistma_master_url . $slug . '/';
+		$package_registration_url = $aistma_master_url . 'ai-story-maker-plans' . '/';
 		
-		// For the action URL, you might want to include the current site's domain
+        // For the action URL, you might want to include the current site's domain
 		$current_site_url = get_site_url();
 		$current_parsed = wp_parse_url($current_site_url);
 		$current_domain = $current_parsed['host'];
 		$current_port = isset($current_parsed['port']) ? $current_parsed['port'] : null;
+        
         // Standardized wrapper support: decode top-level wrapper and then body
+        // $response_body is passed from the settings page
         $decoded_wrapper = json_decode( $response_body, true );
         if ( json_last_error() === JSON_ERROR_NONE && is_array( $decoded_wrapper ) && isset( $decoded_wrapper['body'] ) ) {
             $packages_json = is_string( $decoded_wrapper['body'] ) ? $decoded_wrapper['body'] : json_encode( $decoded_wrapper['body'] );
@@ -88,7 +135,6 @@ $current_user_email = $current_user->user_email;
         $hide_container = false;
         $message = '';
 
-        // Legacy error format support
         if ( is_array( $packages ) && isset( $packages['status'] ) && $packages['status'] === 'error' ) {
             $hide_container = true;
             $message = isset( $packages['message'] ) ? (string) $packages['message'] : 'Subscription server not available.';
@@ -107,9 +153,9 @@ $current_user_email = $current_user->user_email;
             }
         }
 
-if ( $hide_container ) {
-    echo "<div class='aistma-error-message'>" . esc_html( $message ) . "</div>";
-} else {
+        if ( $hide_container ) {
+            echo "<div class='aistma-error-message'>" . esc_html( $message ) . "</div>";
+        } else {
         // Server-side subscription status fetch (no frontend AJAX)
         $subscription_status = null;
         try {
@@ -118,9 +164,7 @@ if ( $hide_container ) {
         } catch ( \Throwable $e ) {
             $subscription_status = null;
         }
-
         $current_package_name = ( is_array( $subscription_status ) && ! empty( $subscription_status['valid'] ) ) ? ( $subscription_status['package_name'] ?? '' ) : '';
-
         // Build concise status line
         $status_line = '';
         if ( is_array( $subscription_status ) && ! empty( $subscription_status['valid'] ) ) {
@@ -155,55 +199,85 @@ if ( $hide_container ) {
     <?php
         $matched = false;
         foreach ($packages as $package):
+            // Skip if package is not an array
+            if (!is_array($package)) {
+                continue;
+            }
         // Build the subscription URL with package ID, domain, port, and email
-        $package_subscription_url = add_query_arg(
+        $package_registration_url = add_query_arg(
             array(
                 'domain' => rawurlencode($current_domain),
                 'port' => $current_port ? rawurlencode($current_port) : '',
                 'email' => rawurlencode(string: $current_user_email),
-                // Send package name as plain value; add_query_arg will urlencode
                 'package_name' => isset($package['name']) ? $package['name'] : '',
             ),
-            $base_url
+            $package_registration_url
         );
         $is_current = $current_package_name && isset($package['name']) && strcasecmp($package['name'], $current_package_name) === 0;
         if ( $is_current ) { $matched = true; }
+        
+        // Check if this package has subscription info from the API gateway
+        $has_subscription = isset($package['subscription_status']) && isset($package['subscription_info']);
+        $subscription_status = $has_subscription ? $package['subscription_status'] : '';
+        $subscription_info = $has_subscription ? $package['subscription_info'] : null;
         ?>
         <a 
-            href="<?php echo esc_url($package_master_url); ?>"
+            href="<?php echo esc_url($package_registration_url); ?>"
             target="_blank"
-            class="aistma-package-box aistma-package-clickable<?php echo $is_current ? ' aistma-current-package' : ''; ?>"
+            class="aistma-package-box aistma-package-clickable<?php echo $is_current ? ' aistma-current-package' : ''; ?><?php echo $has_subscription ? ' aistma-subscribed-package' : ''; ?>"
             <?php if ( $is_current ) : ?>aria-current="true"<?php endif; ?>
             data-package-name="<?php echo esc_attr(isset($package['name']) ? $package['name'] : ''); ?>"
           >
-            <div class="aistma-package-title"><?php echo esc_html($package['name']); ?></div>
+            <div class="aistma-package-title">
+                <?php echo esc_html(isset($package['name']) ? $package['name'] : 'Unknown Package'); ?>
+                <?php if ( $has_subscription ) : ?>
+                    <span class="aistma-subscription-badge" style="background-color: #0073aa; color: white; font-size: 0.75em; padding: 2px 6px; border-radius: 3px; margin-left: 8px;">
+                        <?php echo esc_html( ucfirst( $subscription_status ) ); ?>
+                    </span>
+                <?php endif; ?>
+            </div>
             
             <div class="aistma-package-meta">
-                <span><strong>Price:</strong> $<?php echo esc_html($package['price']); ?></span>
+                <span><strong>Price:</strong> $<?php echo esc_html(isset($package['price']) ? $package['price'] : '0'); ?></span>
 				<span>
-    <?php
-            $stories_count = intval($package['stories']);
-            $interval_count = intval($package['interval_count']);
-            $interval = $package['interval'];
+            <?php
+                    $stories_count = intval(isset($package['stories']) ? $package['stories'] : 0);
+                    $interval_count = intval(isset($package['interval_count']) ? $package['interval_count'] : 1);
+                    $interval = isset($package['interval']) ? $package['interval'] : 'month';
 
-            // Handle stories display - hide if only 1 story, use singular if 1, plural if more
-            if ($stories_count > 1) {
-                echo esc_html($stories_count . ' stories');
-            } else {
-                echo esc_html('1 story');
-            }
+                    // Handle stories display - hide if only 1 story, use singular if 1, plural if more
+                    if ($stories_count > 1) {
+                        echo esc_html($stories_count . ' stories');
+                    } else {
+                        echo esc_html('1 story');
+                    }
 
-            echo ' every ';
+                    echo ' every ';
 
-            // Handle interval display - singular if count is 1, plural if more
-            if ($interval_count > 1) {
-                echo esc_html($interval_count . ' ' . $interval . 's');
-            } else {
-                echo esc_html($interval);
-            }
-            ?>
-</span>
+                    // Handle interval display - singular if count is 1, plural if more
+                    if ($interval_count > 1) {
+                        echo esc_html($interval_count . ' ' . $interval . 's');
+                    } else {
+                        echo esc_html($interval);
+                    }
+                    ?>
+            </span>
                 <div class="aistma-current-plan-line" style="<?php echo $is_current && $status_line ? 'display:block;margin-top:8px;font-weight:600;color:#0073aa;' : 'display:none;'; ?>"><?php echo $is_current ? esc_html( $status_line ) : ''; ?></div>
+                
+                <?php if ( $has_subscription && $subscription_info ) : ?>
+                    <div class="aistma-subscription-details" style="margin-top: 12px; padding: 8px; background-color: #f0f6fc; border: 1px solid #c3c4c7; border-radius: 4px; font-size: 0.9em;">
+                        <div style="font-weight: 600; color: #0073aa; margin-bottom: 4px;">📊 Your Subscription Details</div>
+                        <?php if ( isset( $subscription_info['user_email'] ) ) : ?>
+                            <div><strong>Email:</strong> <?php echo esc_html( $subscription_info['user_email'] ); ?></div>
+                        <?php endif; ?>
+                        <?php if ( isset( $subscription_info['credits_total'] ) && isset( $subscription_info['credits_used'] ) ) : ?>
+                            <div><strong>Credits:</strong> <?php echo esc_html( $subscription_info['credits_used'] ); ?> / <?php echo esc_html( $subscription_info['credits_total'] ); ?> used</div>
+                        <?php endif; ?>
+                        <?php if ( isset( $subscription_info['created_at'] ) ) : ?>
+                            <div><strong>Since:</strong> <?php echo esc_html( date( 'M j, Y', strtotime( $subscription_info['created_at'] ) ) ); ?></div>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
             </div>
         </a>
     <?php endforeach; 
@@ -214,6 +288,53 @@ if ( $hide_container ) {
     ?>
     
 </div>
+
+<!-- Email field for subscription email -->
+<form method="post" class="aistma-subscription-email-field" style="margin: 10px 0 16px;">
+    <?php wp_nonce_field( 'aistma_subscription_email', 'aistma_subscription_email_nonce' ); ?>
+    <label for="aistma_subscription_email" style="display:block;margin-bottom:6px;">
+        <?php esc_html_e( 'Use this email for subscription', 'ai-story-maker' ); ?>
+    </label>
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <input
+            type="email"
+            id="aistma_subscription_email"
+            name="aistma_subscription_email"
+            value="<?php echo esc_attr( $current_user_email ); ?>"
+            placeholder="<?php esc_attr_e( 'you@example.com', 'ai-story-maker' ); ?>"
+            style="max-width: 360px; width: 100%;"
+            aria-label="<?php esc_attr_e( 'Subscription email', 'ai-story-maker' ); ?>"
+            required
+        />
+        <button type="submit" class="button button-primary"><?php esc_html_e( 'use email', 'ai-story-maker' ); ?></button>
+    </div>
+</form>
+
+<script>
+// Keep package links' email param in sync with the input
+document.addEventListener('DOMContentLoaded', function() {
+    const emailInput = document.getElementById('aistma_subscription_email');
+    if (!emailInput) return;
+
+    function aistma_update_package_links_email() {
+        const email = emailInput.value || '';
+        document.querySelectorAll('.aistma-package-clickable').forEach(function(a) {
+            try {
+                const u = new URL(a.href);
+                if (email) {
+                    u.searchParams.set('email', email);
+                } else {
+                    u.searchParams.delete('email');
+                }
+                a.href = u.toString();
+            } catch (e) { /* ignore invalid URLs */ }
+        });
+    }
+
+    emailInput.addEventListener('input', aistma_update_package_links_email);
+    emailInput.addEventListener('change', aistma_update_package_links_email);
+});
+</script>
 
 <p class="aistma-subscribe-description">
 	<?php esc_html_e( 'Click on any package above to go directly to the subscription page for that specific plan. This will take you to the plugin\'s secure official page on Exedotcom.ca with more details.', 'ai-story-maker' ); ?>

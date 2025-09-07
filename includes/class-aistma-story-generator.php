@@ -279,16 +279,17 @@ class AISTMA_Story_Generator {
 	 * @param  string $prompt_id        The prompt ID.
 	 * @param  array  $prompt           The prompt data.
 	 * @param  array  $merged_settings  Merged settings.
-	 * @param  array  $recent_posts     Recent posts to avoid duplication.
 	 * @param  string $the_prompt       The prompt text.
 	 * @param  array  $subscription_info Subscription information.
 	 * @return void
 	 */
 	private function generate_story_via_master_api( $prompt_id, $prompt, $merged_settings, $the_prompt, $subscription_info ) {
-		$master_url = defined( 'AISTMA_MASTER_URL' ) ? AISTMA_MASTER_URL : '';
+		// Get recent posts to avoid duplication
+		$recent_posts = $this->aistma_get_recent_posts( 20, $prompt['category'] ?? '' );
+		$master_url = getenv('AISTMA_MASTER_API') ? getenv('AISTMA_MASTER_API') : 'http://exedotcom.ca';	
 		
 		if ( empty( $master_url ) ) {
-			$this->aistma_log_manager::log( 'error', message: 'AISTMA_MASTER_URL not defined, falling back to direct OpenAI call' );
+			$this->aistma_log_manager::log( 'error', message: 'AISTMA_MASTER_API not defined, falling back to direct OpenAI call' );
 			// Fallback to direct OpenAI call
 			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $this->api_key, $the_prompt );
 			return;
@@ -996,6 +997,7 @@ class AISTMA_Story_Generator {
 	 * @return array Subscription status data or error information.
 	 */
 	public function aistma_get_subscription_status( $domain = '' ) {
+		$master_url = getenv('AISTMA_MASTER_API') ? getenv('AISTMA_MASTER_API') : 'http://exedotcom.ca';	
 		// Get current domain with port if it exists
 		if ( empty( $domain ) ) {
 			$domain = sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? '' ) );
@@ -1003,13 +1005,10 @@ class AISTMA_Story_Generator {
 		}
 
 		// Get master URL from WordPress constant
-		$master_url = defined( 'AISTMA_MASTER_URL' ) ? AISTMA_MASTER_URL : '';
 		
 		if ( empty( $master_url ) ) {
-			$this->aistma_log_manager::log( 'error', 'AISTMA_MASTER_URL not defined' );
 			$this->subscription_status = array(
 				'valid' => false,
-				'error' => 'AISTMA_MASTER_URL not defined',
 				'domain' => $domain,
 			);
 			return $this->subscription_status;

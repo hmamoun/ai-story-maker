@@ -87,6 +87,6 @@ function aistma_get_api_url(string $path = ''): string {
     return rtrim($base_url, '/') . '/' . ltrim($path, '/');
 }
 function aistma_get_instructions_url(): string {
-    $default_url = aistma_get_master_url('wp-json/exaig/v1/aistma-general-instructions');
+    $default_url = aistma_get_api_url('wp-json/exaig/v1/aistma-general-instructions');
 	return apply_filters('aistma_instructions_url', $default_url);
 }
