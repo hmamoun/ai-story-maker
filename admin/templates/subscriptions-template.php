@@ -48,6 +48,8 @@ if ( ! empty( $saved_subscription_email ) ) {
 
 ?>
 <div class="wrap">
+    <div class="aistma-style-settings">
+        <h2><?php esc_html_e('Subscriptions', 'ai-story-maker'); ?></h2>
 <?php
 	// Add a nonce for AJAX security
 	$ajax_nonce = wp_create_nonce( 'aistma_save_setting' );
@@ -364,3 +366,4 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 </div>
 </div> 
+</div>

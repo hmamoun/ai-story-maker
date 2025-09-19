@@ -12,6 +12,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 ?>
 <div class="wrap">
+	<div class="aistma-style-settings">
+
+<h2><?php esc_html_e( 'General Settings', 'ai-story-maker' ); ?></h2>
 <?php
 	// Add a nonce for AJAX security
 	$ajax_nonce = wp_create_nonce( 'aistma_save_setting' );
@@ -25,7 +28,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 <div id="aistma-settings-message"></div>
 
-<h2><?php esc_html_e( 'General Settings', 'ai-story-maker' ); ?></h2>
 <p><?php esc_html_e( 'Configure the general settings for AI Story Maker. These settings control how the plugin behaves and generates content.', 'ai-story-maker' ); ?></p>
 
 <div class="aistma-settings-vertical">
@@ -125,3 +127,4 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<input type="hidden" id="generate-story-nonce" value="<?php echo esc_attr( wp_create_nonce( 'generate_ai_stories' ) ); ?>">
 </div>
 </div> 
+</div>

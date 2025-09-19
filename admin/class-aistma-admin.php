@@ -64,6 +64,7 @@ class AISTMA_Admin {
 	const TAB_SETTINGS = 'settings';
 	const TAB_GENERAL = 'general';
 	const TAB_PROMPTS = 'prompts';
+	const TAB_ANALYTICS = 'analytics';
 	const TAB_LOG     = 'log';
 
 
@@ -78,6 +79,7 @@ class AISTMA_Admin {
 			'admin/class-aistma-api-keys.php',
 			'admin/class-aistma-settings-page.php',
 			'includes/class-aistma-log-manager.php',
+			'admin/widgets/widgets-manager.php',
 		);
 		AISTMA_Plugin::aistma_load_dependencies( $files );
 
@@ -139,6 +141,7 @@ class AISTMA_Admin {
 			self::TAB_SETTINGS,
 			self::TAB_GENERAL,
 			self::TAB_PROMPTS,
+			self::TAB_ANALYTICS,
 			self::TAB_LOG,
 		);
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Tab selection only affects UI; no action taken
@@ -159,6 +162,9 @@ class AISTMA_Admin {
 			<a href="?page=aistma-settings&tab=<?php echo esc_attr( self::TAB_PROMPTS ); ?>" class="nav-tab <?php echo ( self::TAB_PROMPTS === $active_tab ) ? 'nav-tab-active' : ''; ?>">
 		<?php esc_html_e( 'Prompts', 'ai-story-maker' ); ?>
 			</a>
+			<a href="?page=aistma-settings&tab=<?php echo esc_attr( self::TAB_ANALYTICS ); ?>" class="nav-tab <?php echo ( self::TAB_ANALYTICS === $active_tab ) ? 'nav-tab-active' : ''; ?>">
+		<?php esc_html_e( 'Analytics', 'ai-story-maker' ); ?>
+			</a>
 			<a href="?page=aistma-settings&tab=<?php echo esc_attr( self::TAB_LOG ); ?>" class="nav-tab <?php echo ( self::TAB_LOG === $active_tab ) ? 'nav-tab-active' : ''; ?>">
 		<?php esc_html_e( 'Log', 'ai-story-maker' ); ?>
 			</a>
@@ -176,6 +182,8 @@ class AISTMA_Admin {
 		} elseif ( self::TAB_PROMPTS === $active_tab ) {
 			$this->aistma_prompt_editor = new AISTMA_Prompt_Editor();
 			$this->aistma_prompt_editor->aistma_prompt_editor_render();
+		} elseif ( self::TAB_ANALYTICS === $active_tab ) {
+			include_once AISTMA_PATH . 'admin/templates/analytics-template.php';
 		} elseif ( self::TAB_LOG === $active_tab ) {
 			$this->aistma_log_manager = new AISTMA_Log_Manager();
 			$this->aistma_log_manager->aistma_log_table_render();
