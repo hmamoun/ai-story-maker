@@ -286,7 +286,7 @@ class AISTMA_Story_Generator {
 	private function generate_story_via_master_api( $prompt_id, $prompt, $merged_settings, $the_prompt, $subscription_info ) {
 		// Get recent posts to avoid duplication
 		$recent_posts = $this->aistma_get_recent_posts( 20, $prompt['category'] ?? '' );
-		$master_url = getenv('AISTMA_MASTER_API') ? getenv('AISTMA_MASTER_API') : 'http://exedotcom.ca';	
+		$master_url = aistma_get_api_url();
 		
 		if ( empty( $master_url ) ) {
 			$this->aistma_log_manager::log( 'error', message: 'AISTMA_MASTER_API not defined, falling back to direct OpenAI call' );
@@ -997,7 +997,7 @@ class AISTMA_Story_Generator {
 	 * @return array Subscription status data or error information.
 	 */
 	public function aistma_get_subscription_status( $domain = '' ) {
-		$master_url = getenv('AISTMA_MASTER_API') ? getenv('AISTMA_MASTER_API') : 'http://exedotcom.ca';	
+		$master_url =aistma_get_api_url();
 		// Get current domain with port if it exists
 		if ( empty( $domain ) ) {
 			$domain = sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? '' ) );

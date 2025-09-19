@@ -51,8 +51,8 @@ if ( ! empty( $saved_subscription_email ) ) {
 <?php
 	// Add a nonce for AJAX security
 	$ajax_nonce = wp_create_nonce( 'aistma_save_setting' );
-    $aistma_api_url = getenv('AISTMA_MASTER_API');
-    $aistma_master_url = getenv('AISTMA_MASTER_URL');
+    $aistma_api_url = aistma_get_api_url();
+    $aistma_master_url = aistma_get_master_url();
 	$aistma_api_url = $aistma_api_url  ? $aistma_api_url  : 'https://www.exedotcom.ca/';
     $aistma_master_url = $aistma_master_url  ? $aistma_master_url  : 'https://www.exedotcom.ca/';
 ?>

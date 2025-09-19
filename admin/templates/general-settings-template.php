@@ -50,7 +50,7 @@ if ( ! isset( $active_tab ) ) {
         <?php esc_html_e( 'Choose one of the available subscription tiers', 'ai-story-maker' ); ?>
     </p>
     <?php
-
+	    $aistma_subscription_url = aistma_get_master_url();
 		// Parse the URL to get domain and port
 		$parsed_url = wp_parse_url($aistma_subscription_url);
 		$domain = $parsed_url['host']; 
