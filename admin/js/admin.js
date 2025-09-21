@@ -243,6 +243,28 @@ document.addEventListener("DOMContentLoaded", function() {
             this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating... do not leave or close the page';
 
             const nonce = document.getElementById("generate-story-nonce").value;
+            const showNotice = (message, type) => {
+                let messageDiv = document.getElementById("aistma-notice");
+                if (!messageDiv) {
+                    messageDiv = document.createElement('div');
+                    messageDiv.id = 'aistma-notice';
+                    const btn = document.getElementById('aistma-generate-stories-button');
+                    if (btn && btn.parentNode) {
+                        btn.insertAdjacentElement('afterend', messageDiv);
+                    } else {
+                        document.body.appendChild(messageDiv);
+                    }
+                }
+                messageDiv.className = `notice notice-${type} is-dismissible`;
+                messageDiv.style.display = 'block';
+                messageDiv.style.marginTop = '10px';
+                // Normalize and simplify common fatal error wording and strip HTML tags
+                const normalized = String(message || '')
+                    .replace(/<[^>]*>/g, '')
+                    .replace(/fatal\s+error:?/ig, 'Error')
+                    .trim();
+                messageDiv.textContent = normalized || (type === 'success' ? 'Done.' : 'Error. Please check the logs.');
+            };
             fetch(ajaxurl, {
                     method: "POST"
                     , headers: {
@@ -263,18 +285,16 @@ document.addEventListener("DOMContentLoaded", function() {
                 })
                 .then(data => {
                     if (data.success) {
-                        const messageDiv = document.getElementById("aistma-notice");
-                        messageDiv.className = "notice notice-success visible";
-                        messageDiv.innerText = "Story generated successfully!";
-
+                        showNotice("Story generated successfully!", 'success');
                     } else {
-                        const messageDiv = document.getElementById("aistma-notice");
-                        messageDiv.className = "notice notice-error visible";
-                        messageDiv.innerText = "Error generating stories please check the logs!";
+                        const serverMsg = (data && data.data && (data.data.message || data.data.error)) || data.message || "Error generating stories. Please check the logs!";
+                        showNotice(serverMsg, 'error');
                     }
                 })
                 .catch(error => {
                     console.error("Fetch error:", error);
+                    const errMsg = (error && error.message) ? `Network error: ${error.message}` : 'Network error. Please try again.';
+                    showNotice(errMsg, 'error');
                 })
                 .finally(() => {
                     this.disabled = false;

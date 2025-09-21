@@ -28,6 +28,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<?php echo esc_html( $button_text ); ?>
 	</button>
 
+	<div id="aistma-notice" class="notice" style="display:none; margin-top:10px;"></div>
+
 	<?php
 	$next_event    = wp_next_scheduled( 'aistma_generate_story_event' );
 	$is_generating = get_transient( 'aistma_generating_lock' );

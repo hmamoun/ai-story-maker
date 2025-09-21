@@ -38,13 +38,15 @@ global $wpdb;
 
 // Drop custom log table.
 $log_table = $wpdb->prefix . 'aistma_log_table';
-// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
-$wpdb->query( "DROP TABLE IF EXISTS `{$log_table}`" );
+$safe_log_table = esc_sql( $log_table );
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+$wpdb->query( "DROP TABLE IF EXISTS `{$safe_log_table}`" );
 
 // Drop traffic info table if exists.
 $traffic_table = $wpdb->prefix . 'aistma_traffic_info';
-// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
-$wpdb->query( "DROP TABLE IF EXISTS `{$traffic_table}`" );
+$safe_traffic_table = esc_sql( $traffic_table );
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+$wpdb->query( "DROP TABLE IF EXISTS `{$safe_traffic_table}`" );
 // bmark Schedule on uninstall.
 wp_clear_scheduled_hook( 'aistma_generate_story_event' );
 

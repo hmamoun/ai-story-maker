@@ -51,6 +51,7 @@ class AISTMA_Traffic_Logger {
         global $wpdb;
 
         $table = $wpdb->prefix . 'aistma_traffic_info';
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Required for analytics logging to custom table
         $wpdb->insert(
             $table,
             array(
@@ -86,14 +87,18 @@ class AISTMA_Traffic_Logger {
         // Helper to drop a column if it exists.
         $columns_to_drop = array( 'ip_address', 'cookie_id', 'is_returning', 'user_agent' );
         foreach ( $columns_to_drop as $col ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Schema migration check, temporary operation
             $exists = $wpdb->get_var( $wpdb->prepare(
                 'SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND COLUMN_NAME = %s',
                 $table,
                 $col
             ) );
             if ( (int) $exists > 0 ) {
-                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching
-                $wpdb->query( "ALTER TABLE `{$table}` DROP COLUMN `{$col}`" );
+                // Sanitize identifiers for DDL query - table name is controlled, column names are from predefined array
+                $safe_table = esc_sql( $table );
+                $safe_col = esc_sql( $col );
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+                $wpdb->query( "ALTER TABLE `{$safe_table}` DROP COLUMN `{$safe_col}`" );
             }
         }
     }

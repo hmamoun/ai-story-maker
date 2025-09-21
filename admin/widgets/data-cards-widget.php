@@ -70,12 +70,14 @@ class AISTMA_Data_Cards_Widget {
 		$stats = array();
 		
 		// Total published posts
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Analytics data for dashboard widget
 		$stats['total_posts'] = $wpdb->get_var(
 			"SELECT COUNT(*) FROM {$wpdb->posts} 
 			WHERE post_type = 'post' AND post_status = 'publish'"
 		);
 		
 		// AI-generated posts
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- AI content statistics for widget
 		$stats['ai_generated_posts'] = $wpdb->get_var(
 			"SELECT COUNT(*) FROM {$wpdb->posts} p 
 			JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id 
@@ -84,23 +86,26 @@ class AISTMA_Data_Cards_Widget {
 		);
 		
 		// Posts this week
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Weekly statistics for analytics
 		$stats['posts_this_week'] = $wpdb->get_var( $wpdb->prepare(
 			"SELECT COUNT(*) FROM {$wpdb->posts} 
 			WHERE post_type = 'post' AND post_status = 'publish' 
 			AND post_date >= %s",
-			date( 'Y-m-d', strtotime( '-7 days' ) )
+			gmdate( 'Y-m-d', strtotime( '-7 days' ) )
 		) );
 		
 		// Posts this month
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Monthly statistics for analytics
 		$stats['posts_this_month'] = $wpdb->get_var( $wpdb->prepare(
 			"SELECT COUNT(*) FROM {$wpdb->posts} 
 			WHERE post_type = 'post' AND post_status = 'publish' 
 			AND post_date >= %s",
-			date( 'Y-m-01' )
+			gmdate( 'Y-m-01' )
 		) );
 		
 		// AI stories in last 6 months
-		$six_months_ago = date( 'Y-m-d', strtotime( '-180 days' ) );
+		$six_months_ago = gmdate( 'Y-m-d', strtotime( '-180 days' ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Historical analytics data aggregation
 		$story_results = $wpdb->get_results( $wpdb->prepare(
 			"SELECT DATE(post_date) as date, COUNT(*) as count 
 			FROM {$wpdb->posts} 
@@ -136,6 +141,7 @@ class AISTMA_Data_Cards_Widget {
 	private static function get_recent_posts() {
 		global $wpdb;
 		
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Recent posts for widget display
 		return $wpdb->get_results(
 			"SELECT ID, post_title, post_date 
 			FROM {$wpdb->posts} 
@@ -160,7 +166,9 @@ class AISTMA_Data_Cards_Widget {
 					<div class="data-card-label"><?php esc_html_e( 'Total Posts', 'ai-story-maker' ); ?></div>
 					<div class="data-card-trend">
 						<span class="trend-indicator">📊</span>
-						<?php printf( esc_html__( '%d this week', 'ai-story-maker' ), $stats['posts_this_week'] ); ?>
+						<?php 
+						/* translators: %d: number of posts created this week */
+						printf( esc_html__( '%d this week', 'ai-story-maker' ), esc_html( $stats['posts_this_week'] ) ); ?>
 					</div>
 				</div>
 
@@ -169,7 +177,9 @@ class AISTMA_Data_Cards_Widget {
 					<div class="data-card-label"><?php esc_html_e( 'AI Generated', 'ai-story-maker' ); ?></div>
 					<div class="data-card-trend">
 						<span class="trend-indicator">🤖</span>
-						<?php printf( esc_html__( '%s%% of total', 'ai-story-maker' ), $stats['ai_percentage'] ); ?>
+						<?php 
+						/* translators: %s: percentage of AI-generated posts out of total posts */
+						printf( esc_html__( '%s%% of total', 'ai-story-maker' ), esc_html( $stats['ai_percentage'] ) ); ?>
 					</div>
 				</div>
 
@@ -178,7 +188,9 @@ class AISTMA_Data_Cards_Widget {
 					<div class="data-card-label"><?php esc_html_e( 'Stories (6 months)', 'ai-story-maker' ); ?></div>
 					<div class="data-card-trend">
 						<span class="trend-indicator">📅</span>
-						<?php printf( esc_html__( 'Max %d/day', 'ai-story-maker' ), $stats['max_stories_per_day'] ); ?>
+						<?php 
+						/* translators: %d: maximum number of stories generated in a single day */
+						printf( esc_html__( 'Max %d/day', 'ai-story-maker' ), esc_html( $stats['max_stories_per_day'] ) ); ?>
 					</div>
 				</div>
 
@@ -188,8 +200,9 @@ class AISTMA_Data_Cards_Widget {
 					<div class="data-card-trend">
 						<span class="trend-indicator">📈</span>
 						<?php 
-						$daily_avg = $stats['posts_this_month'] > 0 ? round( $stats['posts_this_month'] / date( 'j' ), 1 ) : 0;
-						printf( esc_html__( '%s per day', 'ai-story-maker' ), $daily_avg );
+						$daily_avg = $stats['posts_this_month'] > 0 ? round( $stats['posts_this_month'] / gmdate( 'j' ), 1 ) : 0;
+						/* translators: %s: average number of posts per day this month */
+						printf( esc_html__( '%s per day', 'ai-story-maker' ), esc_html( $daily_avg ) );
 						?>
 					</div>
 				</div>

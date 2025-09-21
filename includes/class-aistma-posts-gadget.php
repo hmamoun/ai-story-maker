@@ -185,7 +185,7 @@ class AISTMA_Posts_Gadget {
 
             <div class="aistma-posts-container <?php echo esc_attr( 'layout-' . $config['layout'] ); ?>">
                 <div class="aistma-posts-grid">
-                    <?php echo $this->render_posts( $posts_data['posts'], $config ); ?>
+                    <?php echo wp_kses_post( $this->render_posts( $posts_data['posts'], $config ) ); ?>
                 </div>
                 
                 <?php if ( $posts_data['has_more'] && $config['ajax_pagination'] ) : ?>
@@ -227,7 +227,9 @@ class AISTMA_Posts_Gadget {
             'post_status' => 'publish',
             'posts_per_page' => intval( $config['posts_per_page'] ),
             'paged' => 1,
+            // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Required for posts gadget filtering functionality
             'meta_query' => array(),
+            // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query -- Required for posts gadget taxonomy filtering
             'tax_query' => array(),
         );
 
@@ -283,6 +285,11 @@ class AISTMA_Posts_Gadget {
      * @param array $config Configuration.
      */
     private function apply_filters( &$args, $config ) {
+		// Ensure tax_query is initialized to an array to avoid undefined index warnings
+		if ( ! isset( $args['tax_query'] ) || ! is_array( $args['tax_query'] ) ) {
+			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query -- Required for posts gadget category/tag filtering
+			$args['tax_query'] = array();
+		}
         // Categories
         if ( ! empty( $config['categories'] ) ) {
             $categories = array_map( 'intval', explode( ',', $config['categories'] ) );
@@ -488,7 +495,8 @@ class AISTMA_Posts_Gadget {
         check_ajax_referer( 'aistma_posts_gadget_nonce', 'nonce' );
 
         $page = intval( $_POST['page'] ?? 1 );
-        $config = json_decode( stripslashes( $_POST['config'] ?? '{}' ), true );
+        $config_raw = isset( $_POST['config'] ) ? sanitize_text_field( wp_unslash( $_POST['config'] ) ) : '{}';
+        $config = json_decode( stripslashes( $config_raw ), true );
         $config = array_merge( $this->default_config, $config );
 
         $config['posts_per_page'] = intval( $config['posts_per_page'] );
@@ -524,8 +532,9 @@ class AISTMA_Posts_Gadget {
     public function ajax_search_posts() {
         check_ajax_referer( 'aistma_posts_gadget_nonce', 'nonce' );
 
-        $search_term = sanitize_text_field( $_POST['search'] ?? '' );
-        $config = json_decode( stripslashes( $_POST['config'] ?? '{}' ), true );
+        $search_term = sanitize_text_field( wp_unslash( $_POST['search'] ?? '' ) );
+        $config_raw = isset( $_POST['config'] ) ? sanitize_text_field( wp_unslash( $_POST['config'] ) ) : '{}';
+        $config = json_decode( stripslashes( $config_raw ), true );
         $config = array_merge( $this->default_config, $config );
 
         if ( empty( $search_term ) ) {

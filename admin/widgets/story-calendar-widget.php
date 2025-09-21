@@ -69,9 +69,10 @@ class AISTMA_Story_Calendar_Widget {
 		
 		// Get stories created in the last 2 months (60 days)
 		// Get stories created in the last 3 months (90 days)
-		$three_months_ago = date( 'Y-m-d', strtotime( '-90 days' ) );
+		$three_months_ago = gmdate( 'Y-m-d', strtotime( '-90 days' ) );
 		
 		// First try to get AI-generated posts
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- AI story analytics for calendar heatmap
 		$ai_results = $wpdb->get_results( $wpdb->prepare(
 			"SELECT DATE(post_date) as date, COUNT(*) as count 
 			FROM {$wpdb->posts} 
@@ -89,6 +90,7 @@ class AISTMA_Story_Calendar_Widget {
 		
 		// If no AI-generated posts found, get all published posts
 		if ( empty( $ai_results ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Fallback story data for calendar
 			$results = $wpdb->get_results( $wpdb->prepare(
 				"SELECT DATE(post_date) as date, COUNT(*) as count 
 				FROM {$wpdb->posts} 
@@ -230,7 +232,9 @@ class AISTMA_Story_Calendar_Widget {
 										 data-stories="<?php echo esc_attr( $story_count ); ?>"
 										 data-week="<?php echo esc_attr( $week_num ); ?>"
 										 data-day="<?php echo esc_attr( $day_index ); ?>"
-										 title="<?php echo esc_attr( sprintf( __( '%d stories generated', 'ai-story-maker' ), $story_count ) ); ?>">
+										 title="<?php 
+										 /* translators: %d: number of stories generated on this day */
+										 echo esc_attr( sprintf( __( '%d stories generated', 'ai-story-maker' ), $story_count ) ); ?>">
 									</div>
 								<?php endforeach; ?>
 							</div>

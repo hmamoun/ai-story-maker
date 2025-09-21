@@ -16,7 +16,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 		
 		<div class="aistma-log-filter-container">
 			<label>
-				<input type="checkbox" id="aistma-show-all-logs" <?php checked( isset( $_GET['show_all_logs'] ) && '1' === $_GET['show_all_logs'] ); ?>>
+				<input type="checkbox" id="aistma-show-all-logs" <?php 
+				// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only filter for display, no data modification
+				checked( isset( $_GET['show_all_logs'] ) && '1' === $_GET['show_all_logs'] ); ?>>
 				<?php esc_html_e( 'Show all logs (by default only success and error events are shown)', 'ai-story-maker' ); ?>
 			</label>
 		</div>

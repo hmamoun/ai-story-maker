@@ -23,10 +23,10 @@ $current_user_email = $current_user->user_email;
 
 // Handle posted subscription email and persist it
 $email_update_message = '';
-if ( 'POST' === $_SERVER['REQUEST_METHOD'] && isset( $_POST['aistma_subscription_email_nonce'] ) ) {
+if ( isset( $_SERVER['REQUEST_METHOD'] ) && 'POST' === $_SERVER['REQUEST_METHOD'] && isset( $_POST['aistma_subscription_email_nonce'] ) ) {
     // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Verified via nonce and sanitized below
     if ( wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['aistma_subscription_email_nonce'] ) ), 'aistma_subscription_email' ) ) {
-        $posted_email_raw = isset( $_POST['aistma_subscription_email'] ) ? wp_unslash( $_POST['aistma_subscription_email'] ) : '';
+        $posted_email_raw = isset( $_POST['aistma_subscription_email'] ) ? sanitize_text_field( wp_unslash( $_POST['aistma_subscription_email'] ) ) : '';
         $posted_email = sanitize_email( $posted_email_raw );
         if ( ! empty( $posted_email ) && is_email( $posted_email ) ) {
             update_option( 'aistma_subscription_email', $posted_email );
@@ -252,7 +252,7 @@ if ( ! empty( $saved_subscription_email ) ) {
                             <div><strong>Credits:</strong> <?php echo esc_html( $subscription_info['credits_used'] ); ?> / <?php echo esc_html( $subscription_info['credits_total'] ); ?> used</div>
                         <?php endif; ?>
                         <?php if ( isset( $subscription_info['created_at'] ) ) : ?>
-                            <div><strong>Since:</strong> <?php echo esc_html( date( 'M j, Y', strtotime( $subscription_info['created_at'] ) ) ); ?></div>
+                            <div><strong>Since:</strong> <?php echo esc_html( gmdate( 'M j, Y', strtotime( $subscription_info['created_at'] ) ) ); ?></div>
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>

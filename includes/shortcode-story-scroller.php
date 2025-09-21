@@ -68,6 +68,7 @@ function aistma_adsense_shortcode( $atts ) {
 	
 	// Build AdSense code
 	$adsense_code = sprintf(
+		// phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript -- AdSense requires inline scripts, can't be properly enqueued
 		'<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=%s" crossorigin="anonymous"></script>
 		<ins class="adsbygoogle" style="%s" data-ad-layout="%s" data-ad-format="fluid" data-ad-client="%s" data-ad-slot="%s"></ins>
 		<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>',

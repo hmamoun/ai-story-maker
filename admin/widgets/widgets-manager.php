@@ -62,7 +62,29 @@ class AISTMA_Widgets_Manager {
 	 */
 	public static function register_widget_options() {
 		// Register options for widget preferences
-		register_setting( 'aistma_widgets', 'aistma_widget_preferences' );
+		register_setting( 'aistma_widgets', 'aistma_widget_preferences', array(
+			'sanitize_callback' => array( self::class, 'sanitize_widget_preferences' ),
+		) );
+	}
+
+	/**
+	 * Sanitize widget preferences
+	 *
+	 * @param array $input Input data.
+	 * @return array Sanitized data.
+	 */
+	public static function sanitize_widget_preferences( $input ) {
+		$sanitized = array();
+		
+		if ( is_array( $input ) ) {
+			foreach ( $input as $key => $value ) {
+				$sanitized_key = sanitize_text_field( $key );
+				$sanitized_value = is_bool( $value ) ? (bool) $value : sanitize_text_field( $value );
+				$sanitized[ $sanitized_key ] = $sanitized_value;
+			}
+		}
+		
+		return $sanitized;
 	}
 
 	/**
@@ -84,12 +106,12 @@ class AISTMA_Widgets_Manager {
 	 */
 	public static function handle_widget_toggle() {
 		// Verify nonce and capabilities
-		if ( ! wp_verify_nonce( $_POST['nonce'], 'aistma_widget_toggle' ) || ! current_user_can( 'manage_options' ) ) {
-			wp_die( __( 'Security check failed', 'ai-story-maker' ) );
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'aistma_widget_toggle' ) || ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'Security check failed', 'ai-story-maker' ) );
 		}
 
-		$widget_id = sanitize_text_field( $_POST['widget_id'] );
-		$enabled = (bool) $_POST['enabled'];
+		$widget_id = isset( $_POST['widget_id'] ) ? sanitize_text_field( wp_unslash( $_POST['widget_id'] ) ) : '';
+		$enabled = isset( $_POST['enabled'] ) ? (bool) $_POST['enabled'] : false;
 		
 		$preferences = self::get_widget_preferences();
 		$preferences[ $widget_id . '_enabled' ] = $enabled;

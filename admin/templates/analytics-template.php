@@ -26,9 +26,10 @@ function aistma_get_story_generation_data() {
 	global $wpdb;
 	
 	// Get stories created in the last 6 months (180 days)
-	$six_months_ago = date('Y-m-d', strtotime('-180 days'));
+	$six_months_ago = gmdate('Y-m-d', strtotime('-180 days'));
 	
 	// First try to get AI-generated posts
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Analytics aggregation query for custom data
 	$ai_results = $wpdb->get_results($wpdb->prepare(
 		"SELECT DATE(post_date) as date, COUNT(*) as count 
 		FROM {$wpdb->posts} 
@@ -46,6 +47,7 @@ function aistma_get_story_generation_data() {
 	
 	// If no AI-generated posts found, get all published posts
 	if (empty($ai_results)) {
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Fallback analytics query
 		$results = $wpdb->get_results($wpdb->prepare(
 			"SELECT DATE(post_date) as date, COUNT(*) as count 
 			FROM {$wpdb->posts} 
@@ -132,8 +134,11 @@ $month_labels = $calendar_result['month_labels'];
 // Get debug/stats information
 global $wpdb;
 $debug_info = array();
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Debug statistics for analytics dashboard
 $debug_info['total_posts'] = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'post' AND post_status = 'publish'");
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- AI content statistics
 $debug_info['ai_generated_posts'] = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->posts} p JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id WHERE p.post_type = 'post' AND p.post_status = 'publish' AND pm.meta_key = 'ai_story_maker_generated_via'");
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Recent posts for dashboard display
 $debug_info['recent_posts'] = $wpdb->get_results("SELECT ID, post_title, post_date FROM {$wpdb->posts} WHERE post_type = 'post' AND post_status = 'publish' ORDER BY post_date DESC LIMIT 5");
 $debug_info['story_data_count'] = count($story_data);
 $debug_info['total_stories'] = $total_stories;
@@ -155,6 +160,7 @@ function aistma_get_hide_empty_columns() {
 function aistma_get_tag_clicks_data() {
 	global $wpdb;
 	
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Complex analytics query for tag click data
 	$results = $wpdb->get_results(
 		"SELECT 
 			t.name as tag_name,
@@ -184,6 +190,7 @@ $aistma_views_days_window = aistma_get_activity_days();
 $recent_posts_limit = aistma_get_recent_posts_limit();
 
 // Get recent posts with configurable limit
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Recent posts query for analytics display
 $recent_posts_list = $wpdb->get_results( $wpdb->prepare(
 	"SELECT ID, post_title, post_date FROM {$wpdb->posts} 
 	WHERE post_type = 'post' AND post_status = 'publish' 
@@ -205,7 +212,7 @@ if ( ! empty( $recent_post_ids ) ) {
     
     // Generate date labels for the past N days
     for ( $i = $aistma_views_days_window - 1; $i >= 0; $i-- ) {
-        $date_labels[] = date( 'Y-m-d', strtotime( "-{$i} days" ) );
+        $date_labels[] = gmdate( 'Y-m-d', strtotime( "-{$i} days" ) );
     }
     
     // For each recent post, build views array per day
@@ -222,6 +229,7 @@ if ( ! empty( $recent_post_ids ) ) {
             $date = $date_labels[ $i ];
             
             // Count views for this post on this specific date
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Traffic analytics from custom table
             $view_count = $wpdb->get_var( $wpdb->prepare(
                 "SELECT COUNT(*) FROM {$wpdb->prefix}aistma_traffic_info 
                 WHERE post_id = %d 
@@ -405,7 +413,10 @@ if ( $hide_empty_columns && ! empty( $post_views_by_day ) && ! empty( $date_labe
 		<!-- Recent Posts x Days Heatmap -->
         <div class="aistma-analytic-block" style="margin-top:20px;">
 			<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-				<h4><?php echo esc_html( sprintf( __( 'Recent Posts Activity (last %d days)', 'ai-story-maker' ), $aistma_views_days_window ) ); ?></h4>
+				<h4><?php
+				/* translators: %d: number of days shown in the recent posts activity heatmap. */
+				echo esc_html( sprintf( __( 'Recent Posts Activity (last %d days)', 'ai-story-maker' ), $aistma_views_days_window ) );
+				?></h4>
 				<button id="aistma-analytics-settings-btn" class="button button-secondary" style="font-size: 12px;">
 					<?php esc_html_e( 'Settings', 'ai-story-maker' ); ?>
 				</button>

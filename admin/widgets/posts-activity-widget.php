@@ -98,6 +98,7 @@ class AISTMA_Posts_Activity_Widget {
 	private static function get_recent_posts() {
 		global $wpdb;
 		
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Recent posts query for activity widget
 		return $wpdb->get_results( $wpdb->prepare(
 			"SELECT ID, post_title, post_date 
 			FROM {$wpdb->posts} 
@@ -120,7 +121,7 @@ class AISTMA_Posts_Activity_Widget {
 		
 		// Generate date labels for the past N days
 		for ( $i = $activity_days - 1; $i >= 0; $i-- ) {
-			$date_labels[] = date( 'Y-m-d', strtotime( "-{$i} days" ) );
+			$date_labels[] = gmdate( 'Y-m-d', strtotime( "-{$i} days" ) );
 		}
 		
 		// For each recent post, get actual view data from traffic table
@@ -131,9 +132,10 @@ class AISTMA_Posts_Activity_Widget {
 			// Get actual view data from aistma_traffic_info table
 			for ( $i = 0; $i < count( $date_labels ); $i++ ) {
 				$date = $date_labels[ $i ];
-				$next_date = date( 'Y-m-d', strtotime( $date . ' +1 day' ) );
+				$next_date = gmdate( 'Y-m-d', strtotime( $date . ' +1 day' ) );
 				
 				// Count views for this post on this specific date
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Traffic analytics from custom table for heatmap
 				$view_count = $wpdb->get_var( $wpdb->prepare(
 					"SELECT COUNT(*) FROM {$wpdb->prefix}aistma_traffic_info 
 					WHERE post_id = %d 
@@ -209,7 +211,9 @@ class AISTMA_Posts_Activity_Widget {
 		?>
 		<div class="aistma-posts-activity-widget">
 			<div class="aistma-widget-summary">
-				<p><strong><?php echo esc_html( count( $recent_posts ) ); ?></strong> <?php echo esc_html( sprintf( __( 'recent posts activity over last %d days', 'ai-story-maker' ), self::get_activity_days() ) ); ?></p>
+				<p><strong><?php echo esc_html( count( $recent_posts ) ); ?></strong> <?php 
+				/* translators: %d: number of days shown in the activity widget */
+				echo esc_html( sprintf( __( 'recent posts activity over last %d days', 'ai-story-maker' ), self::get_activity_days() ) ); ?></p>
 			</div>
 
 			<div class="aistma-activity-heatmap">
@@ -247,8 +251,10 @@ class AISTMA_Posts_Activity_Widget {
 									}
 								}
 							?>
-							<div class="aistma-heatmap-day <?php echo esc_attr( $intensity ); ?>" 
-								 title="<?php echo esc_attr( sprintf( __( '%d views on %s', 'ai-story-maker' ), $activity, date_i18n( get_option( 'date_format' ), strtotime( $date_labels[ $i ] ) ) ) ); ?>">
+						<div class="aistma-heatmap-day <?php echo esc_attr( $intensity ); ?>" 
+							 title="<?php 
+							 /* translators: 1: number of views, 2: formatted date */
+							 echo esc_attr( sprintf( __( '%1$d views on %2$s', 'ai-story-maker' ), $activity, date_i18n( get_option( 'date_format' ), strtotime( $date_labels[ $i ] ) ) ) ); ?>">
 							</div>
 							<?php endfor; ?>
 						</div>
@@ -274,7 +280,7 @@ class AISTMA_Posts_Activity_Widget {
 	 */
 	public static function save_widget_config() {
 		// Verify nonce
-		if ( ! wp_verify_nonce( $_POST['nonce'], 'aistma_widget_config' ) ) {
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'aistma_widget_config' ) ) {
 			wp_die( 'Security check failed' );
 		}
 
@@ -284,8 +290,8 @@ class AISTMA_Posts_Activity_Widget {
 		}
 
 		// Sanitize and validate input
-		$activity_days = (int) $_POST['activity_days'];
-		$recent_posts_limit = (int) $_POST['recent_posts_limit'];
+		$activity_days = isset( $_POST['activity_days'] ) ? (int) $_POST['activity_days'] : 14;
+		$recent_posts_limit = isset( $_POST['recent_posts_limit'] ) ? (int) $_POST['recent_posts_limit'] : 5;
 		$hide_empty_columns = isset( $_POST['hide_empty_columns'] ) ? (bool) $_POST['hide_empty_columns'] : false;
 
 		// Validate ranges

@@ -114,10 +114,11 @@ class AISTMA_Log_Manager {
 		if ( false === $logs ) {
 			// Build query based on filter
 			$where_clause = $show_all_logs ? '' : "WHERE log_type IN ('success', 'error')";
+			$safe_table = esc_sql( $wpdb->prefix . 'aistma_log_table' );
 			
 			// Log table is a custom table.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-			$logs = $wpdb->get_results( "SELECT * FROM `{$wpdb->prefix}aistma_log_table` {$where_clause} ORDER BY created_at DESC LIMIT 0, 25" );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$logs = $wpdb->get_results( "SELECT * FROM `{$safe_table}` {$where_clause} ORDER BY created_at DESC LIMIT 0, 25" );
 			wp_cache_set( $cache_key, $logs, '', 300 );
 		}
 
@@ -143,13 +144,15 @@ class AISTMA_Log_Manager {
 	public static function aistma_fix_empty_log_types() {
 		global $wpdb;
 		$table = $wpdb->prefix . 'aistma_log_table';
+		$safe_table = esc_sql( $table );
 		
 		// Update empty, null, or whitespace-only log types to 'info'
 		// Log table is a custom table.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$updated = $wpdb->query( 
 			$wpdb->prepare(
-				"UPDATE `{$table}` SET log_type = %s WHERE log_type IS NULL OR log_type = '' OR TRIM(log_type) = ''",
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is controlled, not user input
+				"UPDATE `{$safe_table}` SET log_type = %s WHERE log_type IS NULL OR log_type = '' OR TRIM(log_type) = ''",
 				'info'
 			)
 		);
