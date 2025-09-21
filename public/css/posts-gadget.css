@@ -1,0 +1,517 @@
+/**
+ * Posts Gadget Styles for AI Story Maker
+ *
+ * @package AI_Story_Maker
+ * @since 2.0.1
+ */
+
+/* Main Container */
+.aistma-posts-gadget {
+    max-width: 100%;
+    margin: 0 auto;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+/* Controls Section */
+.aistma-posts-controls {
+    margin-bottom: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Search Box */
+.aistma-search-box {
+    position: relative;
+    max-width: 400px;
+}
+
+.aistma-posts-search {
+    width: 100%;
+    padding: 12px 45px 12px 16px;
+    border: 2px solid #e1e5e9;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    background: #fff;
+}
+
+.aistma-posts-search:focus {
+    outline: none;
+    border-color: #007cba;
+    box-shadow: 0 0 0 3px rgba(0, 124, 186, 0.1);
+}
+
+.aistma-search-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    color: #666;
+    transition: color 0.3s ease;
+}
+
+.aistma-search-btn:hover {
+    color: #007cba;
+}
+
+.aistma-search-btn .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+/* Filter Buttons */
+.aistma-posts-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.aistma-filter-btn {
+    padding: 8px 16px;
+    background: #f8f9fa;
+    border: 1px solid #e1e5e9;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #495057;
+}
+
+.aistma-filter-btn:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.aistma-filter-btn.active {
+    background: #007cba;
+    border-color: #007cba;
+    color: #fff;
+}
+
+/* Posts Container */
+.aistma-posts-container {
+    position: relative;
+}
+
+.aistma-posts-grid {
+    display: grid;
+    gap: 1.5rem;
+}
+
+/* Grid Layout */
+.layout-grid .aistma-posts-grid {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+/* List Layout */
+.layout-list .aistma-posts-grid {
+    grid-template-columns: 1fr;
+}
+
+.layout-list .aistma-post-item {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.layout-list .aistma-post-image {
+    flex: 0 0 200px;
+    max-width: 200px;
+}
+
+.layout-list .aistma-post-content {
+    flex: 1;
+}
+
+/* Post Item */
+.aistma-post-item {
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+}
+
+.aistma-post-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* New Post Badge */
+.aistma-post-new {
+    border-left: 4px solid #28a745;
+}
+
+.aistma-new-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: #28a745;
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    z-index: 2;
+}
+
+/* Post Image */
+.aistma-post-image {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 16/9;
+}
+
+.aistma-post-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.aistma-post-image:hover img {
+    transform: scale(1.05);
+}
+
+.aistma-post-image a {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* Post Content */
+.aistma-post-content {
+    padding: 1.5rem;
+}
+
+.aistma-post-title {
+    margin: 0 0 0.75rem 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.aistma-post-title a {
+    color: #212529;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.aistma-post-title a:hover {
+    color: #007cba;
+}
+
+.aistma-post-excerpt {
+    color: #6c757d;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.aistma-post-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.aistma-read-more {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 16px;
+    background: #007cba;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.aistma-read-more:hover {
+    background: #005a87;
+    transform: translateY(-1px);
+}
+
+/* Pagination */
+.aistma-posts-pagination {
+    text-align: center;
+    margin-top: 2rem;
+}
+
+.aistma-load-more-btn {
+    padding: 12px 24px;
+    background: #007cba;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 160px;
+}
+
+.aistma-load-more-btn:hover:not(:disabled) {
+    background: #005a87;
+    transform: translateY(-1px);
+}
+
+.aistma-load-more-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Loading States */
+.aistma-posts-loading {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+}
+
+.aistma-spinner {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #007cba;
+    border-radius: 50%;
+    animation: aistma-spin 1s linear infinite;
+    margin-right: 12px;
+    vertical-align: middle;
+}
+
+@keyframes aistma-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.aistma-posts-error,
+.aistma-posts-empty {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+
+.aistma-posts-error {
+    color: #dc3545;
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+}
+
+.aistma-no-posts {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+    background: #f8f9fa;
+    border-radius: 8px;
+    grid-column: 1 / -1;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .aistma-posts-controls {
+        gap: 0.75rem;
+    }
+    
+    .aistma-search-box {
+        max-width: 100%;
+    }
+    
+    .aistma-posts-filters {
+        justify-content: center;
+    }
+    
+    .aistma-filter-btn {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+    
+    /* Mobile Grid */
+    .layout-grid .aistma-posts-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    /* Mobile List */
+    .layout-list .aistma-post-item {
+        flex-direction: column;
+    }
+    
+    .layout-list .aistma-post-image {
+        flex: none;
+        max-width: 100%;
+        aspect-ratio: 16/9;
+    }
+    
+    .aistma-post-content {
+        padding: 1rem;
+    }
+    
+    .aistma-post-title {
+        font-size: 1.125rem;
+    }
+    
+    .aistma-load-more-btn {
+        width: 100%;
+        padding: 14px 24px;
+    }
+}
+
+@media (max-width: 480px) {
+    .aistma-posts-gadget {
+        margin: 0 -1rem;
+    }
+    
+    .aistma-posts-controls {
+        padding: 0 1rem;
+    }
+    
+    .aistma-posts-container {
+        padding: 0 1rem;
+    }
+    
+    .aistma-posts-grid {
+        gap: 0.75rem;
+    }
+    
+    .aistma-post-content {
+        padding: 0.75rem;
+    }
+    
+    .aistma-post-title {
+        font-size: 1rem;
+    }
+}
+
+/* High DPI Displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .aistma-post-item {
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    }
+    
+    .aistma-post-item:hover {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .aistma-posts-gadget {
+        color: #e9ecef;
+    }
+    
+    .aistma-posts-search {
+        background: #343a40;
+        border-color: #495057;
+        color: #e9ecef;
+    }
+    
+    .aistma-posts-search:focus {
+        border-color: #007cba;
+    }
+    
+    .aistma-filter-btn {
+        background: #495057;
+        border-color: #6c757d;
+        color: #e9ecef;
+    }
+    
+    .aistma-filter-btn:hover {
+        background: #6c757d;
+    }
+    
+    .aistma-post-item {
+        background: #343a40;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+    
+    .aistma-post-title a {
+        color: #e9ecef;
+    }
+    
+    .aistma-post-excerpt {
+        color: #adb5bd;
+    }
+    
+    .aistma-posts-empty {
+        background: #495057;
+        color: #adb5bd;
+    }
+}
+
+/* Accessibility Improvements */
+.aistma-filter-btn:focus,
+.aistma-load-more-btn:focus,
+.aistma-read-more:focus {
+    outline: 2px solid #007cba;
+    outline-offset: 2px;
+}
+
+.aistma-posts-search:focus {
+    outline: 2px solid #007cba;
+    outline-offset: 2px;
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    .aistma-post-item,
+    .aistma-post-image img,
+    .aistma-read-more,
+    .aistma-load-more-btn,
+    .aistma-filter-btn,
+    .aistma-search-btn,
+    .aistma-posts-search {
+        transition: none;
+    }
+    
+    .aistma-spinner {
+        animation: none;
+    }
+    
+    .aistma-post-item:hover {
+        transform: none;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .aistma-posts-controls,
+    .aistma-posts-pagination,
+    .aistma-posts-loading,
+    .aistma-posts-error,
+    .aistma-new-badge {
+        display: none !important;
+    }
+    
+    .aistma-post-item {
+        break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+    
+    .aistma-post-title a {
+        color: #000 !important;
+        text-decoration: none;
+    }
+    
+    .aistma-read-more {
+        background: none !important;
+        color: #000 !important;
+        text-decoration: underline;
+    }
+}

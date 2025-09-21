@@ -32,10 +32,21 @@ define( 'AISTMA_URL', plugin_dir_url( __FILE__ ) );
 use exedotcom\aistorymaker\AISTMA_Story_Generator;
 
 require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-plugin.php';
+require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-posts-gadget.php';
 
 // Hooks.
 register_activation_hook( __FILE__, array( 'exedotcom\\aistorymaker\\AISTMA_Plugin', 'aistma_activate' ) );
 register_deactivation_hook( __FILE__, array( 'exedotcom\\aistorymaker\\AISTMA_Plugin', 'aistma_deactivate' ) );
+
+// Initialize Posts Gadget
+if ( class_exists( '\\exedotcom\\aistorymaker\\AISTMA_Posts_Gadget' ) ) {
+    new \exedotcom\aistorymaker\AISTMA_Posts_Gadget( new \exedotcom\aistorymaker\AISTMA_Plugin() );
+    
+    // Debug: Add a temporary comment to verify class loaded
+    add_action( 'wp_footer', function() {
+        echo '<!-- Posts Gadget class loaded successfully -->';
+    });
+}
 
 /**
  * Handle AJAX request to generate stories.
@@ -58,6 +69,9 @@ add_action(
 		}
 	}
 );
+
+
+
 
 // Register AJAX actions
 add_action( 'wp_ajax_aistma_save_setting', function() {

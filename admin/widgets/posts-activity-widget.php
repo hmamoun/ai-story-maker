@@ -28,14 +28,14 @@ class AISTMA_Posts_Activity_Widget {
 	const WIDGET_ID = 'aistma_posts_activity_widget';
 
 	/**
-	 * Number of days to show activity for
+	 * Default number of days to show activity for
 	 */
-	const ACTIVITY_DAYS = 14;
+	const DEFAULT_ACTIVITY_DAYS = 14;
 
 	/**
-	 * Number of recent posts to display
+	 * Default number of recent posts to display
 	 */
-	const RECENT_POSTS_LIMIT = 5;
+	const DEFAULT_RECENT_POSTS_LIMIT = 5;
 
 	/**
 	 * Initialize the widget
@@ -43,6 +43,7 @@ class AISTMA_Posts_Activity_Widget {
 	public static function init() {
 		add_action( 'wp_dashboard_setup', array( __CLASS__, 'register_widget' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_scripts' ) );
+		add_action( 'wp_ajax_aistma_save_widget_config', array( __CLASS__, 'save_widget_config' ) );
 	}
 
 	/**
@@ -71,6 +72,27 @@ class AISTMA_Posts_Activity_Widget {
 	}
 
 	/**
+	 * Get configured number of activity days
+	 */
+	private static function get_activity_days() {
+		return (int) get_option( 'aistma_widget_activity_days', self::DEFAULT_ACTIVITY_DAYS );
+	}
+
+	/**
+	 * Get configured number of recent posts
+	 */
+	private static function get_recent_posts_limit() {
+		return (int) get_option( 'aistma_widget_recent_posts_limit', self::DEFAULT_RECENT_POSTS_LIMIT );
+	}
+
+	/**
+	 * Get hide empty columns setting
+	 */
+	private static function get_hide_empty_columns() {
+		return (bool) get_option( 'aistma_widget_hide_empty_columns', false );
+	}
+
+	/**
 	 * Get recent posts
 	 */
 	private static function get_recent_posts() {
@@ -83,7 +105,7 @@ class AISTMA_Posts_Activity_Widget {
 			AND post_status = 'publish' 
 			ORDER BY post_date DESC 
 			LIMIT %d",
-			self::RECENT_POSTS_LIMIT
+			self::get_recent_posts_limit()
 		) );
 	}
 
@@ -91,23 +113,76 @@ class AISTMA_Posts_Activity_Widget {
 	 * Generate activity data for posts
 	 */
 	private static function generate_activity_data( $recent_posts ) {
+		global $wpdb;
 		$post_views_by_day = array();
 		$date_labels = array();
+		$activity_days = self::get_activity_days();
 		
 		// Generate date labels for the past N days
-		for ( $i = self::ACTIVITY_DAYS - 1; $i >= 0; $i-- ) {
+		for ( $i = $activity_days - 1; $i >= 0; $i-- ) {
 			$date_labels[] = date( 'Y-m-d', strtotime( "-{$i} days" ) );
 		}
 		
-		// For each recent post, build simulated activity data
+		// For each recent post, get actual view data from traffic table
 		foreach ( $recent_posts as $post ) {
 			$post_id = (int) $post->ID;
 			$post_views_by_day[ $post_id ] = array();
 			
-			// Generate simulated activity data (replace with real analytics)
+			// Get actual view data from aistma_traffic_info table
 			for ( $i = 0; $i < count( $date_labels ); $i++ ) {
-				$simulated_activity = rand( 0, 25 );
-				$post_views_by_day[ $post_id ][ $i ] = $simulated_activity;
+				$date = $date_labels[ $i ];
+				$next_date = date( 'Y-m-d', strtotime( $date . ' +1 day' ) );
+				
+				// Count views for this post on this specific date
+				$view_count = $wpdb->get_var( $wpdb->prepare(
+					"SELECT COUNT(*) FROM {$wpdb->prefix}aistma_traffic_info 
+					WHERE post_id = %d 
+					AND DATE(viewed_at) = %s",
+					$post_id,
+					$date
+				) );
+				
+				$post_views_by_day[ $post_id ][ $i ] = (int) $view_count;
+			}
+		}
+		
+		// Filter empty columns if requested
+		$hide_empty_columns = self::get_hide_empty_columns();
+		if ( $hide_empty_columns && ! empty( $post_views_by_day ) && ! empty( $date_labels ) ) {
+			$filtered_date_labels = array();
+			$filtered_post_views_by_day = array();
+			
+			// Check each day to see if any post has views
+			for ( $i = 0; $i < count( $date_labels ); $i++ ) {
+				$has_activity = false;
+				foreach ( $recent_posts as $post ) {
+					$post_id = (int) $post->ID;
+					if ( isset( $post_views_by_day[ $post_id ][ $i ] ) && $post_views_by_day[ $post_id ][ $i ] > 0 ) {
+						$has_activity = true;
+						break;
+					}
+				}
+				
+				// If this day has activity, include it
+				if ( $has_activity ) {
+					$new_index = count( $filtered_date_labels );
+					$filtered_date_labels[] = $date_labels[ $i ];
+					
+					// Copy views for this day to the filtered array
+					foreach ( $recent_posts as $post ) {
+						$post_id = (int) $post->ID;
+						if ( ! isset( $filtered_post_views_by_day[ $post_id ] ) ) {
+							$filtered_post_views_by_day[ $post_id ] = array();
+						}
+						$filtered_post_views_by_day[ $post_id ][ $new_index ] = isset( $post_views_by_day[ $post_id ][ $i ] ) ? $post_views_by_day[ $post_id ][ $i ] : 0;
+					}
+				}
+			}
+			
+			// Use filtered data if we have any days with activity
+			if ( ! empty( $filtered_date_labels ) ) {
+				$date_labels = $filtered_date_labels;
+				$post_views_by_day = $filtered_post_views_by_day;
 			}
 		}
 		
@@ -134,7 +209,7 @@ class AISTMA_Posts_Activity_Widget {
 		?>
 		<div class="aistma-posts-activity-widget">
 			<div class="aistma-widget-summary">
-				<p><strong><?php echo esc_html( count( $recent_posts ) ); ?></strong> <?php esc_html_e( 'recent posts activity over last 14 days', 'ai-story-maker' ); ?></p>
+				<p><strong><?php echo esc_html( count( $recent_posts ) ); ?></strong> <?php echo esc_html( sprintf( __( 'recent posts activity over last %d days', 'ai-story-maker' ), self::get_activity_days() ) ); ?></p>
 			</div>
 
 			<div class="aistma-activity-heatmap">
@@ -193,6 +268,43 @@ class AISTMA_Posts_Activity_Widget {
 	}
 
 
+
+	/**
+	 * Save widget configuration via AJAX
+	 */
+	public static function save_widget_config() {
+		// Verify nonce
+		if ( ! wp_verify_nonce( $_POST['nonce'], 'aistma_widget_config' ) ) {
+			wp_die( 'Security check failed' );
+		}
+
+		// Check user capabilities
+		if ( ! current_user_can( 'edit_dashboard' ) ) {
+			wp_die( 'Insufficient permissions' );
+		}
+
+		// Sanitize and validate input
+		$activity_days = (int) $_POST['activity_days'];
+		$recent_posts_limit = (int) $_POST['recent_posts_limit'];
+		$hide_empty_columns = isset( $_POST['hide_empty_columns'] ) ? (bool) $_POST['hide_empty_columns'] : false;
+
+		// Validate ranges
+		if ( $activity_days < 1 || $activity_days > 90 ) {
+			wp_send_json_error( 'Invalid activity days range' );
+		}
+
+		if ( $recent_posts_limit < 1 || $recent_posts_limit > 20 ) {
+			wp_send_json_error( 'Invalid recent posts limit range' );
+		}
+
+		// Save options
+		update_option( 'aistma_widget_activity_days', $activity_days );
+		update_option( 'aistma_widget_recent_posts_limit', $recent_posts_limit );
+		update_option( 'aistma_widget_hide_empty_columns', $hide_empty_columns );
+
+		wp_send_json_success( 'Settings saved successfully' );
+	}
+
 	/**
 	 * Get widget-specific CSS styles
 	 */
@@ -230,7 +342,7 @@ class AISTMA_Posts_Activity_Widget {
 			writing-mode: vertical-rl;
 			transform: rotate(180deg);
 			text-align: left;
-			height: 30px;
+			height: 60px;
 			display: flex;
 			align-items: center;
 			justify-content: center;

@@ -49,7 +49,7 @@ if ( ! empty( $saved_subscription_email ) ) {
 ?>
 <div class="wrap">
     <div class="aistma-style-settings">
-        <h2><?php esc_html_e('Subscriptions', 'ai-story-maker'); ?></h2>
+       
 <?php
 	// Add a nonce for AJAX security
 	$ajax_nonce = wp_create_nonce( 'aistma_save_setting' );
@@ -59,31 +59,7 @@ if ( ! empty( $saved_subscription_email ) ) {
     $aistma_master_url = $aistma_master_url  ? $aistma_master_url  : 'https://www.exedotcom.ca/';
 ?>
 
- <style>
-.aistma-subscribed-package {
-    border: 2px solid #0073aa !important;
-    box-shadow: 0 2px 8px rgba(0, 115, 170, 0.15) !important;
-}
 
-.aistma-subscribed-package .aistma-package-title {
-    color: #0073aa !important;
-}
-
-.aistma-subscription-badge {
-    display: inline-block;
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.7; }
-    100% { opacity: 1; }
-}
-
-.aistma-subscription-details div {
-    margin-bottom: 2px;
-}
-</style>
 
 <script type="text/javascript">
 		window.aistmaSettings = {
@@ -92,22 +68,20 @@ if ( ! empty( $saved_subscription_email ) ) {
 			masterUrl: '<?php echo esc_url( $aistma_master_url ); ?>'
 		};
 </script> 
-
-
-<div id="aistma-settings-message"><?php echo esc_html( $email_update_message ); ?></div>
 <!--  tabs for subscribe and api keys -->
 <h2 class="nav-tab-wrapper" id="aistma-subscribe-or-api-keys-wrapper">
     <a href="javascript:void(0);" data-tab="subscribe" class="nav-tab <?php echo ( $active_tab === 'subscribe' ) ? 'nav-tab-active' : ''; ?>">
-        <?php esc_html_e( 'Subscribe [free tier available]', 'ai-story-maker' ); ?>
+        <?php esc_html_e( 'Subscribe', 'ai-story-maker' ); ?>
     </a>
     <a href="javascript:void(0);" data-tab="api_keys" class="nav-tab <?php echo ( $active_tab === 'api_keys' ) ? 'nav-tab-active' : ''; ?>">
         <?php esc_html_e( 'Use your own API keys', 'ai-story-maker' ); ?>
     </a>
 </h2>
 
-<div class="aistma-subscribe-or-api-keys-content-wrapper">
+
 <div id="tab-subscribe" class="aistma-tab-content" style="display: <?php echo ( $active_tab === 'subscribe' ) ? 'block' : 'none'; ?>;">
     <h2><?php esc_html_e( 'Subscription', 'ai-story-maker' ); ?></h2>
+
     <?php
 		// Build the base URL
 		$package_registration_url = $aistma_master_url . 'ai-story-maker-plans' . '/';
@@ -238,11 +212,13 @@ if ( ! empty( $saved_subscription_email ) ) {
                     </span>
                 <?php endif; ?>
             </div>
-            
             <div class="aistma-package-meta">
+            <?php if (isset($package['price']) and $package['price'] > 0) { ?>
+    
                 <span><strong>Price:</strong> $<?php echo esc_html(isset($package['price']) ? $package['price'] : '0'); ?></span>
 				<span>
             <?php
+            }
                     $stories_count = intval(isset($package['stories']) ? $package['stories'] : 0);
                     $interval_count = intval(isset($package['interval_count']) ? $package['interval_count'] : 1);
                     $interval = isset($package['interval']) ? $package['interval'] : 'month';
@@ -268,7 +244,7 @@ if ( ! empty( $saved_subscription_email ) ) {
                 
                 <?php if ( $has_subscription && $subscription_info ) : ?>
                     <div class="aistma-subscription-details" style="margin-top: 12px; padding: 8px; background-color: #f0f6fc; border: 1px solid #c3c4c7; border-radius: 4px; font-size: 0.9em;">
-                        <div style="font-weight: 600; color: #0073aa; margin-bottom: 4px;">📊 Your Subscription Details</div>
+                        <div style="font-weight: 600; color: #0073aa; margin-bottom: 4px;">Your Subscription Details</div>
                         <?php if ( isset( $subscription_info['user_email'] ) ) : ?>
                             <div><strong>Email:</strong> <?php echo esc_html( $subscription_info['user_email'] ); ?></div>
                         <?php endif; ?>
@@ -309,6 +285,7 @@ if ( ! empty( $saved_subscription_email ) ) {
             required
         />
         <button type="submit" class="button button-primary"><?php esc_html_e( 'use email', 'ai-story-maker' ); ?></button>
+
     </div>
 </form>
 
@@ -338,9 +315,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<p class="aistma-subscribe-description">
-	<?php esc_html_e( 'Click on any package above to go directly to the subscription page for that specific plan. This will take you to the plugin\'s secure official page on Exedotcom.ca with more details.', 'ai-story-maker' ); ?>
-</p>
 <?php } ?>
 </div>
 
@@ -365,5 +339,5 @@ document.addEventListener('DOMContentLoaded', function() {
 	</div>
 </div>
 </div>
-</div> 
+
 </div>

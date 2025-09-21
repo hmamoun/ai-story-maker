@@ -18,113 +18,79 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<div class="aistma-style-settings">
 	<h2>AI Story Maker</h2>
 <p>
-	AI Story Maker leverages OpenAI's advanced language models to automatically create engaging stories for your WordPress site.
-	Getting started is easy — simply enter your API keys and set up your prompts.
+	AI Story Maker utilizes Generative AI Models to automatically create engaging stories for your WordPress site, adding content based on the topics you choose, which results in better SEO ranking. Getting started is easy — simply enter your API keys and set up your prompts.
 </p>
-
-<h3>Getting Started</h3>
 <ul>
 	<li>
-		<strong>Settings:</strong> Enter your OpenAI and Unsplash API keys and configure your story generation preferences.
+		<strong>AI Writer:</strong> Offers flexibility to select a subscription plan or integrate your own API keys for personalized story generation.
 	</li>
 	<li>
-		<strong>Prompts:</strong> Visit the Prompts tab to create and manage the instructions that guide story generation.
+		<strong>Settings:</strong> Manage your scheduling preferences, author details, and attribution settings with ease.
 	</li>
 	<li>
-		<strong>Shortcode:</strong> Use the <code>[aistma_scroller]</code> shortcode to display your AI-generated stories anywhere on your site.
+		<strong>Prompts:</strong> Create and manage your prompts and general instructions to tailor story generation to your needs.
+	</li>
+
+	<li>
+		<strong>Analytics:</strong>
+		<ul class="aistma-sub-list">
+			<li><strong>Data Cards:</strong> Quick snapshot of stories, views, CTR, and top tags to spot what resonates, so you can reinforce winning topics and hooks in your prompts and retire low performers.</li>
+			<li><strong>Story Generation Calendar Heatmap:</strong> Shows activity and engagement by day to reveal best publishing windows and dry spells, helping you adjust prompt cadence, timing, and length.</li>
+			<li><strong>Recent Activity & Clicks:</strong> Highlights headlines and openings that get clicks, guiding you to refine the first lines, titles, and calls-to-action in your prompts.</li>
+			<li><strong>Activity by Tag:</strong> Compares topics to uncover audience interests, so you can target high-intent tags, sharpen wording/keywords, and phase out weak themes in prompts.</li>
+		</ul>
+	</li>
+
+	<li><strong>Log:</strong> where you can view the logs of your AI story generation.</li>
+	<li>
+		<ul>
+			<li>
+				<strong>Shortcodes:</strong>
+				<p>
+					<code>[aistma_posts_gadget]</code>: Add a fast, search-friendly posts section that improves internal linking, increases time-on-page, and helps visitors discover more of your content.
+				</p>
+				<p>
+					<strong>Common options:</strong>
+					<ul class="aistma-sub-list">
+						<li><strong>posts_per_page:</strong> number of posts (default: 6)</li>
+						<li><strong>layout:</strong> grid or list</li>
+						<li><strong>show_search:</strong> true/false</li>
+						<li><strong>show_filters:</strong> true/false</li>
+						<li><strong>categories:</strong> comma-separated category IDs (e.g., 2,5)</li>
+						<li><strong>date_range:</strong> today, week, month, year</li>
+						<li><strong>highlight_new:</strong> true/false (uses new_post_days)</li>
+					</ul>
+				</p>
+				<p>
+					<strong>Examples:</strong>
+					<ul class="aistma-sub-list">
+						<li><code>[aistma_posts_gadget posts_per_page="8" layout="grid" show_search="true"]</code></li>
+						<li><code>[aistma_posts_gadget categories="3,7" date_range="month" highlight_new="true"]</code></li>
+					</ul>
+				</p>
+			</li>
+			<li>
+			
+				<p><code>[aistma_scroller]</code>: Displays a sticky, auto‑scrolling story bar at the bottom of the screen with your latest AI‑generated stories. Add it to any page to enable the scroller for that page.	
+			</p>
+			</li>
+		</ul>
 	</li>
 </ul>
 <p>
 	Generated stories are saved as WordPress posts. You can display them using the custom template included with the plugin or by embedding the shortcode into any page or post.
 </p>
 
-<h3>Easy to Use</h3>
-<p>
-	AI Story Maker is designed for simplicity and flexibility, making it easy for users of any skill level to start generating rich, AI-driven content within minutes.
-</p>
 <?php
 $plugin_data = get_plugin_data( AISTMA_PATH . 'ai-story-maker.php' );
 $version = $plugin_data['Version'];
 ?>
-<h3>Future Enhancements</h3>
-<p>
-	This is version <?php echo esc_html( 	$version ); ?>. Future updates will bring support for additional AI models like Gemini, Grok, and DeepSeek,
-	along with enhanced options for embedding premium-quality images from various sources, for full features list, please visit the <a href="https://exedotcom.ca/ai-story-maker/" target="_blank">AI Story Maker</a> website.
-</p>
 
 
-<div class="aistma-generate-stories-section">
-	<h3><?php esc_html_e( 'Generate Stories Now', 'ai-story-maker' ); ?></h3>
-	<p>
-		<?php esc_html_e( 'Click the button below to manually generate AI stories using your configured prompts and settings.', 'ai-story-maker' ); ?>
-	</p>
+
+
 	
-	<?php
-	$is_generating   = get_transient( 'aistma_generating_lock' );
-	$button_disabled = $is_generating ? 'disabled' : '';
-	$button_text     = $is_generating
-		? __( 'Story generation in progress [recheck in 10 minutes]', 'ai-story-maker' )
-		: __( 'Generate AI Stories', 'ai-story-maker' );
-	?>
-
-	<input type="hidden" id="generate-story-nonce" value="<?php echo esc_attr( wp_create_nonce( 'generate_story_nonce' ) ); ?>">
-	<button
-		id="aistma-generate-stories-button"
-		class="button button-primary"
-		<?php echo esc_attr( $button_disabled ); ?>
-	>
-		<?php echo esc_html( $button_text ); ?>
-	</button>
-	
-	<div class="aistma-analytics-promotion">
-		<div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 20px; border-radius: 8px; text-align: center; margin-top: 20px; border: 1px solid #dee2e6;">
-			<h4 style="margin: 0 0 10px 0; color: #495057;">
-				📊 <?php esc_html_e('Analytics Dashboard', 'ai-story-maker'); ?>
-			</h4>
-			<p style="margin: 0 0 15px 0; color: #6c757d; font-size: 14px;">
-				<?php esc_html_e('View comprehensive analytics and insights about your AI story generation.', 'ai-story-maker'); ?>
-			</p>
-			<a href="<?php echo esc_url( admin_url( 'admin.php?page=aistma-settings&tab=analytics' ) ); ?>" class="button button-primary">
-				<?php esc_html_e('View Analytics', 'ai-story-maker'); ?>
-			</a>
-		</div>
-	</div>
-</div>
-
-		<?php
-		$next_event    = wp_next_scheduled( 'aistma_generate_story_event' );
-		$is_generating = get_transient( 'aistma_generating_lock' );
-
-		if ( $next_event ) {
-			$time_diff = $next_event - time();
-			$days      = floor( $time_diff / ( 60 * 60 * 24 ) );
-			$hours     = floor( ( $time_diff % ( 60 * 60 * 24 ) ) / ( 60 * 60 ) );
-			$minutes   = floor( ( $time_diff % ( 60 * 60 ) ) / 60 );
-
-			$formatted_countdown = sprintf( '%dd %dh %dm', $days, $hours, $minutes );
-			$formatted_datetime  = date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $next_event );
-
-			?>
-	<div class="notice notice-info">
-		<strong>
-			🕒 Next AI story generation scheduled in <?php echo esc_html( $formatted_countdown ); ?><br>
-			📅 Scheduled for: <em><?php echo esc_html( $formatted_datetime ); ?></em><br>
-			<?php if ( $is_generating ) : ?>
-				<span style="color: #d98500;"><strong>Currently generating stories... Please recheck in 10 minutes.</strong></span>
-			<?php endif; ?>
-		</strong>
-	</div>
-			<?php
-		} else {
-			?>
-	<div class="notice notice-warning">
-		<strong>
-			<?php esc_html_e( 'No scheduled story generation found.', 'ai-story-maker' ); ?>
-		</strong>
-	</div>
-			<?php
-		}
-		?>
+	<?php // Generation controls moved to a reusable template included globally. ?>
 	</div>
 
 </div>

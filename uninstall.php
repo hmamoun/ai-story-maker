@@ -24,7 +24,9 @@ $options = array(
 	'aistma_unsplash_api_secret',
 	'aistma_generate_story_cron',
 	'aistma_show_exedotcom_attribution',
-
+	'aistma_widget_activity_days',
+	'aistma_widget_recent_posts_limit',
+	'aistma_widget_hide_empty_columns',
 );
 foreach ( $options as $option ) {
 	if ( get_option( $option ) ) {

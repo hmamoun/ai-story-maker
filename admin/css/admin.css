@@ -21,6 +21,11 @@
 	margin: 20px 0;
 }
 
+/* Indentation for nested Analytics list on welcome tab */
+.aistma-style-settings .aistma-sub-list {
+	margin-left: 28px; /* increase left margin */
+}
+
 /* Header styles within settings */
 .aistma-style-settings h2 {
 	border-bottom: 2px solid #0073aa;
@@ -30,7 +35,7 @@
 
 /* Label styling for form fields */
 .aistma-style-settings label {
-	font-weight: bold;
+
 	display: block;
 	margin-top: 15px;
 }
@@ -54,6 +59,8 @@
 	line-height: 32px;
 	padding: 0 8px;
 	border: 1px solid #ccc;
+	margin-left: auto;
+	display: block;
 }
 
 /* Styling for inline fields grouping */
@@ -68,12 +75,14 @@
 
 /* Submit button styling */
 .aistma-style-settings .submit-button {
+
 	margin-top: 20px;
 }
 
 .wp-core-ui .button-primary {
 	display: block;
-	margin: auto;
+
+
 }
 #add-prompt {
 	display: block ;
@@ -169,7 +178,7 @@
 	margin-bottom: 12px;
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 	transition: all 0.2s ease;
-	display: flex;
+
 	align-items: center;
 	justify-content: space-between;
 	min-height: 60px;
@@ -183,6 +192,9 @@
 .aistma-setting-item-compact .setting-label {
 	flex: 1;
 	margin-right: 20px;
+	display: flex;
+	align-items: flex-start;
+	gap: 20px;
 }
 
 .aistma-setting-item-compact .setting-label h4 {
@@ -199,9 +211,15 @@
 	line-height: 1.4;
 }
 
+.aistma-setting-item-compact .setting-text {
+	flex: 1;
+}
+
 .aistma-setting-item-compact .setting-control {
 	flex-shrink: 0;
-	min-width: 200px;
+	min-width: 150px;
+	display: flex;
+	align-items: center;
 }
 
 .aistma-setting-item-compact .setting-control select {
@@ -211,6 +229,15 @@
 	border-radius: 4px;
 	background: #fff;
 	font-size: 13px;
+	transition: border-color 0.3s ease;
+	margin-left: auto;
+	text-align: right;
+}
+
+.aistma-setting-item-compact .setting-control select:focus {
+	border-color: #0073aa;
+	outline: none;
+	box-shadow: 0 0 0 2px rgba(0, 115, 170, 0.1);
 }
 
 .aistma-setting-item-compact .setting-control input[type="text"] {
@@ -304,12 +331,14 @@
 	width: 100%;
 	max-width: 250px;
 	margin-top: 12px;
+	margin-left: auto;
 	padding: 10px 12px;
 	border: 2px solid #ddd;
 	border-radius: 6px;
 	background: #fff;
 	font-size: 14px;
 	transition: border-color 0.3s ease;
+	text-align: right;
 }
 
 .aistma-setting-item select:focus {
@@ -365,13 +394,13 @@
 .aistma-package-clickable:hover {
     transform: translateY(-5px);
     box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
-    border-color: #0073aa;
+    border-color: #28a745;
     text-decoration: none;
     color: inherit;
 }
 
 .aistma-package-clickable:focus {
-    outline: 2px solid #0073aa;
+    outline: 2px solid #28a745;
     outline-offset: 2px;
     text-decoration: none;
     color: inherit;
@@ -388,7 +417,7 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: rgba(0, 115, 170, 0.95);
+    background: rgba(40, 167, 69, 0.95);
     color: white;
     padding: 8px 16px;
     border-radius: 20px;
@@ -413,15 +442,15 @@
 	left: 0;
 	right: 0;
 	height: 4px;
-	background: linear-gradient(90deg, #ef06d4, #20c997);
+	background: linear-gradient(90deg, #fdfcfd, #196127);
 }
 
 /* Removed - replaced with .aistma-package-clickable:hover styles */
 
 /* Highlight for current plan */
 .aistma-package-box.aistma-current-package {
-    border-color: #0073aa;
-    box-shadow: 0 0 0 3px rgba(0, 115, 170, 0.15), 0 8px 16px rgba(0, 0, 0, 0.08);
+    border-color: #28a745;
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.15), 0 8px 16px rgba(0, 0, 0, 0.08);
 }
 
 .aistma-package-box.aistma-current-package::after {
@@ -430,7 +459,7 @@
     top: 10px;
     left: -36px;
     transform: rotate(-45deg);
-    background: #0073aa;
+    background: #28a745;
     color: #fff;
     padding: 6px 50px;
     font-size: 11px;
@@ -441,7 +470,7 @@
 }
 
 .aistma-package-box.aistma-current-package .aistma-current-plan-line {
-    color: #005a87 !important;
+    color: #28a745 !important;
 }
 
 .aistma-package-title {
@@ -481,6 +510,29 @@
 	letter-spacing: 0.5px;
 }
 
+.aistma-subscribed-package {
+    border: 2px solid #28a745 !important;
+    box-shadow: 0 2px 8px rgba(0, 115, 170, 0.15) !important;
+}
+
+.aistma-subscribed-package .aistma-package-title {
+    color: #28a745 !important;
+}
+
+.aistma-subscription-badge {
+    display: inline-block;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.aistma-subscription-details div {
+    margin-bottom: 2px;
+}
 /* Enhanced Generate Stories Section */
 .aistma-generate-stories-section {
 	background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
@@ -721,6 +773,8 @@ tr:hover .row-actions {
 	.aistma-setting-item-compact .setting-label {
 		margin-right: 0;
 		margin-bottom: 15px;
+		flex-direction: column;
+		gap: 15px;
 	}
 	
 	.aistma-setting-item-compact .setting-control {
@@ -875,6 +929,70 @@ tr:hover .row-actions {
 
 .aistma-heatmap-container-vertical {
 	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	align-items: center;
+}
+
+/* Month labels styles */
+.aistma-heatmap-month-labels {
+	display: flex;
+	gap: 2px;
+	margin-bottom: 5px;
+	align-items: flex-end;
+}
+
+.month-label-vertical {
+	width: 14px;
+	height: 15px;
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+	flex-shrink: 0;
+}
+
+.month-label-spacer {
+	width: 50px;
+}
+
+.month-labels-grid {
+	display: flex;
+	gap: 1px;
+	align-items: flex-end;
+}
+
+.month-label-week {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+
+.month-label-day {
+	width: 12px;
+	height: 3px;
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+}
+
+.month-label-day:first-child {
+	height: 15px;
+	align-items: flex-end;
+}
+
+.month-text {
+	font-size: 10px;
+	font-weight: 600;
+	color: #666;
+	writing-mode: horizontal-tb;
+	text-orientation: mixed;
+	letter-spacing: 0;
+	transform: rotate(-90deg);
+	white-space: nowrap;
+}
+
+.aistma-heatmap-weeks-container {
+	display: flex;
 	gap: 10px;
 	align-items: flex-start;
 }
@@ -883,17 +1001,19 @@ tr:hover .row-actions {
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
-	margin-right: 10px;
+	margin-right: 8px;
+	width: 32px;
+	flex-shrink: 0;
 }
 
 .weekday-vertical {
 	font-size: 10px;
 	color: #666;
-	text-align: center;
+	text-align: right;
 	font-weight: 500;
 	height: 12px;
 	line-height: 12px;
-	width: 30px;
+	width: 100%;
 }
 
 .aistma-heatmap-weeks-vertical {
@@ -907,6 +1027,8 @@ tr:hover .row-actions {
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
+	width: 14px;
+	flex-shrink: 0;
 }
 
 .aistma-heatmap-day {
@@ -916,6 +1038,8 @@ tr:hover .row-actions {
 	position: relative;
 	cursor: pointer;
 	transition: all 0.2s ease;
+	box-sizing: border-box;
+	border: 1px solid transparent;
 }
 
 .aistma-heatmap-day:hover {
@@ -951,6 +1075,11 @@ tr:hover .row-actions {
 .intensity-3 { background-color: #239a3b; }
 .intensity-4 { background-color: #196127; }
 
+/* First day of month marker */
+.first-day-of-month {
+	border-color: #000 !important;
+}
+
 /* Heatmap responsive design */
 @media (max-width: 768px) {
 	.aistma-heatmap-stats {
@@ -965,15 +1094,20 @@ tr:hover .row-actions {
 	
 	.weekday-vertical {
 		font-size: 9px;
-		width: 25px;
-	}
-	
-	.aistma-heatmap-container-vertical {
-		gap: 5px;
+		width: 100%;
 	}
 	
 	.aistma-heatmap-weekdays-vertical {
+		width: 28px;
 		margin-right: 5px;
+	}
+	
+	.aistma-heatmap-container-vertical {
+		gap: 2px;
+	}
+	
+	.aistma-heatmap-weeks-container {
+		gap: 5px;
 	}
 }
 
@@ -1159,4 +1293,202 @@ tr:hover .row-actions {
 .log-type-message {
     color: #666;
     font-weight: 600;
+}
+
+/* Analytics Block Styling - Universal styling for all analytics sections */
+.aistma-analytic-block {
+    background: #fff;
+    border: 1px solid #ddd;
+	width: 95%;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Tag Clicks specific styling */
+.aistma-tag-clicks-container {
+    background: transparent;
+	width: 95%;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    margin-top: 0;
+    box-shadow: none;
+}
+
+.aistma-tag-clicks-header {
+    display: grid;
+    grid-template-columns: 2fr 2fr 1fr;
+    gap: 15px;
+    padding: 15px 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-bottom: 2px solid #0073aa;
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 14px;
+}
+
+.aistma-tag-clicks-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.aistma-tag-click-item {
+    display: grid;
+    grid-template-columns: 2fr 2fr 1fr;
+    gap: 15px;
+    padding: 12px 20px;
+    border-bottom: 1px solid #eee;
+    align-items: center;
+    transition: background-color 0.2s ease;
+}
+
+.aistma-tag-click-item:hover {
+    background-color: #f0f6ff;
+}
+
+.aistma-tag-click-item:last-child {
+    border-bottom: none;
+}
+
+.tag-name a {
+    color: #0073aa;
+    text-decoration: none;
+    font-weight: 500;
+    display: block;
+    padding: 4px 0;
+    transition: color 0.2s ease;
+}
+
+.tag-name a:hover {
+    color: #005a87;
+    text-decoration: underline;
+}
+
+.tag-clicks {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.clicks-number {
+    font-weight: 600;
+    color: #2c3e50;
+    min-width: 60px;
+    text-align: right;
+}
+
+.clicks-bar {
+    flex: 1;
+    height: 20px;
+    background-color: #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+
+.clicks-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #239a3b 0%, #196127 100%);
+    border-radius: 10px;
+    transition: width 0.3s ease;
+    position: relative;
+}
+
+.clicks-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.tag-percentage {
+    text-align: center;
+    font-weight: 600;
+    color: #666;
+}
+
+.aistma-tag-clicks-summary {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    border-top: 1px solid #ddd;
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.summary-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.summary-item strong {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.summary-item span {
+    color: #0073aa;
+    font-weight: 500;
+}
+
+.aistma-no-data {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+    background: #f9f9f9;
+    border-radius: 8px;
+    margin-top: 15px;
+}
+
+.aistma-no-data p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* Responsive adjustments for tag clicks */
+@media (max-width: 768px) {
+    .aistma-tag-clicks-header,
+    .aistma-tag-click-item {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        text-align: center;
+    }
+    
+    .aistma-tag-clicks-header {
+        display: none;
+    }
+    
+    .tag-name {
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    
+    .tag-clicks {
+        justify-content: center;
+        margin: 10px 0;
+    }
+    
+    .tag-percentage {
+        margin-top: 5px;
+    }
+    
+    .aistma-tag-clicks-summary {
+        flex-direction: column;
+        text-align: center;
+    }
 }

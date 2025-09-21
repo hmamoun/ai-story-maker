@@ -58,7 +58,7 @@ class AISTMA_Story_Calendar_Widget {
 		}
 
 		wp_add_inline_style( 'dashboard', self::get_widget_styles() );
-		wp_add_inline_script( 'dashboard', self::get_widget_scripts() );
+
 	}
 
 	/**
@@ -67,8 +67,9 @@ class AISTMA_Story_Calendar_Widget {
 	private static function get_story_generation_data() {
 		global $wpdb;
 		
-		// Get stories created in the last 6 months (180 days)
-		$six_months_ago = date( 'Y-m-d', strtotime( '-180 days' ) );
+		// Get stories created in the last 2 months (60 days)
+		// Get stories created in the last 3 months (90 days)
+		$three_months_ago = date( 'Y-m-d', strtotime( '-90 days' ) );
 		
 		// First try to get AI-generated posts
 		$ai_results = $wpdb->get_results( $wpdb->prepare(
@@ -83,7 +84,7 @@ class AISTMA_Story_Calendar_Widget {
 			)
 			GROUP BY DATE(post_date)
 			ORDER BY date ASC",
-			$six_months_ago
+			$three_months_ago
 		) );
 		
 		// If no AI-generated posts found, get all published posts
@@ -96,7 +97,7 @@ class AISTMA_Story_Calendar_Widget {
 				AND post_date >= %s
 				GROUP BY DATE(post_date)
 				ORDER BY date ASC",
-				$six_months_ago
+				$three_months_ago
 			) );
 		} else {
 			$results = $ai_results;
@@ -115,22 +116,33 @@ class AISTMA_Story_Calendar_Widget {
 	 */
 	private static function generate_calendar_data( $story_data ) {
 		$calendar = array();
-		$start_date = new DateTime( '-180 days' ); // 6 months ago
-		$end_date = new DateTime( '180 days' );
+		$month_labels = array(); // Store month labels by exact position
+		$start_date = new DateTime( '-90 days' ); // 3 months ago
+		$end_date = new DateTime( 'now' );
 		
 		for ( $date = clone $start_date; $date <= $end_date; $date->add( new DateInterval( 'P1D' ) ) ) {
 			$date_str = $date->format( 'Y-m-d' );
 			$week = $date->format( 'W' );
 			$day_of_week = $date->format( 'N' ) - 1; // 0-6 (Monday-Sunday)
+			$is_first_day_of_month = $date->format( 'j' ) === '1';
 			
 			if ( ! isset( $calendar[ $week ] ) ) {
-				$calendar[ $week ] = array_fill( 0, 7, 0 );
+				$calendar[ $week ] = array_fill( 0, 7, array( 'count' => 0, 'is_first_day' => false ) );
 			}
 			
-			$calendar[ $week ][ $day_of_week ] = isset( $story_data[ $date_str ] ) ? $story_data[ $date_str ] : 0;
+			$calendar[ $week ][ $day_of_week ] = array(
+				'count' => isset( $story_data[ $date_str ] ) ? $story_data[ $date_str ] : 0,
+				'is_first_day' => $is_first_day_of_month
+			);
+			
+			// Store month label for the exact position where first day appears
+			if ( $is_first_day_of_month ) {
+				$position_key = $week . '-' . $day_of_week;
+				$month_labels[ $position_key ] = $date->format( 'M' ); // 3-letter month name
+			}
 		}
 		
-		return $calendar;
+		return array( 'calendar' => $calendar, 'month_labels' => $month_labels );
 	}
 
 	/**
@@ -138,12 +150,14 @@ class AISTMA_Story_Calendar_Widget {
 	 */
 	public static function render_widget() {
 		$story_data = self::get_story_generation_data();
-		$calendar_data = self::generate_calendar_data( $story_data );
+		$calendar_result = self::generate_calendar_data( $story_data );
+		$calendar_data = $calendar_result['calendar'];
+		$month_labels = $calendar_result['month_labels'];
 		$total_stories = array_sum( $story_data );
 		?>
 		<div class="aistma-story-calendar-widget">
 			<div class="aistma-widget-summary">
-				<p><strong><?php echo esc_html( $total_stories ); ?></strong> <?php esc_html_e( 'stories generated in the last 6 months', 'ai-story-maker' ); ?></p>
+			<p><strong><?php echo esc_html( $total_stories ); ?></strong> <?php esc_html_e( 'stories generated in the last 3 months', 'ai-story-maker' ); ?></p>
 			</div>
 
 			<div class="aistma-heatmap-legend">
@@ -154,27 +168,46 @@ class AISTMA_Story_Calendar_Widget {
 					<div class="legend-square intensity-2"></div>
 					<div class="legend-square intensity-3"></div>
 					<div class="legend-square intensity-4"></div>
-				</div>
+					</div>
+		
 				<span><?php esc_html_e( 'More', 'ai-story-maker' ); ?></span>
+				<div class="legend-square intensity-0 first-day-of-month" title="<?php esc_attr_e( 'First day of month', 'ai-story-maker' ); ?>"></div>
+				<span><?php esc_html_e( 'First day of month', 'ai-story-maker' ); ?></span>
 			</div>
 			
 			<div class="aistma-heatmap-grid">
 				<div class="aistma-heatmap-container-vertical">
-					<div class="aistma-heatmap-weekdays-vertical">
-						<div class="weekday-vertical"><?php esc_html_e( 'Mon', 'ai-story-maker' ); ?></div>
-						<div class="weekday-vertical"></div>
-						<div class="weekday-vertical"><?php esc_html_e( 'Wed', 'ai-story-maker' ); ?></div>
-						<div class="weekday-vertical"></div>
-						<div class="weekday-vertical"><?php esc_html_e( 'Fri', 'ai-story-maker' ); ?></div>
-						<div class="weekday-vertical"></div>
-						<div class="weekday-vertical"><?php esc_html_e( 'Sun', 'ai-story-maker' ); ?></div>
+					<!-- Month labels row -->
+					<div class="aistma-heatmap-month-labels">
+						<div class="month-label-spacer"></div>
+						<?php foreach ( $calendar_data as $week_num => $week_data ) : ?>
+							<div class="month-label-vertical">
+								<?php if ( isset( $month_labels[ $week_num ] ) ) : ?>
+									<span class="month-text"><?php echo esc_html( $month_labels[ $week_num ] ); ?></span>
+								<?php endif; ?>
+							</div>
+						<?php endforeach; ?>
 					</div>
-					
-					<div class="aistma-heatmap-weeks-vertical">
+
+					<div class="aistma-heatmap-weeks-container">
+						<div class="aistma-heatmap-weekdays-vertical">
+							<div class="weekday-vertical"><?php esc_html_e('M', 'ai-story-maker'); ?></div>
+							<div class="weekday-vertical"><?php esc_html_e('T', 'ai-story-maker'); ?></div>
+							<div class="weekday-vertical"><?php esc_html_e('W', 'ai-story-maker'); ?></div>
+							<div class="weekday-vertical"><?php esc_html_e('T', 'ai-story-maker'); ?></div>
+							<div class="weekday-vertical"><?php esc_html_e('F', 'ai-story-maker'); ?></div>
+							<div class="weekday-vertical"><?php esc_html_e('S', 'ai-story-maker'); ?></div>
+							<div class="weekday-vertical"><?php esc_html_e('S', 'ai-story-maker'); ?></div>
+						</div>
+						
+						<div class="aistma-heatmap-weeks-vertical">
 						<?php foreach ( $calendar_data as $week_num => $week_data ) : ?>
 							<div class="aistma-heatmap-week-vertical">
-								<?php foreach ( $week_data as $day_index => $story_count ) : ?>
+								<?php foreach ( $week_data as $day_index => $day_data ) : ?>
 									<?php 
+									$story_count = $day_data['count'];
+									$is_first_day = $day_data['is_first_day'];
+									
 									$intensity_class = 'intensity-0';
 									if ( $story_count > 0 ) {
 										if ( $story_count <= 2 ) {
@@ -187,8 +220,13 @@ class AISTMA_Story_Calendar_Widget {
 											$intensity_class = 'intensity-4';
 										}
 									}
+									
+									$css_classes = $intensity_class;
+									if ( $is_first_day ) {
+										$css_classes .= ' first-day-of-month';
+									}
 									?>
-									<div class="aistma-heatmap-day <?php echo esc_attr( $intensity_class ); ?>" 
+									<div class="aistma-heatmap-day <?php echo esc_attr( $css_classes ); ?>" 
 										 data-stories="<?php echo esc_attr( $story_count ); ?>"
 										 data-week="<?php echo esc_attr( $week_num ); ?>"
 										 data-day="<?php echo esc_attr( $day_index ); ?>"
@@ -197,6 +235,7 @@ class AISTMA_Story_Calendar_Widget {
 								<?php endforeach; ?>
 							</div>
 						<?php endforeach; ?>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -219,6 +258,7 @@ class AISTMA_Story_Calendar_Widget {
 	private static function get_widget_styles() {
 		return '
 		.aistma-story-calendar-widget {
+			--heatmap-square-size: 10px;
 			font-size: 13px;
 		}
 		.aistma-story-calendar-widget .aistma-widget-summary {
@@ -242,15 +282,57 @@ class AISTMA_Story_Calendar_Widget {
 			gap: 2px;
 		}
 		.aistma-story-calendar-widget .legend-square {
-			width: 10px;
-			height: 10px;
+			width: var(--heatmap-square-size);
+			height: var(--heatmap-square-size);
 			border-radius: 2px;
 		}
 		.aistma-story-calendar-widget .aistma-heatmap-container-vertical {
 			display: flex;
+			flex-direction: column;
+			gap: 2px;
+			align-items: center;
+			justify-content: center;
+		}
+		.aistma-story-calendar-widget .aistma-heatmap-month-labels {
+			display: flex;
+			gap: 8px;
+			margin-bottom: 5px;
+			align-items: flex-end;
+		}
+		.aistma-story-calendar-widget .month-label-spacer {
+			width: 33px;
+		}
+		.aistma-story-calendar-widget .month-labels-container {
+			display: flex;
+			gap: 1px;
+		}
+		.aistma-story-calendar-widget .month-label-week {
+			display: flex;
+			flex-direction: column;
+			gap: 1px;
+			justify-content: flex-end;
+		}
+		.aistma-story-calendar-widget .month-label-day {
+			width: var(--heatmap-square-size);
+			height: 15px;
+			display: flex;
+			align-items: flex-end;
+			justify-content: center;
+		}
+		.aistma-story-calendar-widget .month-text {
+			font-size: 10px;
+			font-weight: 600;
+			color: #666;
+			writing-mode: horizontal-tb;
+			text-orientation: mixed;
+			letter-spacing: 0;
+			transform: rotate(-90deg);
+			white-space: nowrap;
+		}
+		.aistma-story-calendar-widget .aistma-heatmap-weeks-container {
+			display: flex;
 			gap: 8px;
 			align-items: flex-start;
-			justify-content: center;
 		}
 		.aistma-story-calendar-widget .aistma-heatmap-weekdays-vertical {
 			display: flex;
@@ -263,8 +345,8 @@ class AISTMA_Story_Calendar_Widget {
 			color: #666;
 			text-align: center;
 			font-weight: 500;
-			height: 10px;
-			line-height: 10px;
+			height: var(--heatmap-square-size);
+			line-height: var(--heatmap-square-size);
 			width: 25px;
 		}
 		.aistma-story-calendar-widget .aistma-heatmap-weeks-vertical {
@@ -279,10 +361,9 @@ class AISTMA_Story_Calendar_Widget {
 			gap: 1px;
 		}
 		.aistma-story-calendar-widget .aistma-heatmap-day {
-			width: 10px;
-			height: 10px;
+			width: var(--heatmap-square-size);
+			height: var(--heatmap-square-size);
 			border-radius: 2px;
-			cursor: pointer;
 			transition: all 0.2s ease;
 		}
 		.aistma-story-calendar-widget .aistma-heatmap-day:hover {
@@ -294,6 +375,7 @@ class AISTMA_Story_Calendar_Widget {
 		.aistma-story-calendar-widget .intensity-2 { background-color: #7bc96f; }
 		.aistma-story-calendar-widget .intensity-3 { background-color: #239a3b; }
 		.aistma-story-calendar-widget .intensity-4 { background-color: #196127; }
+		.aistma-story-calendar-widget .first-day-of-month { border: 1px solid #000; }
 		.aistma-story-calendar-widget .aistma-widget-footer {
 			margin-top: 15px;
 			text-align: center;
@@ -303,24 +385,7 @@ class AISTMA_Story_Calendar_Widget {
 		';
 	}
 
-	/**
-	 * Get widget-specific JavaScript
-	 */
-	private static function get_widget_scripts() {
-		return '
-		document.addEventListener("DOMContentLoaded", function() {
-			const calendarDays = document.querySelectorAll(".aistma-story-calendar-widget .aistma-heatmap-day");
-			calendarDays.forEach(day => {
-				day.addEventListener("click", function() {
-					const stories = this.getAttribute("data-stories");
-					if (stories > 0) {
-						alert("Stories generated: " + stories);
-					}
-				});
-			});
-		});
-		';
-	}
+	
 }
 
 // Initialize the widget

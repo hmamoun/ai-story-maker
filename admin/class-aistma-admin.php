@@ -60,7 +60,7 @@ class AISTMA_Admin {
 	// These constants are used internally as tab identifiers.
 	// Translation and HTML escaping are applied when outputting user-facing labels.
 	const TAB_WELCOME = 'welcome';
-	const TAB_SUBSCRIPTIONS = 'subscriptions';
+	const TAB_AI_WRITER = 'ai_writer';
 	const TAB_SETTINGS = 'settings';
 	const TAB_GENERAL = 'general';
 	const TAB_PROMPTS = 'prompts';
@@ -137,7 +137,7 @@ class AISTMA_Admin {
 
 		$allowed_tabs = array(
 			self::TAB_WELCOME,
-			self::TAB_SUBSCRIPTIONS,
+			self::TAB_AI_WRITER,
 			self::TAB_SETTINGS,
 			self::TAB_GENERAL,
 			self::TAB_PROMPTS,
@@ -148,13 +148,13 @@ class AISTMA_Admin {
 		$active_tab = isset( $_GET['tab'] ) && in_array( sanitize_key( $_GET['tab'] ), $allowed_tabs, true ) ? sanitize_key( $_GET['tab'] ) : self::TAB_WELCOME;
 
 		?>
-		<div id="aistma-notice" class="notice notice-info hidden"></div>
+
 		<h2 class="nav-tab-wrapper">
 			<a href="?page=aistma-settings&tab=<?php echo esc_attr( self::TAB_WELCOME ); ?>" class="nav-tab <?php echo ( self::TAB_WELCOME === $active_tab ) ? 'nav-tab-active' : ''; ?>">
 		<?php esc_html_e( 'AI Story Maker', 'ai-story-maker' ); ?>
 			</a>
-			<a href="?page=aistma-settings&tab=<?php echo esc_attr( self::TAB_SUBSCRIPTIONS ); ?>" class="nav-tab <?php echo ( self::TAB_SUBSCRIPTIONS === $active_tab ) ? 'nav-tab-active' : ''; ?>">
-		<?php esc_html_e( 'Subscriptions', 'ai-story-maker' ); ?>
+			<a href="?page=aistma-settings&tab=<?php echo esc_attr( self::TAB_AI_WRITER ); ?>" class="nav-tab <?php echo ( self::TAB_AI_WRITER === $active_tab ) ? 'nav-tab-active' : ''; ?>">
+		<?php esc_html_e( 'AI Writer', 'ai-story-maker' ); ?>
 			</a>
 			<a href="?page=aistma-settings&tab=<?php echo esc_attr( self::TAB_SETTINGS ); ?>" class="nav-tab <?php echo ( self::TAB_SETTINGS === $active_tab ) ? 'nav-tab-active' : ''; ?>">
 		<?php esc_html_e( 'Settings', 'ai-story-maker' ); ?>
@@ -173,7 +173,7 @@ class AISTMA_Admin {
 
 		if ( self::TAB_WELCOME === $active_tab ) {
 			include_once AISTMA_PATH . 'admin/templates/welcome-tab-template.php';
-		} elseif ( self::TAB_SUBSCRIPTIONS === $active_tab ) {
+		} elseif ( self::TAB_AI_WRITER === $active_tab ) {
 			$this->aistma_settings_page = new AISTMA_Settings_Page();
 			$this->aistma_settings_page->aistma_subscriptions_page_render();
 		} elseif ( self::TAB_SETTINGS === $active_tab ) {
@@ -188,6 +188,9 @@ class AISTMA_Admin {
 			$this->aistma_log_manager = new AISTMA_Log_Manager();
 			$this->aistma_log_manager->aistma_log_table_render();
 		}
+
+		// Include generation controls on all tabs
+		include_once AISTMA_PATH . 'admin/templates/generation-controls-template.php';
 	}
 }
 
