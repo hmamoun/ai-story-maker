@@ -228,12 +228,14 @@ class AISTMA_Posts_Activity_Widget {
 					
 					<!-- Rows: each recent post -->
 					<?php foreach ( $recent_posts as $post ) : 
+						if ( ! $post || ! isset( $post->ID ) ) continue;
 						$post_id = (int) $post->ID; 
+						$post_title = isset( $post->post_title ) ? $post->post_title : __( '(no title)', 'ai-story-maker' );
 					?>
 						<div class="aistma-heatmap-row" style="grid-template-columns: 180px repeat(<?php echo count( $date_labels ); ?>, 14px);">
 							<div class="post-label">
-								<a href="<?php echo esc_url( get_permalink( $post_id ) ); ?>" target="_blank" title="<?php echo esc_attr( $post->post_title ); ?>">
-									<?php echo esc_html( wp_html_excerpt( $post->post_title ?: __( '(no title)', 'ai-story-maker' ), 25, '…' ) ); ?>
+								<a href="<?php echo esc_url( get_permalink( $post_id ) ); ?>" target="_blank" title="<?php echo esc_attr( $post_title ); ?>">
+									<?php echo esc_html( wp_html_excerpt( $post_title, 25, '…' ) ); ?>
 								</a>
 							</div>
 							<?php for ( $i = 0; $i < count( $date_labels ); $i++ ) :

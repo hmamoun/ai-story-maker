@@ -154,8 +154,12 @@ if ( ! empty( $saved_subscription_email ) ) {
                 $next_billing = $ts ? gmdate( 'Y-M-d', $ts ) : $next_billing_raw;
             }
             $parts = [];
-            if ( null !== $credits_remaining ) {
-                $parts[] = sprintf( '%d stories remaining', $credits_remaining );
+            if ($credits_remaining === 0) {
+                $parts[] = "You don’t have any credits left. Please upgrade or wait for the next billing cycle.";
+            } elseif ($credits_remaining === 1) {
+                $parts[] = "1 story remaining";
+            } else {
+                $parts[] = sprintf("%d stories remaining", $credits_remaining);
             }
             if ( $next_billing && 'N/A' !== $next_billing ) {
                 $parts[] = 'Next billing: ' . $next_billing;

@@ -31,17 +31,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<tr>
 					<th><?php esc_html_e( 'Prompt', 'ai-story-maker' ); ?></th>
 					<th width="10%">
-						<?php esc_html_e( 'Category', 'ai-story-maker' ); ?>
-						<br>
-						<small>
-							<a href="<?php echo esc_url( admin_url( 'edit-tags.php?taxonomy=category' ) ); ?>" target="_blank" style="text-decoration: none; color: #0073aa;">
-								<?php esc_html_e( 'Manage Categories', 'ai-story-maker' ); ?>
-							</a>
-						</small>
+						<?php esc_html_e( 'Category *', 'ai-story-maker' ); ?>
 					</th>
-					<th width="5%"><?php esc_html_e( 'Images per Post', 'ai-story-maker' ); ?></th>
+					<th width="5%">
+						<?php esc_html_e( 'Images **', 'ai-story-maker' ); ?>
+					</th>
 					<th width="5%"><?php esc_html_e( 'Active', 'ai-story-maker' ); ?></th>
-					<th width="5%"><?php esc_html_e( 'Auto Publish Post', 'ai-story-maker' ); ?></th>
+					<th width="5%"><?php esc_html_e( 'Publish Post ***', 'ai-story-maker' ); ?></th>
 					<th width="10%"><?php esc_html_e( 'Actions', 'ai-story-maker' ); ?></th>
 				</tr>
 			</thead>
@@ -74,13 +70,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<input type="checkbox" class="toggle-active" data-field="auto_publish" <?php checked( $prompt['auto_publish'] ?? 0, '1' ); ?> />
 						</td>
 						<td>
-							<button class="delete-prompt button button-danger"><?php esc_html_e( 'Delete', 'ai-story-maker' ); ?></button>
+							<button class="delete-prompt button button-danger"><?php esc_html_e( 'Delete ****', 'ai-story-maker' ); ?></button>
 						</td>
 					</tr>
 				<?php endforeach; ?>
 				<tr>
 					<td colspan="6" style="text-align: right; padding: 20px;">
-						<button id="add-prompt" class="button button-primary"><?php esc_html_e( 'Add a new prompt', 'ai-story-maker' ); ?></button>
+						<button id="add-prompt" class="button button-primary"><?php esc_html_e( 'Add a new prompt ****', 'ai-story-maker' ); ?></button>
 					</td>
 				</tr>
 			</tbody>
@@ -93,14 +89,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 		</form>
 				<hr>
-								<div class="pre-generate-info">
-	<p>
-	Please review your general settings and prompts below. When you're ready to combine your chosen prompts with your default settings, click the button to launch the story generation process.
-	</p>
-	<p>
-	You can always check the next scheduled generation time in the <strong>AI Story Maker</strong> tab.
-	</p>
-</div>             
+	<div class="pre-generate-info">
+	<p>Please review your general settings and prompts below. When you're ready, click the button to launch the story generation process. Remember: the clearer and more detailed your prompt, the better the generated story will be.</p>
+	<p>* The dropdown list displays your WordPress post categories. You can manage them 
+	<small><a href="<?php echo esc_url( admin_url( 'edit-tags.php?taxonomy=category' ) ); ?>" target="_blank" style="text-decoration: none; color: #0073aa;"><?php esc_html_e( 'here', 'ai-story-maker' ); ?></a></small></p>
+	<p>** The module will attempt to fetch free images related to your story and include proper credits. However, the number of images per post is not guaranteed, as it depends on server load during generation.</p>
+	<p>*** If this checkbox is left unchecked, the post will be created as a draft.</p>
+	<p>**** Prompts must be saved after adding, deleting, or updating them for changes to take effect.</p>
+
+
+	</div>             
 <?php // Generation controls moved to a reusable template included globally. ?>
 
 

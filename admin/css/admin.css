@@ -97,9 +97,52 @@
 
 /* New row styling */
 .new-prompt-row {
-	background-color: #e0f7fa !important;
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-	transition: background-color 0.3s ease, box-shadow 0.3s ease;
+	background-color: #e8f5e8 !important;
+	border: 2px solid #4caf50 !important;
+	box-shadow: 0 4px 8px rgba(76, 175, 80, 0.2);
+	transition: all 0.3s ease;
+	animation: newRowPulse 2s ease-in-out;
+}
+
+.new-prompt-row:hover {
+	background-color: #f1f8f1 !important;
+	box-shadow: 0 6px 12px rgba(76, 175, 80, 0.3);
+}
+
+/* Animation for new rows */
+@keyframes newRowPulse {
+	0% {
+		transform: scale(1);
+		box-shadow: 0 4px 8px rgba(76, 175, 80, 0.2);
+	}
+	50% {
+		transform: scale(1.02);
+		box-shadow: 0 6px 12px rgba(76, 175, 80, 0.4);
+	}
+	100% {
+		transform: scale(1);
+		box-shadow: 0 4px 8px rgba(76, 175, 80, 0.2);
+	}
+}
+
+/* Enhanced placeholder styling for empty prompt text */
+.new-prompt-row [data-field="text"]:empty::before {
+	content: "Enter your new prompt here...";
+	color: #999;
+	font-style: italic;
+	opacity: 0.7;
+}
+
+.new-prompt-row [data-field="text"]:focus::before {
+	display: none;
+}
+
+/* Styling for edited new prompt rows */
+.edited-prompt-row {
+	background-color: #fff3cd !important;
+	border: 1px solid #ffc107 !important;
+	box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2);
+	transition: all 0.3s ease;
 }
 
 /* Row marked for deletion */

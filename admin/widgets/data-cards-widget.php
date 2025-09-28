@@ -121,7 +121,9 @@ class AISTMA_Data_Cards_Widget {
 		
 		$story_data = array();
 		foreach ( $story_results as $row ) {
-			$story_data[ $row->date ] = (int) $row->count;
+			if ( $row && isset( $row->date, $row->count ) ) {
+				$story_data[ $row->date ] = (int) $row->count;
+			}
 		}
 		
 		$stats['total_stories_6months'] = array_sum( $story_data );
@@ -213,14 +215,20 @@ class AISTMA_Data_Cards_Widget {
 			<div class="aistma-recent-posts-quick">
 				<h4><?php esc_html_e( 'Latest Posts', 'ai-story-maker' ); ?></h4>
 				<ul class="recent-posts-list">
-					<?php foreach ( $recent_posts as $post ) : ?>
+					<?php foreach ( $recent_posts as $post ) : 
+						if ( ! $post || ! isset( $post->ID ) ) continue;
+						$post_title = isset( $post->post_title ) ? $post->post_title : __( '(no title)', 'ai-story-maker' );
+						$post_date = isset( $post->post_date ) ? $post->post_date : '';
+					?>
 					<li class="recent-post-item">
 						<a href="<?php echo esc_url( get_permalink( $post->ID ) ); ?>" target="_blank" class="post-title">
-							<?php echo esc_html( wp_html_excerpt( $post->post_title ?: __( '(no title)', 'ai-story-maker' ), 40, '…' ) ); ?>
+							<?php echo esc_html( wp_html_excerpt( $post_title, 40, '…' ) ); ?>
 						</a>
 						<span class="post-date">
-							<?php echo esc_html( human_time_diff( strtotime( $post->post_date ), current_time( 'timestamp' ) ) ); ?> 
-							<?php esc_html_e( 'ago', 'ai-story-maker' ); ?>
+							<?php if ( $post_date ) : ?>
+								<?php echo esc_html( human_time_diff( strtotime( $post_date ), current_time( 'timestamp' ) ) ); ?> 
+								<?php esc_html_e( 'ago', 'ai-story-maker' ); ?>
+							<?php endif; ?>
 						</span>
 					</li>
 					<?php endforeach; ?>

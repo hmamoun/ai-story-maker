@@ -4,7 +4,7 @@ Tags: ai, content creation, blog automation, article generation, wordpress ai pl
 Requires at least: 5.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.0.1
+Stable tag: 2.0.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Plugin URI: https://github.com/hmamoun/ai-story-maker
@@ -209,6 +209,14 @@ The plugin provides comprehensive analytics including story generation heatmaps,
 
 == Changelog ==
 
+= 2.0.3 =
+- Enhanced analytics dashboard with improved performance and reliability
+- Fixed widget promotion content removal for cleaner analytics interface
+- Improved subscription system integration and error handling
+- Updated dashboard widgets with consistent styling and functionality
+- Enhanced security measures and input validation
+- Bug fixes and performance optimizations
+
 = 2.0.1 =
 - Added comprehensive analytics dashboard with heatmaps and insights
 - Introduced subscription package system with free options
@@ -225,6 +233,9 @@ The plugin provides comprehensive analytics including story generation heatmaps,
 - Initial release with AI story generation, image integration, logging, and prompt editor.
 
 == Upgrade Notice ==
+
+= 2.0.3 =
+- Recommended update with enhanced analytics, improved performance, and bug fixes. All existing functionality remains compatible.
 
 = 2.0.1 =
 - Major update with analytics dashboard, subscription system, and enhanced features. Existing users can continue using their API keys or switch to subscription packages.

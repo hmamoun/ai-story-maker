@@ -146,7 +146,7 @@ class AISTMA_Story_Generator {
 	 * @param  string $api_key               OpenAI API key.
 	 * @return void
 	 */
-	public function generate_ai_story( $prompt_id, $prompt, $default_settings,   $api_key,$aistma_master_instructions  ) {
+	public function generate_ai_story( $prompt_id, $prompt, $default_settings, $api_key, $aistma_master_instructions ) {
 		$merged_settings        = array_merge( $default_settings, $prompt );
 	
 		$recent_posts = $this->aistma_get_recent_posts( 20, $prompt['category'] );
@@ -204,14 +204,14 @@ class AISTMA_Story_Generator {
 			$this->api_key = get_option( 'aistma_openai_api_key' );
 					if ( ! $this->api_key ) {
 			$error = __( 'OpenAI API Key is missing. Required for direct OpenAI calls when no subscription is active.', 'ai-story-maker' );
-			$this->aistma_log_manager::log( 'error', $error );
+			$this->aistma_log_manager->log( 'error', $error );
 			$results['errors'][] = $error;
 			throw new \RuntimeException( esc_html( $error ) );
 			}
 		} else {
 			// For subscription users, we'll use master API, so OpenAI key is not required
 			$this->api_key = null;
-			$this->aistma_log_manager::log( 'info', 'Valid subscription detected, will use Master API for story generation' );
+			$this->aistma_log_manager->log( 'info', 'Valid subscription detected, will use Master API for story generation' );
 		}
 
 		$raw_settings = get_option( 'aistma_prompts', '' );
@@ -220,13 +220,13 @@ class AISTMA_Story_Generator {
 		// Check if the settings are valid.
 		if ( JSON_ERROR_NONE !== json_last_error() || empty( $settings['prompts'] ) ) {
 			$error = __( 'General instructions or prompts are not set properly', 'ai-story-maker' );
-			$this->aistma_log_manager::log( 'error', $error );
+			$this->aistma_log_manager->log( 'error', $error );
 			$results['errors'][] = $error;
 			throw new \RuntimeException( esc_html( $error ) );
 		}
 		$this->default_settings = isset( $settings['default_settings'] ) ? $settings['default_settings'] : array();
 
-		$aistma_master_instructions = $this->aistma_get_master_instructions( );	
+		$aistma_master_instructions = $this->aistma_get_master_instructions();
 
 		foreach ( $settings['prompts'] as &$prompt ) {
 			if ( isset( $prompt['active'] ) && 0 === $prompt['active'] ) {
@@ -249,7 +249,7 @@ class AISTMA_Story_Generator {
 				$results['successes'][] = __( 'AI story generated successfully.', 'ai-story-maker' );
 			} catch ( \Exception $e ) {
 				$error = __( 'Error generating AI story: ', 'ai-story-maker' ) . $e->getMessage();
-				$this->aistma_log_manager::log( 'error', $error );
+				$this->aistma_log_manager->log( 'error', $error );
 				$results['errors'][] = $error;
 			}
 		}
@@ -266,9 +266,9 @@ class AISTMA_Story_Generator {
 
 			/* translators: %s: The next scheduled date and time in Y-m-d H:i:s format */
 			$error_msg = sprintf( __( 'Set next schedule to %s', 'ai-story-maker' ), $next_schedule_display );
-			$this->aistma_log_manager::log( 'info', $error_msg );
+			$this->aistma_log_manager->log( 'info', $error_msg );
 		} else {
-			$this->aistma_log_manager::log( 'info', __( 'Schedule for next story is unset', 'ai-story-maker' ) );
+			$this->aistma_log_manager->log( 'info', __( 'Schedule for next story is unset', 'ai-story-maker' ) );
 			wp_clear_scheduled_hook( 'aistma_generate_story_event' );
 		}
 	}
@@ -289,7 +289,7 @@ class AISTMA_Story_Generator {
 		$master_url = aistma_get_api_url();
 		
 		if ( empty( $master_url ) ) {
-			$this->aistma_log_manager::log( 'error', message: 'AISTMA_MASTER_API not defined, falling back to direct OpenAI call' );
+			$this->aistma_log_manager->log( 'error', 'AISTMA_MASTER_API not defined, falling back to direct OpenAI call' );
 			// Fallback to direct OpenAI call
 			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $this->api_key, $the_prompt );
 			return;
@@ -324,7 +324,7 @@ class AISTMA_Story_Generator {
 
 		if ( is_wp_error( $response ) ) {
 			$error_message = $response->get_error_message();
-			$this->aistma_log_manager::log( 'error', 'Master API error: ' . $error_message . ', falling back to direct OpenAI call' );
+			$this->aistma_log_manager->log( 'error', 'Master API error: ' . $error_message . ', falling back to direct OpenAI call' );
 			// Fallback to direct OpenAI call
 			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $this->api_key, $the_prompt );
 			return;
@@ -335,14 +335,14 @@ class AISTMA_Story_Generator {
 		$data = json_decode( $response_body, true );
 
 		if ( $response_code !== 200 ) {
-			$this->aistma_log_manager::log( 'error', 'Master API returned HTTP ' . $response_code . ', falling back to direct OpenAI call' );
+			$this->aistma_log_manager->log( 'error', 'Master API returned HTTP ' . $response_code . ', falling back to direct OpenAI call' );
 			// Fallback to direct OpenAI call
 			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $this->api_key, $the_prompt );
 			return;
 		}
 
 		if ( json_last_error() !== JSON_ERROR_NONE ) {
-			$this->aistma_log_manager::log( 'error', 'Invalid JSON response from Master API, falling back to direct OpenAI call' );
+			$this->aistma_log_manager->log( 'error', 'Invalid JSON response from Master API, falling back to direct OpenAI call' );
 			// Fallback to direct OpenAI call
 			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings,  $this->api_key, $the_prompt );
 			return;
@@ -350,7 +350,7 @@ class AISTMA_Story_Generator {
 
 		if ( ! isset( $data['success'] ) || ! $data['success'] ) {
 			$error_msg = isset( $data['error'] ) ? $data['error'] : 'Unknown error from Master API';
-			$this->aistma_log_manager::log( 'error', 'Master API error: ' . $error_msg . ', falling back to direct OpenAI call' );
+			$this->aistma_log_manager->log( 'error', 'Master API error: ' . $error_msg . ', falling back to direct OpenAI call' );
 			// Fallback to direct OpenAI call
 			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings,  $this->api_key, $the_prompt );
 			return;
@@ -380,7 +380,7 @@ class AISTMA_Story_Generator {
 		
 		if ( ! $api_key ) {
 			$error = __( 'OpenAI API Key is missing. Required for direct OpenAI calls without subscription', 'ai-story-maker' );
-			$this->aistma_log_manager::log( 'error', $error );
+			$this->aistma_log_manager->log( 'error', $error );
 			throw new \RuntimeException( esc_html( $error ) );
 		}
 
@@ -418,7 +418,7 @@ class AISTMA_Story_Generator {
 		if ( 200 !== $status_code ) {
 			/* translators: %d: HTTP status code returned by the OpenAI API */
 			$error_msg = sprintf( __( 'OpenAI API returned HTTP %d', 'ai-story-maker' ), $status_code );
-			$this->aistma_log_manager::log( 'error', $error_msg );
+			$this->aistma_log_manager->log( 'error', $error_msg );
 			delete_transient( 'aistma_generating_lock' );
 			wp_send_json_error( array( 'errors' => array( $error_msg ) ) );
 		}
@@ -426,7 +426,7 @@ class AISTMA_Story_Generator {
 		// Check if response is valid.
 		if ( is_wp_error( $response ) ) {
 			$error = $response->get_error_message();
-			$this->aistma_log_manager::log( 'error', $error );
+			$this->aistma_log_manager->log( 'error', $error );
 			delete_transient( 'aistma_generating_lock' );
 			wp_send_json_error( array( 'errors' => array( $error ) ) );
 		}
@@ -435,7 +435,7 @@ class AISTMA_Story_Generator {
 		$response_body = json_decode( wp_remote_retrieve_body( $response ), true );
 		if ( ! isset( $response_body['choices'][0]['message']['content'] ) ) {
 			$error = __( 'Invalid response from OpenAI API.', 'ai-story-maker' );
-			$this->aistma_log_manager::log( 'error', $error );
+			$this->aistma_log_manager->log( 'error', $error );
 			delete_transient( 'aistma_generating_lock' );
 			wp_send_json_error( array( 'errors' => array( $error ) ) );
 		}
@@ -444,7 +444,7 @@ class AISTMA_Story_Generator {
 
 		if ( ! isset( $parsed_content['title'], $parsed_content['content'] ) ) {
 			$error = __( 'Invalid content structure, try to simplify your prompts', 'ai-story-maker' );
-			$this->aistma_log_manager::log( 'error', $error );
+			$this->aistma_log_manager->log( 'error', $error );
 			delete_transient( 'aistma_generating_lock' );
 			wp_send_json_error( array( 'errors' => array( $error ) ) );
 		}
@@ -473,7 +473,7 @@ class AISTMA_Story_Generator {
 			$tags = isset( $data['content']['tags'] ) && is_array( $data['content']['tags'] ) ? $data['content']['tags'] : array();
 		} else {
 			$error = __( 'Invalid content structure from Master API', 'ai-story-maker' );
-			$this->aistma_log_manager::log( 'error', $error );
+			$this->aistma_log_manager->log( 'error', $error );
 			throw new \RuntimeException( esc_html( $error ) );
 		}
 
@@ -488,7 +488,7 @@ class AISTMA_Story_Generator {
 		}
 
 		if ( 1 === (int) get_option( 'aistma_show_ai_attribution', 1 ) ) {
-			$content .= '<div class="ai-story-model">' . __( 'generated by:', 'ai-story-maker' ) . ' ' . esc_html( $merged_settings['model'] ?? 'gpt-4-turbo' ) . '</div>';
+			$content .= '<div class="ai-story-model">' . __( 'generated by:', 'ai-story-maker' ) . ' ' . esc_html( get_option( 'aistma_master_model', 'gpt-4o-mini' )) . '</div>';
 		}
 
 		// Determine the post author.
@@ -520,7 +520,7 @@ class AISTMA_Story_Generator {
 
 		if ( is_wp_error( $post_id ) ) {
 			$error = __( 'Error creating post: ', 'ai-story-maker' ) . $post_id->get_error_message();
-			$this->aistma_log_manager::log( 'error', $error );
+			$this->aistma_log_manager->log( 'error', $error );
 			throw new \RuntimeException( esc_html( $error ) );
 		}
 
@@ -608,7 +608,7 @@ class AISTMA_Story_Generator {
 		$excerpt = wp_trim_words( wp_strip_all_tags( $content ), 55, '...' );
 
 		if ( 1 === (int) get_option( 'aistma_show_ai_attribution', 1 ) ) {
-			$content .= '<div class="ai-story-model">' . __( 'generated by:', 'ai-story-maker' ) . ' ' . esc_html( $merged_settings['model'] ) . '</div>';
+			$content .= '<div class="ai-story-model">' . __( 'generated by:', 'ai-story-maker' ) . ' ' . esc_html( get_option( 'aistma_master_model', 'gpt-4o-mini' )) . '</div>';
 		}
 
 		// Determine the post author.
@@ -640,7 +640,7 @@ class AISTMA_Story_Generator {
 
 		if ( is_wp_error( $post_id ) ) {
 			$error = __( 'Error creating post: ', 'ai-story-maker' ) . $post_id->get_error_message();
-			$this->aistma_log_manager::log( 'error', $error );
+			$this->aistma_log_manager->log( 'error', $error );
 			throw new \RuntimeException( esc_html( $error ) );
 		}
 
@@ -649,10 +649,10 @@ class AISTMA_Story_Generator {
 			$content = $this->replace_image_placeholders( $content, $post_id );
 			
 			// Update the post with processed content
-			wp_update_post( postarr: array(
-				'ID' => $post_id,
-				'post_content' => $content
-			) );
+		wp_update_post( array(
+			'ID' => $post_id,
+			'post_content' => $content
+		) );
 		}
 
 		// Save post meta data
@@ -661,10 +661,10 @@ class AISTMA_Story_Generator {
 			update_post_meta( $post_id, 'ai_story_maker_total_tokens', $total_tokens ?? 'N/A' );
 			update_post_meta( $post_id, 'ai_story_maker_request_id', $request_id ?? 'N/A' );
 			update_post_meta( $post_id, 'ai_story_maker_generated_via', 'openai_api' );
-			$this->aistma_log_manager::log( 'success', 'AI-generated news article created via OpenAI API: ' . get_permalink( $post_id ), $request_id );
+			$this->aistma_log_manager->log( 'success', 'AI-generated news article created via OpenAI API: ' . get_permalink( $post_id ), $request_id );
 		}
 
-		$this->aistma_log_manager::log( 'info', 'Story generated successfully via OpenAI API. Post ID: ' . $post_id . ', Tokens used: ' . $total_tokens );
+		$this->aistma_log_manager->log( 'info', 'Story generated successfully via OpenAI API. Post ID: ' . $post_id . ', Tokens used: ' . $total_tokens );
 	}
 
 	/**
@@ -673,7 +673,7 @@ class AISTMA_Story_Generator {
 	 * @param array $recent_posts Array of recent posts to exclude from generation.
 	 * @return string Master instructions for AI story generation.
 	 */
-	private function aistma_get_master_instructions(  )	{
+	private function aistma_get_master_instructions() {
 		// Fetch dynamic system content from Exedotcom API Gateway.
 		$aistma_master_instructions = get_transient( 'aistma_exaig_cached_master_instructions' );
 		if ( false === $aistma_master_instructions  || true) {
@@ -715,12 +715,12 @@ class AISTMA_Story_Generator {
 					}
 				} else {
 					// Silent fail; fallback will be handled below.
-					$this->aistma_log_manager::log( 'error', 'Error fetching dynamic instructions: ' . $api_response->get_error_message() );
+					$this->aistma_log_manager->log( 'error', 'Error fetching dynamic instructions: ' . $api_response->get_error_message() );
 					$aistma_master_instructions = '';
 				}
 			} catch ( Exception $e ) {
 				// Silent fail; fallback will be handled below.
-				$this->aistma_log_manager::log( 'error', 'Error fetching master instructions: ' . $e->getMessage() );
+				$this->aistma_log_manager->log( 'error', 'Error fetching master instructions: ' . $e->getMessage() );
 				$aistma_master_instructions = '';
 			}
 		}
@@ -834,7 +834,7 @@ class AISTMA_Story_Generator {
 		$api_key = get_option( 'aistma_unsplash_api_key' );
 
 		if ( ! $api_key ) {
-			$this->aistma_log_manager::log( 'error', 'Unsplash API key not configured' );
+			$this->aistma_log_manager->log( 'error', 'Unsplash API key not configured' );
 			return false;
 		}
 
@@ -843,13 +843,13 @@ class AISTMA_Story_Generator {
 		$response = wp_remote_get( $url );
 
 		if ( is_wp_error( $response ) ) {
-			$this->aistma_log_manager::log( 'error', 'Error fetching Unsplash image: ' . $response->get_error_message() );
+			$this->aistma_log_manager->log( 'error', 'Error fetching Unsplash image: ' . $response->get_error_message() );
 			return false;
 		}
 		$body = wp_remote_retrieve_body( $response );
 		$data = json_decode( $body, true );
 		if ( empty( $data['results'] ) ) {
-			$this->aistma_log_manager::log( 'error', 'No Unsplash images found for keywords: ' . $query );
+			$this->aistma_log_manager->log( 'error', 'No Unsplash images found for keywords: ' . $query );
 			return false;
 		}
 		$image_index = array_rand( $data['results'] );
@@ -880,7 +880,7 @@ class AISTMA_Story_Generator {
 	private function set_featured_image_from_url( $post_id, $image_url ) {
 		// Check if post exists
 		if ( ! get_post( $post_id ) ) {
-			$this->aistma_log_manager::log( 'error', 'Post not found for featured image: ' . $post_id );
+			$this->aistma_log_manager->log( 'error', 'Post not found for featured image: ' . $post_id );
 			return false;
 		}
 
@@ -888,7 +888,7 @@ class AISTMA_Story_Generator {
 		$upload = media_sideload_image( $image_url, $post_id, '', 'id' );
 		
 		if ( is_wp_error( $upload ) ) {
-			$this->aistma_log_manager::log( 'error', 'Failed to download featured image: ' . $upload->get_error_message() );
+			$this->aistma_log_manager->log( 'error', 'Failed to download featured image: ' . $upload->get_error_message() );
 			return false;
 		}
 
@@ -896,9 +896,9 @@ class AISTMA_Story_Generator {
 		$result = set_post_thumbnail( $post_id, $upload );
 		
 		if ( $result ) {
-			$this->aistma_log_manager::log( 'info', 'Featured image set successfully for post ' . $post_id );
+			$this->aistma_log_manager->log( 'info', 'Featured image set successfully for post ' . $post_id );
 		} else {
-			$this->aistma_log_manager::log( 'error', 'Failed to set featured image for post ' . $post_id );
+			$this->aistma_log_manager->log( 'error', 'Failed to set featured image for post ' . $post_id );
 		}
 
 		return $upload;
@@ -914,7 +914,7 @@ class AISTMA_Story_Generator {
 	private function set_featured_image_from_content( $post_id, $content ) {
 		// Check if post exists
 		if ( ! get_post( $post_id ) ) {
-			$this->aistma_log_manager::log( 'error', 'Post not found for featured image: ' . $post_id );
+			$this->aistma_log_manager->log( 'error', 'Post not found for featured image: ' . $post_id );
 			return false;
 		}
 
@@ -922,7 +922,7 @@ class AISTMA_Story_Generator {
 		$image_url = $this->extract_first_image_url( $content );
 		
 		if ( ! $image_url ) {
-			$this->aistma_log_manager::log( 'info', 'No image found in content for featured image on post ' . $post_id );
+			$this->aistma_log_manager->log( 'info', 'No image found in content for featured image on post ' . $post_id );
 			return false;
 		}
 
@@ -997,7 +997,7 @@ class AISTMA_Story_Generator {
 	 * @return array Subscription status data or error information.
 	 */
 	public function aistma_get_subscription_status( $domain = '' ) {
-		$master_url =aistma_get_api_url();
+		$master_url = aistma_get_api_url();
 		// Get current domain with port if it exists
 		if ( empty( $domain ) ) {
 			$domain = sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? '' ) );
@@ -1026,7 +1026,7 @@ class AISTMA_Story_Generator {
 
 		if ( is_wp_error( $response ) ) {
 			$error_message = $response->get_error_message();
-			$this->aistma_log_manager::log( 'error', 'Error checking subscription status: ' . $error_message );
+			$this->aistma_log_manager->log( 'error', 'Error checking subscription status: ' . $error_message );
 			$this->subscription_status = array(
 				'valid' => false,
 				'error' => 'Network error: ' . $error_message,
@@ -1040,7 +1040,7 @@ class AISTMA_Story_Generator {
 		$data = json_decode( $response_body, true );
 
 		if ( $response_code !== 200 ) {
-			$this->aistma_log_manager::log( 'error', 'API error checking subscription status. Response code: ' . $response_code );
+			$this->aistma_log_manager->log( 'error', 'API error checking subscription status. Response code: ' . $response_code );
 			$this->subscription_status = array(
 				'valid' => false,
 				'error' => 'API error: HTTP ' . $response_code,
@@ -1050,7 +1050,7 @@ class AISTMA_Story_Generator {
 		}
 
 		if ( json_last_error() !== JSON_ERROR_NONE ) {
-			$this->aistma_log_manager::log( 'error', 'Invalid JSON response from subscription API' );
+			$this->aistma_log_manager->log( 'error', 'Invalid JSON response from subscription API' );
 			$this->subscription_status = array(
 				'valid' => false,
 				'error' => 'Invalid JSON response',
@@ -1068,7 +1068,7 @@ class AISTMA_Story_Generator {
 			return $this->subscription_status;
 		}
 		if ( isset( $data['valid'] ) && $data['valid'] ) {
-			$this->aistma_log_manager::log( 'info', 'Subscription found for domain: ' . $domain . ' - Credits remaining: ' . ( $data['credits_remaining'] ?? 0 ) );
+			$this->aistma_log_manager->log( 'info', 'Subscription found for domain: ' . $domain . ' - Credits remaining: ' . ( $data['credits_remaining'] ?? 0 ) );
 			$this->subscription_status = array(
 				'valid' => true,
 				'domain' => $data['domain'] ?? $domain,
@@ -1080,7 +1080,7 @@ class AISTMA_Story_Generator {
 				'next_billing_date' => $data['next_billing_date'] ?? '',
 			);
 		} else {
-			//$this->aistma_log_manager::log( 'info', 'No active subscription found for domain: ' . $domain );
+			//$this->aistma_log_manager->log( 'info', 'No active subscription found for domain: ' . $domain );
 			$this->subscription_status = array(
 				'valid' => false,
 				'message' => $data['message'] ?? 'No subscription found',

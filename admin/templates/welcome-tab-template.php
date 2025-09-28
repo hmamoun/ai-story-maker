@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 </p>
 <ul>
 	<li>
-		<strong>AI Writer:</strong> Offers flexibility to select a subscription plan or integrate your own API keys for personalized story generation.
+		<strong>Accounts:</strong> Offers flexibility to select a subscription plan or integrate your own API keys for personalized story generation.
 	</li>
 	<li>
 		<strong>Settings:</strong> Manage your scheduling preferences, author details, and attribution settings with ease.

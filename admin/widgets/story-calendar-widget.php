@@ -107,7 +107,9 @@ class AISTMA_Story_Calendar_Widget {
 		
 		$data = array();
 		foreach ( $results as $row ) {
-			$data[ $row->date ] = (int) $row->count;
+			if ( $row && isset( $row->date, $row->count ) ) {
+				$data[ $row->date ] = (int) $row->count;
+			}
 		}
 		
 		return $data;

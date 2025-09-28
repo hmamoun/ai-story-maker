@@ -43,50 +43,97 @@ document.addEventListener("DOMContentLoaded", function() {
     if (addPromptBtn) {
         addPromptBtn.addEventListener("click", function() {
             const promptList = document.getElementById("prompt-list");
-            const lastRow = promptList.querySelector("tr:last-child");
-            if (lastRow) {
-                const newRow = lastRow.cloneNode(true);
-                // Remove the deleted-prompt class from the new row
+            const addPromptRow = promptList.querySelector("tr:last-child"); // The "Add a new prompt" button row
+            
+            // Find the first actual prompt row to use as template
+            const templateRow = promptList.querySelector("tr[data-index]");
+            
+            if (templateRow && addPromptRow) {
+                // Create a new empty row based on the template
+                const newRow = templateRow.cloneNode(true);
+                
+                // Generate a new index that's one higher than the highest existing index
+                const existingRows = promptList.querySelectorAll("tr[data-index]");
+                let maxIndex = -1;
+                existingRows.forEach(row => {
+                    const index = parseInt(row.getAttribute("data-index"));
+                    if (!isNaN(index) && index > maxIndex) {
+                        maxIndex = index;
+                    }
+                });
+                const newIndex = maxIndex + 1;
+                
+                // Set the new row's index
+                newRow.setAttribute("data-index", newIndex);
+                
+                // Clear all existing styles and add new prompt styling
                 newRow.classList.remove("marked-for-deletion");
-                // Clear the changed attribute from the new row
+                newRow.classList.add("new-prompt-row");
+                
+                // Clear any changed attributes
                 newRow.querySelectorAll("[data-changed]").forEach(el => {
                     delete el.dataset.changed;
                 });
-                // Add class unsaved-prompt to the new row, overriding the default color
-                newRow.classList.add("new-prompt-row");
 
-                // Reset editable text field to default content
+                // Reset all fields to empty/default values
+                // 1. Reset the prompt text to empty
                 const textEl = newRow.querySelector("[data-field='text']");
                 if (textEl) {
-                    textEl.innerText = "New Prompt";
+                    textEl.innerText = "";
+                    textEl.setAttribute("placeholder", "Enter your new prompt here...");
                     delete textEl.dataset.changed;
+                    
+                    // Add event listener to remove new-prompt-row class when user starts typing
+                    textEl.addEventListener("input", function() {
+                        if (textEl.innerText.trim().length > 0) {
+                            newRow.classList.remove("new-prompt-row");
+                            newRow.classList.add("edited-prompt-row");
+                        }
+                    }, { once: true }); // Only trigger once
                 }
-                // Reset category dropdown to its first option
+                
+                // 2. Reset category dropdown to first option
                 const categorySelect = newRow.querySelector("[data-field='category'] select");
                 if (categorySelect) {
                     categorySelect.selectedIndex = 0;
                 }
-                // Reset photos dropdown to its first option
+                
+                // 3. Reset photos dropdown to first option (0 photos)
                 const photosSelect = newRow.querySelector("[data-field='photos'] select");
                 if (photosSelect) {
                     photosSelect.selectedIndex = 0;
                 }
-                // Uncheck active checkbox and clear changed attribute
-                const checkbox = newRow.querySelector("[data-field='active'] .toggle-active, [data-field='active'] input");
-                if (checkbox) {
-                    checkbox.checked = false;
-                    delete checkbox.dataset.changed;
+                
+                // 4. Uncheck active checkbox
+                const activeCheckbox = newRow.querySelector("[data-field='active'] input[type='checkbox']");
+                if (activeCheckbox) {
+                    activeCheckbox.checked = false;
+                    delete activeCheckbox.dataset.changed;
                 }
+                
+                // 5. Uncheck auto_publish checkbox
+                const autoPublishCheckbox = newRow.querySelector("[data-field='auto_publish'] input[type='checkbox']");
+                if (autoPublishCheckbox) {
+                    autoPublishCheckbox.checked = false;
+                    delete autoPublishCheckbox.dataset.changed;
+                }
+                
+                // 6. Generate new prompt ID
                 const promptIdEl = newRow.querySelector("[data-field='prompt_id']");
                 if (promptIdEl) {
-                    promptIdEl.value = "";
-                }
-                const auto_publish = newRow.querySelector("[data-field='auto_publish'] input");
-                if (auto_publish) {
-                    auto_publish.value = "";
+                    promptIdEl.value = "prompt_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
                 }
 
-                promptList.appendChild(newRow);
+                // Insert the new row directly above the "Add a new prompt" button row
+                promptList.insertBefore(newRow, addPromptRow);
+                
+                // Focus on the text field for immediate editing
+                if (textEl) {
+                    textEl.focus();
+                }
+                
+                // Add a subtle scroll to bring the new row into view
+                newRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         });
     }
