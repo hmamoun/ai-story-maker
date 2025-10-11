@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 <div id="aistma-settings-message"></div>
 
-<p><?php esc_html_e( 'Configure the general settings for AI Story Maker. These settings control how the plugin behaves and generates content.', 'ai-story-maker' ); ?></p>
+<p><?php esc_html_e( 'Configure the general settings for AI Story Maker. These settings control how the plugin behaves and generates content. For social media publishing settings, visit the Social Media Integration tab.', 'ai-story-maker' ); ?></p>
 
 <div class="aistma-settings-vertical">
 	<div class="aistma-setting-item-compact">

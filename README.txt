@@ -24,6 +24,7 @@ Whether you're a blogger, marketer, or educator, AI Story Maker helps you build 
 - **Subscription-Based Access** – Access AI generation through package subscriptions including free options.
 - **AI-Generated Stories** – Create unique, professional stories and articles using OpenAI.
 - **Smart Image Integration** – Automatic dynamic, royalty-free images from Unsplash.
+- **Social Media Integration** – Automatically publish stories to Facebook, Twitter/X, LinkedIn, and Instagram.
 - **Posts Display Widget** – Searchable and filterable posts display with analytics.
 - **Prompt Editor** – Build, customize, and organize your own prompts.
 - **Custom Story Scroller** – Display stories dynamically on the frontend.
@@ -133,6 +134,44 @@ The displays adapt to your site's theme styles automatically. Additional CSS cus
 
 - Both shortcodes are fully responsive for mobile devices.
 - Normal WordPress post listings are not affected.
+
+== Social Media Integration ==
+
+AI Story Maker includes comprehensive social media integration to automatically publish your AI-generated stories across multiple platforms.
+
+=== Supported Platforms ===
+
+- **Facebook Pages** – Fully supported with automatic link sharing
+- **Twitter/X** – Coming soon with hashtag optimization
+- **LinkedIn Company Pages** – Coming soon for professional content
+- **Instagram Business Accounts** – Coming soon for visual content
+
+=== Key Features ===
+
+- **Auto-Publish New Stories** – Automatically share new AI-generated content to connected accounts
+- **Manual Publishing** – Publish individual posts or use bulk actions for multiple posts
+- **Smart Hashtag Integration** – Convert WordPress post tags to social media hashtags
+- **Custom Hashtags** – Add default hashtags to all social media posts
+- **Multiple Account Support** – Connect multiple accounts per platform
+- **Connection Testing** – Verify account credentials and connection status
+
+=== Setup Instructions ===
+
+1. Navigate to **AI Story Maker > Social Media Integration**
+2. Configure global settings (auto-publish, hashtags, etc.)
+3. Add social media accounts with required credentials
+4. Test connections to verify setup
+5. Enable accounts for automatic or manual publishing
+
+=== Facebook Setup ===
+
+To connect a Facebook page:
+1. Create a Facebook App in Facebook Developer Console
+2. Generate a Page Access Token with required permissions
+3. Get your Page ID from your Facebook page settings
+4. Enter credentials in the plugin and test the connection
+
+For detailed setup instructions, visit the plugin documentation.
 
 == Screenshots ==
 
@@ -261,6 +300,12 @@ This plugin connects to third-party APIs:
    - Purpose: Subscription management and package access.
    - Data sent: Domain and subscription email for integrity verification.
    - Privacy: Only domain and email are transmitted for subscription management.
+
+4. **Social Media Platforms**
+   - Purpose: Publish AI-generated stories to connected social media accounts.
+   - Data sent: Post titles, excerpts, permalinks, and hashtags.
+   - Platforms: Facebook, Twitter/X, LinkedIn, Instagram (when configured).
+   - Privacy: Only post content and metadata are shared; no personal user data is transmitted.
 
 == How AI Story Maker Retrieves General Instructions ==
 

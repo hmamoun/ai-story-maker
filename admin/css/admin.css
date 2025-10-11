@@ -401,17 +401,18 @@
 	flex-direction: row;
 	gap: 25px;
 	padding: 20px 0;
-	flex-wrap: nowrap !important; /* keep in one row */
+	flex-wrap: wrap !important; /* allow wrapping to new lines */
 	align-items: stretch; /* equal heights */
 	justify-content: flex-start;
-	overflow-x: auto; /* allow horizontal scroll if many cards */
+	overflow-x: visible; /* remove horizontal scroll since we're wrapping */
 	-webkit-overflow-scrolling: touch;
 }
 
-/* Ensure uniform card sizing and single-row layout */
+/* Ensure uniform card sizing with flexible wrapping */
 .aistma-packages-container > .aistma-package-box {
 	flex: 0 0 320px !important;
-
+	max-width: 320px;
+	min-width: 280px;
 }
 
 .aistma-package-box {
@@ -765,6 +766,14 @@ tr:hover .row-actions {
 }
 
 /* Responsive Design Improvements */
+@media (max-width: 1024px) {
+	.aistma-packages-container > .aistma-package-box {
+		flex: 0 0 280px !important;
+		max-width: 280px;
+		min-width: 250px;
+	}
+}
+
 @media (max-width: 768px) {
 	.aistma-settings-grid {
 		grid-template-columns: 1fr;
@@ -776,6 +785,12 @@ tr:hover .row-actions {
 		flex-direction: column;
 		gap: 20px;
 		overflow-x: visible;
+	}
+	
+	.aistma-packages-container > .aistma-package-box {
+		flex: 1 1 auto !important;
+		max-width: none;
+		min-width: auto;
 	}
 	
 	.aistma-setting-item {

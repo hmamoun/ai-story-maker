@@ -73,10 +73,11 @@ add_action(
 
 
 
-// Register AJAX actions
-add_action( 'wp_ajax_aistma_save_setting', function() {
-    $settings_page = new \exedotcom\aistorymaker\AISTMA_Settings_Page();
-    $settings_page->aistma_ajax_save_setting();
+// Initialize Settings Page instance early to handle AJAX and OAuth
+add_action( 'plugins_loaded', function() {
+    if ( is_admin() || ( defined( 'DOING_AJAX' ) && DOING_AJAX ) || isset( $_GET['aistma_facebook_oauth'] ) ) {
+        new \exedotcom\aistorymaker\AISTMA_Settings_Page();
+    }
 });
 
 /**

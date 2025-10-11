@@ -147,22 +147,55 @@ if ( ! empty( $saved_subscription_email ) ) {
             $credits_remaining = isset( $subscription_status['credits_remaining'] ) ? intval( $subscription_status['credits_remaining'] ) : null;
             $next_billing_raw = $subscription_status['next_billing_date'] ?? '';
             $next_billing = 'N/A';
+            $next_billing_timestamp = null;
+            $time_remaining = '';
+            
             if ( is_array( $next_billing_raw ) ) {
                 $next_billing = $next_billing_raw['formatted_date'] ?? $next_billing_raw['date'] ?? 'N/A';
+                $next_billing_timestamp = isset( $next_billing_raw['date'] ) ? strtotime( $next_billing_raw['date'] ) : null;
             } elseif ( is_string( $next_billing_raw ) && $next_billing_raw !== '' ) {
-                $ts = strtotime( $next_billing_raw );
-                $next_billing = $ts ? gmdate( 'Y-M-d', $ts ) : $next_billing_raw;
+                $next_billing_timestamp = strtotime( $next_billing_raw );
+                $next_billing = $next_billing_timestamp ? gmdate( 'Y-M-d', $next_billing_timestamp ) : $next_billing_raw;
+            }
+            
+            // Calculate time remaining until next billing
+            if ( $next_billing_timestamp && $next_billing_timestamp > time() ) {
+                $time_diff = $next_billing_timestamp - time();
+                $days = floor( $time_diff / ( 24 * 60 * 60 ) );
+                $hours = floor( ( $time_diff % ( 24 * 60 * 60 ) ) / ( 60 * 60 ) );
+                
+                if ( $days > 0 ) {
+                    if ( $days === 1 ) {
+                        $time_remaining = '1 day';
+                    } else {
+                        $time_remaining = $days . ' days';
+                    }
+                    if ( $hours > 0 && $days < 7 ) { // Show hours only if less than a week
+                        $time_remaining .= ', ' . $hours . ' hour' . ( $hours === 1 ? '' : 's' );
+                    }
+                } elseif ( $hours > 0 ) {
+                    $time_remaining = $hours . ' hour' . ( $hours === 1 ? '' : 's' );
+                } else {
+                    $time_remaining = 'less than 1 hour';
+                }
+                $time_remaining = ' (' . $time_remaining . ' remaining)';
             }
             $parts = [];
             if ($credits_remaining === 0) {
-                $parts[] = "You don’t have any credits left. Please upgrade or wait for the next billing cycle.";
+                $parts[] = "No credits remaining";
+                if ( $next_billing && 'N/A' !== $next_billing ) {
+                    $parts[] = 'Next billing: ' . $next_billing . $time_remaining;
+                }
             } elseif ($credits_remaining === 1) {
                 $parts[] = "1 story remaining";
+                if ( $next_billing && 'N/A' !== $next_billing ) {
+                    $parts[] = 'Next billing: ' . $next_billing . $time_remaining;
+                }
             } else {
                 $parts[] = sprintf("%d stories remaining", $credits_remaining);
-            }
-            if ( $next_billing && 'N/A' !== $next_billing ) {
-                $parts[] = 'Next billing: ' . $next_billing;
+                if ( $next_billing && 'N/A' !== $next_billing ) {
+                    $parts[] = 'Next billing: ' . $next_billing . $time_remaining;
+                }
             }
             if ( ! empty( $current_package_name ) ) {
                 array_unshift( $parts, 'Current plan: ' . $current_package_name );

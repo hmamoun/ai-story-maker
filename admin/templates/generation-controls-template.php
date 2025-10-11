@@ -27,6 +27,39 @@ if ( ! defined( 'ABSPATH' ) ) {
 	>
 		<?php echo esc_html( $button_text ); ?>
 	</button>
+	
+	<?php
+	// Check if social media auto-publish is enabled
+	$social_media_accounts = get_option( 'aistma_social_media_accounts', array() );
+	$auto_publish_enabled = isset( $social_media_accounts['global_settings']['auto_publish'] ) && $social_media_accounts['global_settings']['auto_publish'];
+	$has_enabled_accounts = false;
+	
+	if ( isset( $social_media_accounts['accounts'] ) && is_array( $social_media_accounts['accounts'] ) ) {
+		foreach ( $social_media_accounts['accounts'] as $account ) {
+			if ( isset( $account['enabled'] ) && $account['enabled'] ) {
+				$has_enabled_accounts = true;
+				break;
+			}
+		}
+	}
+	
+	if ( $auto_publish_enabled && $has_enabled_accounts ) : ?>
+		<p style="margin-top: 10px; color: #0073aa; font-size: 13px;">
+			<span class="dashicons dashicons-share" style="font-size: 16px; vertical-align: middle;"></span>
+			<?php esc_html_e( 'Social media auto-publish is enabled. New stories will be automatically shared to your connected accounts.', 'ai-story-maker' ); ?>
+		</p>
+	<?php elseif ( $has_enabled_accounts ) : ?>
+		<p style="margin-top: 10px; color: #666; font-size: 13px;">
+			<span class="dashicons dashicons-share" style="font-size: 16px; vertical-align: middle;"></span>
+			<?php 
+			printf( 
+				/* translators: %s: link to social media settings */
+				wp_kses_post( __( 'Social media accounts connected. <a href="%s">Enable auto-publish</a> to share new stories automatically.', 'ai-story-maker' ) ),
+				esc_url( admin_url( 'admin.php?page=aistma-settings&tab=social_media' ) )
+			); 
+			?>
+		</p>
+	<?php endif; ?>
 
 	<div id="aistma-notice" class="notice" style="display:none; margin-top:10px;"></div>
 

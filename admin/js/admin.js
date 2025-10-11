@@ -566,3 +566,92 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Social Media Publishing functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle single account publish buttons
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.classList.contains('aistma-publish-single')) {
+            e.preventDefault();
+            
+            const button = e.target;
+            const postId = button.getAttribute('data-post-id');
+            const accountId = button.getAttribute('data-account-id');
+            const accountName = button.getAttribute('data-account-name');
+            const platform = button.getAttribute('data-platform');
+            
+            if (!postId || !accountId) {
+                alert('Missing required data for publishing');
+                return;
+            }
+            
+            // Disable button and show loading state
+            const originalText = button.textContent;
+            button.disabled = true;
+            button.textContent = 'Publishing...';
+            button.style.opacity = '0.6';
+            
+            // Create nonce for security (WordPress will generate this)
+            const nonce = (typeof aistmaSocialMedia !== 'undefined' && aistmaSocialMedia.nonce) || 
+                         document.querySelector('#_wpnonce')?.value || 
+                         document.querySelector('input[name="_wpnonce"]')?.value ||
+                         wp.ajax.settings.nonce || '';
+            
+            const ajaxUrl = (typeof aistmaSocialMedia !== 'undefined' && aistmaSocialMedia.ajaxurl) || 
+                           (typeof ajaxurl !== 'undefined' ? ajaxurl : '/wp-admin/admin-ajax.php');
+            
+            // Make AJAX request
+            const formData = new FormData();
+            formData.append('action', 'aistma_publish_to_social_media');
+            formData.append('post_id', postId);
+            formData.append('account_id', accountId);
+            formData.append('nonce', nonce);
+            
+            fetch(ajaxUrl, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    const message = data.data.message || `Successfully published to ${platform}`;
+                    alert(message);
+                    
+                    // Optionally update button text to indicate success
+                    button.textContent = '✓ Published';
+                    button.style.color = '#28a745';
+                } else {
+                    // Show error message
+                    const message = data.data.message || 'Failed to publish to social media';
+                    alert('Error: ' + message);
+                    
+                    // Reset button
+                    button.textContent = originalText;
+                    button.disabled = false;
+                    button.style.opacity = '1';
+                }
+            })
+            .catch(error => {
+                console.error('Publishing error:', error);
+                alert('Network error occurred while publishing');
+                
+                // Reset button
+                button.textContent = originalText;
+                button.disabled = false;
+                button.style.opacity = '1';
+            });
+        }
+        
+        // Handle multiple account menu buttons
+        if (e.target && e.target.classList.contains('aistma-publish-menu')) {
+            e.preventDefault();
+            
+            const button = e.target;
+            const postId = button.getAttribute('data-post-id');
+            
+            // For now, show a simple alert - this could be enhanced with a proper modal
+            alert('Multiple account publishing menu - feature to be enhanced. Use bulk actions for now.');
+        }
+    });
+});

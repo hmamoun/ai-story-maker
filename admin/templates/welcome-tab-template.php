@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<div class="aistma-style-settings">
 	<h2>AI Story Maker</h2>
 <p>
-	AI Story Maker utilizes Generative AI Models to automatically create engaging stories for your WordPress site, adding content based on the topics you choose, which results in better SEO ranking. Getting started is easy — simply enter your API keys and set up your prompts.
+	AI Story Maker utilizes Generative AI Models to automatically create engaging stories for your WordPress site, adding content based on the topics you choose, which results in better SEO ranking. With built-in social media integration, your stories can be automatically shared across multiple platforms to maximize reach and engagement. Getting started is easy — simply enter your API keys, set up your prompts, and connect your social media accounts.
 </p>
 <ul>
 	<li>
@@ -26,6 +26,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	</li>
 	<li>
 		<strong>Settings:</strong> Manage your scheduling preferences, author details, and attribution settings with ease.
+	</li>
+	<li>
+		<strong>Social Media Integration:</strong> Automatically publish your AI-generated stories to Facebook, Twitter/X, LinkedIn, and Instagram. Configure multiple accounts, set up auto-publishing, and track your social media reach.
 	</li>
 	<li>
 		<strong>Prompts:</strong> Create and manage your prompts and general instructions to tailor story generation to your needs.
@@ -78,7 +81,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	</li>
 </ul>
 <p>
-	Generated stories are saved as WordPress posts. You can display them using the custom template included with the plugin or by embedding the shortcode into any page or post.
+	Generated stories are saved as WordPress posts and can be automatically published to your connected social media accounts. You can display them using the custom template included with the plugin or by embedding the shortcode into any page or post. Use the Social Media Integration tab to connect your accounts and configure publishing settings.
 </p>
 
 <?php
