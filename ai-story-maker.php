@@ -3,7 +3,7 @@
  * Plugin Name: AI Story Maker
  * Plugin URI: https://github.com/hmamoun/ai-story-maker/wiki
  * Description: AI-powered content generator for WordPress — create engaging stories with a single click.
- * Version: 2.0.3
+ * Version: 2.1.0
  * Author: Hayan Mamoun
  * Author URI: https://exedotcom.ca
  * License: GPLv2 or later

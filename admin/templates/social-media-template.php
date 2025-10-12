@@ -586,7 +586,7 @@ $ajax_nonce = wp_create_nonce( 'aistma_social_media_settings' );
                                             <strong>Setup Requirements:</strong><br>
                                             1. Create Facebook App with permissions: <code>pages_manage_posts</code>, <code>pages_read_engagement</code>, <code>pages_show_list</code><br>
                                             2. Go to Facebook Login for Business → "Valid OAuth Redirect URLs" → Add:<br>
-                                            <code style="background: #f1f1f1; padding: 2px 4px;">https://[yourdomain]/wp-admin/admin.php?aistma_facebook_oauth=1</code><br>
+                                            <code style="background: #f1f1f1; padding: 2px 4px;"><?php echo esc_url( admin_url( 'admin.php?aistma_facebook_oauth=1' ) ); ?></code><br>
                                             3. From App Settings → Basic: Get the App ID and App Secret<br>
                                             <br>
                                             <strong>⚠️ Domain Error Fix:</strong><br>

@@ -892,19 +892,27 @@ class AISTMA_Admin {
 		if ( $update ) {
 			return;
 		}
-
+	
 		// Only process posts that are published
 		if ( $post->post_status !== 'publish' ) {
 			return;
 		}
-
+	
 		// Only process standard posts (not pages, attachments, etc.)
 		if ( $post->post_type !== 'post' ) {
 			return;
 		}
-
+	
+		// Check if this post was already shared (prevent duplicates)
+		$already_shared = get_post_meta( $post_id, '_aistma_social_shared', true );
+		if ( $already_shared ) {
+			return;
+		}
+	
+		// Mark as shared before processing
+		update_post_meta( $post_id, '_aistma_social_shared', true );
+	
 		// Call the same auto-publish logic
-		// We simulate a transition from 'new' to 'publish' status
 		$this->auto_publish_to_social_media( 'publish', 'new', $post );
 	}
 }

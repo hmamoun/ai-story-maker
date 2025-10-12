@@ -4,7 +4,7 @@ Tags: ai, content creation, blog automation, article generation, wordpress ai pl
 Requires at least: 5.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.0.3
+Stable tag: 2.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Plugin URI: https://github.com/hmamoun/ai-story-maker
@@ -24,7 +24,7 @@ Whether you're a blogger, marketer, or educator, AI Story Maker helps you build 
 - **Subscription-Based Access** – Access AI generation through package subscriptions including free options.
 - **AI-Generated Stories** – Create unique, professional stories and articles using OpenAI.
 - **Smart Image Integration** – Automatic dynamic, royalty-free images from Unsplash.
-- **Social Media Integration** – Automatically publish stories to Facebook, Twitter/X, LinkedIn, and Instagram.
+- **Social Media Integration** – Automatically publish stories to social media platforms (starting with Facebook, with Twitter/X, LinkedIn, and Instagram coming soon).
 - **Posts Display Widget** – Searchable and filterable posts display with analytics.
 - **Prompt Editor** – Build, customize, and organize your own prompts.
 - **Custom Story Scroller** – Display stories dynamically on the frontend.
