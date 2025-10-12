@@ -19,9 +19,7 @@ $default_accounts = array(
     'global_settings' => array(
         'auto_publish' => false,
         'include_hashtags' => true,
-        'default_hashtags' => '#AIStoryMaker #AutomatedContent',
-        'facebook_app_id' => '',
-        'facebook_app_secret' => ''
+        'default_hashtags' => '#AIStoryMaker #AutomatedContent'
     )
 );
 
@@ -38,7 +36,8 @@ $ajax_nonce = wp_create_nonce( 'aistma_social_media_settings' );
         <script type="text/javascript">
             window.aistmaSocialMediaSettings = {
                 ajaxUrl: '<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>',
-                nonce: '<?php echo esc_js( $ajax_nonce ); ?>'
+                nonce: '<?php echo esc_js( $ajax_nonce ); ?>',
+                accounts: <?php echo wp_json_encode( $social_media_accounts['accounts'] ); ?>
             };
         </script>
 
@@ -51,7 +50,7 @@ $ajax_nonce = wp_create_nonce( 'aistma_social_media_settings' );
 
             <?php
             // Handle Facebook OAuth callback messages
-            if ( isset( $_GET['facebook_oauth'] ) ) {
+            if ( isset( $_GET['facebook_oauth'] ) && isset( $_GET['_wpnonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'aistma_facebook_oauth_result' ) ) {
                 if ( $_GET['facebook_oauth'] === 'success' && isset( $_GET['account_name'] ) ) {
                     $account_name = sanitize_text_field( wp_unslash( $_GET['account_name'] ) );
                     echo '<div class="notice notice-success is-dismissible"><p>';
@@ -104,28 +103,6 @@ $ajax_nonce = wp_create_nonce( 'aistma_social_media_settings' );
                             <p class="description"><?php esc_html_e( 'Additional hashtags to include with posts (space-separated)', 'ai-story-maker' ); ?></p>
                         </td>
                     </tr>
-                    <tr>
-                        <th scope="row">
-                            <label for="aistma_facebook_app_id"><?php esc_html_e( 'Facebook App ID', 'ai-story-maker' ); ?></label>
-                        </th>
-                        <td>
-                            <input type="text" id="aistma_facebook_app_id" name="aistma_facebook_app_id" 
-                                   value="<?php echo esc_attr( $social_media_accounts['global_settings']['facebook_app_id'] ); ?>" 
-                                   class="regular-text" />
-                            <p class="description"><?php esc_html_e( 'Facebook App ID for OAuth authentication', 'ai-story-maker' ); ?></p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row">
-                            <label for="aistma_facebook_app_secret"><?php esc_html_e( 'Facebook App Secret', 'ai-story-maker' ); ?></label>
-                        </th>
-                        <td>
-                            <input type="password" id="aistma_facebook_app_secret" name="aistma_facebook_app_secret" 
-                                   value="<?php echo esc_attr( $social_media_accounts['global_settings']['facebook_app_secret'] ); ?>" 
-                                   class="regular-text" />
-                            <p class="description"><?php esc_html_e( 'Facebook App Secret for OAuth authentication (kept secure)', 'ai-story-maker' ); ?></p>
-                        </td>
-                    </tr>
                 </table>
 
                 <p class="submit">
@@ -161,9 +138,6 @@ $ajax_nonce = wp_create_nonce( 'aistma_social_media_settings' );
                                     </div>
                                 </div>
                                 <div class="aistma-account-actions">
-                                    <button type="button" class="button aistma-edit-account" data-account-id="<?php echo esc_attr( $account['id'] ); ?>">
-                                        <?php esc_html_e( 'Edit', 'ai-story-maker' ); ?>
-                                    </button>
                                     <button type="button" class="button aistma-test-account" data-account-id="<?php echo esc_attr( $account['id'] ); ?>">
                                         <?php esc_html_e( 'Test Connection', 'ai-story-maker' ); ?>
                                     </button>
@@ -422,11 +396,6 @@ $ajax_nonce = wp_create_nonce( 'aistma_social_media_settings' );
                     openAccountModal('add', platform);
                 });
                 
-                $('.aistma-edit-account').on('click', function() {
-                    const accountId = $(this).data('account-id');
-                    openAccountModal('edit', null, accountId);
-                });
-                
                 $('.aistma-delete-account').on('click', function() {
                     const accountId = $(this).data('account-id');
                     const accountName = $(this).closest('.aistma-account-card').find('h4').text();
@@ -450,9 +419,7 @@ $ajax_nonce = wp_create_nonce( 'aistma_social_media_settings' );
                     const settings = {
                         auto_publish: $('#aistma_auto_publish').is(':checked'),
                         include_hashtags: $('#aistma_include_hashtags').is(':checked'),
-                        default_hashtags: $('#aistma_default_hashtags').val(),
-                        facebook_app_id: $('#aistma_facebook_app_id').val(),
-                        facebook_app_secret: $('#aistma_facebook_app_secret').val()
+                        default_hashtags: $('#aistma_default_hashtags').val()
                     };
                     
                     saveGlobalSettings(settings);
@@ -487,16 +454,16 @@ $ajax_nonce = wp_create_nonce( 'aistma_social_media_settings' );
                 
                 // Handle Facebook OAuth button click
                 $(document).on('click', '#aistma-connect-facebook-oauth', function() {
-
+ 
                     const button = $(this);
                     const statusDiv = $('#aistma-facebook-oauth-status');
                     
-                    // Check if Facebook App ID is configured
-                    const facebookAppId = $('#aistma_facebook_app_id').val();
-                    const facebookAppSecret = $('#aistma_facebook_app_secret').val();
+                    // Get Facebook App credentials from the modal form
+                    const facebookAppId = $('input[name="facebook_app_id"]').val();
+                    const facebookAppSecret = $('input[name="facebook_app_secret"]').val();
                     
                     if (!facebookAppId || !facebookAppSecret) {
-                        statusDiv.html('<div class="notice notice-error inline"><p>Please configure your Facebook App ID and App Secret in the Global Settings above, then save settings before connecting.</p></div>');
+                        statusDiv.html('<div class="notice notice-error inline"><p>Please enter your Facebook App ID and App Secret above before connecting.</p></div>');
                         return;
                     }
                     
@@ -510,10 +477,11 @@ $ajax_nonce = wp_create_nonce( 'aistma_social_media_settings' );
                         type: 'POST',
                         data: {
                             action: 'aistma_facebook_oauth_callback',
-                            nonce: window.aistmaSocialMediaSettings.nonce
+                            nonce: window.aistmaSocialMediaSettings.nonce,
+                            facebook_app_id: facebookAppId,
+                            facebook_app_secret: facebookAppSecret
                         },
                         success: function(response) {
-                            debugger;
                             console.log('OAuth URL response:', response);
                             if (response.success && response.data.oauth_url) {
                                 statusDiv.html('<div class="notice notice-info inline"><p>Redirecting to Facebook...</p></div>');
@@ -552,20 +520,15 @@ $ajax_nonce = wp_create_nonce( 'aistma_social_media_settings' );
                 });
                 
                 function openAccountModal(action, platform, accountId) {
-                    // Special handling for Facebook accounts
-                    if (platform === 'facebook') {
-                        if (action === 'edit') {
-                            alert('Facebook accounts cannot be edited manually. To reconnect, please delete this account and create a new one using the "Connect Facebook Page" button.');
-                            return;
-                        }
-                    }
-                    
                     $('#aistma-account-modal').show();
                     $('#aistma-account-platform').val(platform || '');
                     $('#aistma-account-id').val(accountId || '');
                     
                     if (action === 'add') {
                         $('#aistma-modal-title').text('Add ' + platform.charAt(0).toUpperCase() + platform.slice(1) + ' Account');
+                        // Clear form fields for new account
+                        $('#aistma-account-name').val('');
+                        $('#aistma-account-enabled').prop('checked', true);
                         generatePlatformCredentialsForm(platform);
                     }
                 }
@@ -599,8 +562,19 @@ $ajax_nonce = wp_create_nonce( 'aistma_social_media_settings' );
                         case 'facebook':
                             credentialsHtml += `
                                 <div class="aistma-facebook-oauth-section">
-                                    <h4>Connect Facebook Page</h4>
-                                    <p>Click the button below to connect your Facebook page automatically using OAuth. This is the secure and recommended method.</p>
+                                    <h4>Facebook App Configuration</h4>
+                                    <p>Enter your Facebook App credentials to connect your Facebook page automatically using OAuth.</p>
+                                    
+                                    <table class="form-table" style="margin-bottom: 20px;">
+                                        <tr>
+                                            <th><label>Facebook App ID</label></th>
+                                            <td><input type="text" name="facebook_app_id" class="regular-text" required placeholder="Your Facebook App ID" /></td>
+                                        </tr>
+                                        <tr>
+                                            <th><label>Facebook App Secret</label></th>
+                                            <td><input type="password" name="facebook_app_secret" class="regular-text" required placeholder="Your Facebook App Secret" /></td>
+                                        </tr>
+                                    </table>
                                     
                                     <div class="aistma-oauth-option" style="padding: 15px; border: 1px solid #ddd; border-radius: 5px; text-align: center;">
                                         <button type="button" id="aistma-connect-facebook-oauth" class="button button-primary" style="font-size: 14px; padding: 8px 16px;">
@@ -609,20 +583,16 @@ $ajax_nonce = wp_create_nonce( 'aistma_social_media_settings' );
                                         </button>
                                         <div id="aistma-facebook-oauth-status" style="margin-top: 15px;"></div>
                                         <p class="description" style="margin-top: 15px;">
-                                            <strong>Requirements:</strong><br>
-                                            • Facebook App ID configured in Global Settings above<br>
-                                            • Facebook App Secret configured in Global Settings above<br>
-                                            • <strong>Facebook App Domain Setup:</strong><br>
-                                            &nbsp;&nbsp;→ Add your domain to "App Domains" in Facebook App Settings<br>
-                                            &nbsp;&nbsp;→ Add redirect URI to "Valid OAuth Redirect URIs"<br>
-                                            • Admin access to at least one Facebook page<br>
+                                            <strong>Setup Requirements:</strong><br>
+                                            1. Create Facebook App with permissions: <code>pages_manage_posts</code>, <code>pages_read_engagement</code>, <code>pages_show_list</code><br>
+                                            2. Go to Facebook Login for Business → "Valid OAuth Redirect URLs" → Add:<br>
+                                            <code style="background: #f1f1f1; padding: 2px 4px;">https://[yourdomain]/wp-admin/admin.php?aistma_facebook_oauth=1</code><br>
+                                            3. From App Settings → Basic: Get the App ID and App Secret<br>
                                             <br>
                                             <strong>⚠️ Domain Error Fix:</strong><br>
                                             If you see "domain not included" error:<br>
-                                            1. Go to <a href="https://developers.facebook.com/" target="_blank">Facebook Developer Console</a><br>
-                                            2. Settings → Basic → Add your domain to "App Domains"<br>
-                                            3. Facebook Login → Settings → Add redirect URI:<br>
-                                            <code style="background: #f1f1f1; padding: 2px 4px;">${window.location.origin}/wp-admin/admin.php</code>
+                                            • Settings → Basic → Add your domain to "App Domains"<br>
+                                            • Facebook Login → Settings → Add redirect URI above
                                         </p>
                                     </div>
                                 </div>

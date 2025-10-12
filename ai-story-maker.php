@@ -75,6 +75,7 @@ add_action(
 
 // Initialize Settings Page instance early to handle AJAX and OAuth
 add_action( 'plugins_loaded', function() {
+    // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- OAuth callback parameter check, actual security verification in Settings Page class
     if ( is_admin() || ( defined( 'DOING_AJAX' ) && DOING_AJAX ) || isset( $_GET['aistma_facebook_oauth'] ) ) {
         new \exedotcom\aistorymaker\AISTMA_Settings_Page();
     }

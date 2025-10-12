@@ -259,8 +259,6 @@ class AISTMA_Settings_Page {
 			'auto_publish' => isset( $settings['auto_publish'] ) ? (bool) $settings['auto_publish'] : false,
 			'include_hashtags' => isset( $settings['include_hashtags'] ) ? (bool) $settings['include_hashtags'] : false,
 			'default_hashtags' => isset( $settings['default_hashtags'] ) ? sanitize_text_field( $settings['default_hashtags'] ) : '',
-			'facebook_app_id' => isset( $settings['facebook_app_id'] ) ? sanitize_text_field( $settings['facebook_app_id'] ) : '',
-			'facebook_app_secret' => isset( $settings['facebook_app_secret'] ) ? sanitize_text_field( $settings['facebook_app_secret'] ) : '',
 		);
 
 		// Get current social media accounts
@@ -614,11 +612,13 @@ class AISTMA_Settings_Page {
 	 */
 	public function handle_facebook_oauth_redirect() {
 		// Check if this is a Facebook OAuth callback
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- OAuth callback uses state parameter verification
 		if ( ! isset( $_GET['code'] ) || ! isset( $_GET['state'] ) || ! isset( $_GET['aistma_facebook_oauth'] ) ) {
 			return;
 		}
 
 		// Verify state parameter for security
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- OAuth callback uses state parameter verification
 		$state = sanitize_text_field( wp_unslash( $_GET['state'] ) );
 		$stored_state = get_transient( 'aistma_facebook_oauth_state_' . get_current_user_id() );
 		
@@ -629,6 +629,7 @@ class AISTMA_Settings_Page {
 		// Clean up the state transient
 		delete_transient( 'aistma_facebook_oauth_state_' . get_current_user_id() );
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- OAuth callback uses state parameter verification
 		$code = sanitize_text_field( wp_unslash( $_GET['code'] ) );
 		
 		// Exchange code for access token
@@ -641,6 +642,7 @@ class AISTMA_Settings_Page {
 				'tab' => 'social-media',
 				'facebook_oauth' => 'success',
 				'account_name' => urlencode( $result['account_name'] ),
+				'_wpnonce' => wp_create_nonce( 'aistma_facebook_oauth_result' ),
 			], admin_url( 'admin.php' ) );
 		} else {
 			// Redirect back with error
@@ -649,6 +651,7 @@ class AISTMA_Settings_Page {
 				'tab' => 'social-media',
 				'facebook_oauth' => 'error',
 				'error_message' => urlencode( $result['message'] ),
+				'_wpnonce' => wp_create_nonce( 'aistma_facebook_oauth_result' ),
 			], admin_url( 'admin.php' ) );
 		}
 		
@@ -663,26 +666,18 @@ class AISTMA_Settings_Page {
 	 * @return array Result of the token exchange.
 	 */
 	private function exchange_facebook_code_for_token( $code ) {
-		// Get Facebook App credentials from settings
-		$social_media_accounts = get_option( 'aistma_social_media_accounts', array() );
-		$facebook_app_id = isset( $social_media_accounts['global_settings']['facebook_app_id'] ) 
-			? $social_media_accounts['global_settings']['facebook_app_id'] 
-			: '';
-		$facebook_app_secret = isset( $social_media_accounts['global_settings']['facebook_app_secret'] ) 
-			? $social_media_accounts['global_settings']['facebook_app_secret'] 
-			: '';
+		// Get Facebook App credentials from transients
+		$facebook_app_id = get_transient( 'aistma_facebook_app_id_' . get_current_user_id() );
+		$facebook_app_secret = get_transient( 'aistma_facebook_app_secret_' . get_current_user_id() );
 
-		if ( empty( $facebook_app_id ) ) {
+		// Clean up transients
+		delete_transient( 'aistma_facebook_app_id_' . get_current_user_id() );
+		delete_transient( 'aistma_facebook_app_secret_' . get_current_user_id() );
+
+		if ( empty( $facebook_app_id ) || empty( $facebook_app_secret ) ) {
 			return array(
 				'success' => false,
-				'message' => __( 'Facebook App ID not configured. Please add your Facebook App ID in the global settings.', 'ai-story-maker' )
-			);
-		}
-
-		if ( empty( $facebook_app_secret ) ) {
-			return array(
-				'success' => false,
-				'message' => __( 'Facebook App Secret not configured. Please add your Facebook App Secret in the global settings.', 'ai-story-maker' )
+				'message' => __( 'Facebook App credentials not found. Please try the connection process again.', 'ai-story-maker' )
 			);
 		}
 
@@ -752,7 +747,7 @@ class AISTMA_Settings_Page {
 		$page_name = $page['name'];
 		$page_access_token = $page['access_token'];
 
-		// Save the Facebook page account
+		// Save the Facebook page account with the app credentials
 		$account_data = array(
 			'id' => wp_generate_uuid4(),
 			'platform' => 'facebook',
@@ -761,6 +756,8 @@ class AISTMA_Settings_Page {
 			'credentials' => array(
 				'access_token' => $page_access_token,
 				'page_id' => $page_id,
+				'facebook_app_id' => $facebook_app_id,
+				'facebook_app_secret' => $facebook_app_secret,
 			),
 			'settings' => array(),
 			'created_at' => current_time( 'mysql' ),
@@ -773,13 +770,14 @@ class AISTMA_Settings_Page {
 		$result = update_option( 'aistma_social_media_accounts', $social_media_accounts );
 
 		if ( $result ) {
-			$this->aistma_log_manager->log( 'info', 'Facebook page connected via OAuth: ' . $page_name . ' (ID: ' . $page_id . ')' );
+			$this->aistma_log_manager->log( 'info', 'Facebook page connected via OAuth: ' . $page_name . ' (ID: ' . $page_id . ') with App ID: ' . $facebook_app_id );
 			
-			return array(
-				'success' => true,
-				'message' => sprintf( __( 'Successfully connected Facebook page: %s', 'ai-story-maker' ), $page_name ),
-				'account_name' => $page_name
-			);
+		return array(
+			'success' => true,
+			// translators: %s is the Facebook page name
+			'message' => sprintf( __( 'Successfully connected Facebook page: %s', 'ai-story-maker' ), $page_name ),
+			'account_name' => $page_name
+		);
 		} else {
 			return array(
 				'success' => false,
@@ -791,18 +789,18 @@ class AISTMA_Settings_Page {
 	/**
 	 * Generate Facebook OAuth URL.
 	 *
+	 * @param string $facebook_app_id Facebook App ID.
+	 * @param string $facebook_app_secret Facebook App Secret.
 	 * @return string|false The OAuth URL or false on error.
 	 */
-	public function get_facebook_oauth_url() {
-		// Get Facebook App ID from settings
-		$social_media_accounts = get_option( 'aistma_social_media_accounts', array() );
-		$facebook_app_id = isset( $social_media_accounts['global_settings']['facebook_app_id'] ) 
-			? $social_media_accounts['global_settings']['facebook_app_id'] 
-			: '';
-
+	public function get_facebook_oauth_url( $facebook_app_id = '', $facebook_app_secret = '' ) {
 		if ( empty( $facebook_app_id ) ) {
 			return false;
 		}
+
+		// Store the app credentials temporarily for the OAuth callback
+		set_transient( 'aistma_facebook_app_id_' . get_current_user_id(), $facebook_app_id, 10 * MINUTE_IN_SECONDS );
+		set_transient( 'aistma_facebook_app_secret_' . get_current_user_id(), $facebook_app_secret, 10 * MINUTE_IN_SECONDS );
 
 		// Generate and store state parameter for security
 		$state = wp_generate_password( 32, false );
@@ -848,12 +846,16 @@ class AISTMA_Settings_Page {
 			wp_die();
 		}
 
-		$oauth_url = $this->get_facebook_oauth_url();
+		// Get Facebook App credentials from the AJAX request
+		$facebook_app_id = isset( $_POST['facebook_app_id'] ) ? sanitize_text_field( wp_unslash( $_POST['facebook_app_id'] ) ) : '';
+		$facebook_app_secret = isset( $_POST['facebook_app_secret'] ) ? sanitize_text_field( wp_unslash( $_POST['facebook_app_secret'] ) ) : '';
+
+		$oauth_url = $this->get_facebook_oauth_url( $facebook_app_id, $facebook_app_secret );
 		
 		if ( $oauth_url ) {
 			wp_send_json_success( [ 'oauth_url' => $oauth_url ] );
 		} else {
-			wp_send_json_error( [ 'message' => __( 'Facebook App ID not configured. Please add your Facebook App ID in the global settings first.', 'ai-story-maker' ) ] );
+			wp_send_json_error( [ 'message' => __( 'Facebook App ID or App Secret not provided.', 'ai-story-maker' ) ] );
 		}
 		
 		wp_die();

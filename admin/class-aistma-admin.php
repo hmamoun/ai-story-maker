@@ -753,7 +753,7 @@ class AISTMA_Admin {
 	 */
 	public function ajax_publish_to_social_media() {
 		// Verify nonce for security
-		if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'aistma_social_media_nonce' ) ) {
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'aistma_social_media_nonce' ) ) {
 			wp_send_json_error( array( 'message' => 'Security check failed' ) );
 		}
 
@@ -763,7 +763,7 @@ class AISTMA_Admin {
 		}
 
 		$post_id = intval( $_POST['post_id'] ?? 0 );
-		$account_id = sanitize_text_field( $_POST['account_id'] ?? '' );
+		$account_id = sanitize_text_field( wp_unslash( $_POST['account_id'] ?? '' ) );
 
 		if ( ! $post_id || ! $account_id ) {
 			wp_send_json_error( array( 'message' => 'Missing required parameters' ) );
