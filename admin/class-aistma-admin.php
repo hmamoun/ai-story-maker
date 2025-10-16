@@ -67,6 +67,7 @@ class AISTMA_Admin {
 	const TAB_PROMPTS = 'prompts';
 	const TAB_ANALYTICS = 'analytics';
 	const TAB_LOG     = 'log';
+	const TAB_SHORTCODES = 'shortcodes';
 
 
 	/**
@@ -156,6 +157,7 @@ class AISTMA_Admin {
 			self::TAB_PROMPTS,
 			self::TAB_ANALYTICS,
 			self::TAB_LOG,
+			self::TAB_SHORTCODES,
 		);
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Tab selection only affects UI; no action taken
 		$active_tab = isset( $_GET['tab'] ) && in_array( sanitize_key( $_GET['tab'] ), $allowed_tabs, true ) ? sanitize_key( $_GET['tab'] ) : self::TAB_WELCOME;
@@ -169,23 +171,46 @@ class AISTMA_Admin {
 			<a href="?page=aistma-settings&tab=<?php echo esc_attr( self::TAB_AI_WRITER ); ?>" class="nav-tab <?php echo ( self::TAB_AI_WRITER === $active_tab ) ? 'nav-tab-active' : ''; ?>">
 		<?php esc_html_e( 'Accounts', 'ai-story-maker' ); ?>
 			</a>
-			<a href="?page=aistma-settings&tab=<?php echo esc_attr( self::TAB_SOCIAL_MEDIA ); ?>" class="nav-tab <?php echo ( self::TAB_SOCIAL_MEDIA === $active_tab ) ? 'nav-tab-active' : ''; ?>">
-		<?php esc_html_e( 'Social Media Integration', 'ai-story-maker' ); ?>
+			<a href="?page=aistma-settings&tab=<?php echo esc_attr( self::TAB_PROMPTS ); ?>" class="nav-tab <?php echo ( self::TAB_PROMPTS === $active_tab ) ? 'nav-tab-active' : ''; ?>">
+		<?php esc_html_e( 'Prompts', 'ai-story-maker' ); ?>
 			</a>
 			<a href="?page=aistma-settings&tab=<?php echo esc_attr( self::TAB_SETTINGS ); ?>" class="nav-tab <?php echo ( self::TAB_SETTINGS === $active_tab ) ? 'nav-tab-active' : ''; ?>">
 		<?php esc_html_e( 'Settings', 'ai-story-maker' ); ?>
 			</a>
-			<a href="?page=aistma-settings&tab=<?php echo esc_attr( self::TAB_PROMPTS ); ?>" class="nav-tab <?php echo ( self::TAB_PROMPTS === $active_tab ) ? 'nav-tab-active' : ''; ?>">
-		<?php esc_html_e( 'Prompts', 'ai-story-maker' ); ?>
+			<a href="?page=aistma-settings&tab=<?php echo esc_attr( self::TAB_SOCIAL_MEDIA ); ?>" class="nav-tab <?php echo ( self::TAB_SOCIAL_MEDIA === $active_tab ) ? 'nav-tab-active' : ''; ?>">
+		<?php esc_html_e( 'Social Media Integration', 'ai-story-maker' ); ?>
 			</a>
+
+
 			<a href="?page=aistma-settings&tab=<?php echo esc_attr( self::TAB_ANALYTICS ); ?>" class="nav-tab <?php echo ( self::TAB_ANALYTICS === $active_tab ) ? 'nav-tab-active' : ''; ?>">
 		<?php esc_html_e( 'Analytics', 'ai-story-maker' ); ?>
+			</a>
+			<a href="?page=aistma-settings&tab=<?php echo esc_attr( self::TAB_SHORTCODES ); ?>" class="nav-tab <?php echo ( self::TAB_SHORTCODES === $active_tab ) ? 'nav-tab-active' : ''; ?>">
+		<?php esc_html_e( 'Shortcodes', 'ai-story-maker' ); ?>
 			</a>
 			<a href="?page=aistma-settings&tab=<?php echo esc_attr( self::TAB_LOG ); ?>" class="nav-tab <?php echo ( self::TAB_LOG === $active_tab ) ? 'nav-tab-active' : ''; ?>">
 		<?php esc_html_e( 'Log', 'ai-story-maker' ); ?>
 			</a>
 		</h2>
 		<?php
+
+		// Show notice if redirected from generation attempt
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only parameter
+		if ( isset( $_GET['notice'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only parameter
+			$notice = sanitize_text_field( wp_unslash( $_GET['notice'] ) );
+			if ( $notice === 'accounts_required' ) {
+				echo '<div class="notice notice-warning is-dismissible">';
+				echo '<p><strong>' . esc_html__( 'Account Setup Required', 'ai-story-maker' ) . '</strong></p>';
+				echo '<p>' . esc_html__( 'Please set up your subscription account or API keys before generating stories.', 'ai-story-maker' ) . '</p>';
+				echo '</div>';
+			} elseif ( $notice === 'prompts_required' ) {
+				echo '<div class="notice notice-warning is-dismissible">';
+				echo '<p><strong>' . esc_html__( 'Prompts Setup Required', 'ai-story-maker' ) . '</strong></p>';
+				echo '<p>' . esc_html__( 'Please create and activate at least one prompt before generating stories.', 'ai-story-maker' ) . '</p>';
+				echo '</div>';
+			}
+		}
 
 		if ( self::TAB_WELCOME === $active_tab ) {
 			include_once AISTMA_PATH . 'admin/templates/welcome-tab-template.php';
@@ -202,6 +227,8 @@ class AISTMA_Admin {
 			$this->aistma_prompt_editor->aistma_prompt_editor_render();
 		} elseif ( self::TAB_ANALYTICS === $active_tab ) {
 			include_once AISTMA_PATH . 'admin/templates/analytics-template.php';
+		} elseif ( self::TAB_SHORTCODES === $active_tab ) {
+			include_once AISTMA_PATH . 'admin/templates/shortcodes-tab-template.php';
 		} elseif ( self::TAB_LOG === $active_tab ) {
 			$this->aistma_log_manager = new AISTMA_Log_Manager();
 			$this->aistma_log_manager->aistma_log_table_render();
@@ -265,7 +292,8 @@ class AISTMA_Admin {
 				// Create button HTML
 				const buttonHtml = `
 					<input type="hidden" id="aistma-posts-generate-story-nonce" value="<?php echo esc_attr( wp_create_nonce( 'generate_story_nonce' ) ); ?>">
-					<button id="aistma-posts-generate-stories-button" class="button button-primary aistma-posts-page-button" <?php echo esc_attr( $button_disabled ); ?>>
+					<input type="hidden" id="aistma-posts-validate-accounts-nonce" value="<?php echo esc_attr( wp_create_nonce( 'generate_story_nonce' ) ); ?>">
+					<button id="aistma-posts-generate-stories-button" class="button button-primary aistma-posts-page-button" <?php echo esc_attr( $button_disabled ); ?> data-validate-accounts="true">
 						<?php echo esc_html( $button_text ); ?>
 					</button>
 					<div id="aistma-posts-notice" style="display:none;"></div>
@@ -279,65 +307,120 @@ class AISTMA_Admin {
 				if (generateButton) {
 					generateButton.addEventListener('click', function(e) {
 						e.preventDefault();
-						const originalCaption = this.innerHTML;
-						this.disabled = true;
-						this.innerHTML = '<span class="spinner" style="visibility: visible; float: none; margin: 0 5px 0 0;"></span>Generating... do not leave or close the page';
-
-						const nonce = document.getElementById('aistma-posts-generate-story-nonce').value;
-						const showNotice = (message, type) => {
-							let messageDiv = document.getElementById('aistma-posts-notice');
-							if (messageDiv) {
-								messageDiv.className = `notice notice-${type} is-dismissible`;
-								messageDiv.style.display = 'block';
-								// Normalize and simplify common fatal error wording and strip HTML tags
-								const normalized = String(message || '')
-									.replace(/<[^>]*>/g, '')
-									.replace(/fatal\s+error:?/ig, 'Error')
-									.trim();
-								messageDiv.textContent = normalized || (type === 'success' ? 'Done.' : 'Error. Please check the logs.');
-							}
-						};
 						
-						fetch(ajaxurl, {
-							method: "POST",
-							headers: {
-								"Content-Type": "application/x-www-form-urlencoded"
-							},
-							body: new URLSearchParams({
-								action: "generate_ai_stories",
-								nonce: nonce
-							})
-						})
-						.then(response => {
-							if (!response.ok) {
-								return response.text().then(text => {
-									throw new Error(text)
-								});
-							}
-							return response.json();
-						})
-						.then(data => {
-							if (data.success) {
-								showNotice("Story generated successfully!", 'success');
-								// Refresh the page to show new posts
-								setTimeout(() => {
-									window.location.reload();
-								}, 2000);
-							} else {
-								const serverMsg = (data && data.data && (data.data.message || data.data.error)) || data.message || "Error generating stories. Please check the logs!";
-								showNotice(serverMsg, 'error');
-							}
-						})
-						.catch(error => {
-							console.error("Fetch error:", error);
-							const errMsg = (error && error.message) ? `Network error: ${error.message}` : 'Network error. Please try again.';
-							showNotice(errMsg, 'error');
-						})
-						.finally(() => {
-							this.disabled = false;
-							this.innerHTML = originalCaption;
-						});
+						// Check if button has validation enabled
+						const validateAccounts = this.getAttribute('data-validate-accounts') === 'true';
+						
+						if (validateAccounts) {
+							// First validate accounts before proceeding
+							validateAccountsBeforeGenerationPosts(this);
+						} else {
+							// Proceed with generation directly
+							proceedWithGenerationPosts(this);
+						}
 					});
+				}
+
+				function validateAccountsBeforeGenerationPosts(button) {
+					const originalCaption = button.innerHTML;
+					button.disabled = true;
+					button.innerHTML = '<span class="spinner" style="visibility: visible; float: none; margin: 0 5px 0 0;"></span>Checking accounts...';
+
+					const nonce = document.getElementById('aistma-posts-validate-accounts-nonce').value;
+					
+					fetch(ajaxurl, {
+						method: "POST",
+						headers: {
+							"Content-Type": "application/x-www-form-urlencoded"
+						},
+						body: new URLSearchParams({
+							action: "aistma_validate_accounts",
+							nonce: nonce
+						})
+					})
+					.then(response => response.json())
+					.then(data => {
+						if (data.success) {
+							// Setup is valid, proceed with generation
+							proceedWithGenerationPosts(button);
+						} else {
+							// Setup not valid, redirect to appropriate tab and show notice
+							const tab = data.data.tab;
+							const notice = data.data.notice;
+							
+							// Redirect to the appropriate tab first
+							const redirectUrl = `admin.php?page=aistma-settings&tab=${tab}&notice=${notice}`;
+							window.location.href = redirectUrl;
+						}
+					})
+					.catch(error => {
+						console.error("Account validation error:", error);
+						showNotice('Error validating accounts. Please try again.', 'error');
+						button.disabled = false;
+						button.innerHTML = originalCaption;
+					});
+				}
+
+				function proceedWithGenerationPosts(button) {
+					const originalCaption = button.innerHTML;
+					button.disabled = true;
+					button.innerHTML = '<span class="spinner" style="visibility: visible; float: none; margin: 0 5px 0 0;"></span>Generating... do not leave or close the page';
+
+					const nonce = document.getElementById('aistma-posts-generate-story-nonce').value;
+					
+					fetch(ajaxurl, {
+						method: "POST",
+						headers: {
+							"Content-Type": "application/x-www-form-urlencoded"
+						},
+						body: new URLSearchParams({
+							action: "generate_ai_stories",
+							nonce: nonce
+						})
+					})
+					.then(response => {
+						if (!response.ok) {
+							return response.text().then(text => {
+								throw new Error(text)
+							});
+						}
+						return response.json();
+					})
+					.then(data => {
+						if (data.success) {
+							showNotice("Story generated successfully!", 'success');
+							// Refresh the page to show new posts
+							setTimeout(() => {
+								window.location.reload();
+							}, 2000);
+						} else {
+							const serverMsg = (data && data.data && (data.data.message || data.data.error)) || data.message || "Error generating stories. Please check the logs!";
+							showNotice(serverMsg, 'error');
+						}
+					})
+					.catch(error => {
+						console.error("Fetch error:", error);
+						const errMsg = (error && error.message) ? `Network error: ${error.message}` : 'Network error. Please try again.';
+						showNotice(errMsg, 'error');
+					})
+					.finally(() => {
+						button.disabled = false;
+						button.innerHTML = originalCaption;
+					});
+				}
+
+				function showNotice(message, type) {
+					let messageDiv = document.getElementById('aistma-posts-notice');
+					if (messageDiv) {
+						messageDiv.className = `notice notice-${type} is-dismissible`;
+						messageDiv.style.display = 'block';
+						// Normalize and simplify common fatal error wording and strip HTML tags
+						const normalized = String(message || '')
+							.replace(/<[^>]*>/g, '')
+							.replace(/fatal\s+error:?/ig, 'Error')
+							.trim();
+						messageDiv.textContent = normalized || (type === 'success' ? 'Done.' : 'Error. Please check the logs.');
+					}
 				}
 			}
 		});
@@ -359,6 +442,7 @@ class AISTMA_Admin {
 		
 		// Register AJAX handlers
 		add_action( 'wp_ajax_aistma_publish_to_social_media', array( $this, 'ajax_publish_to_social_media' ) );
+		add_action( 'wp_ajax_aistma_validate_accounts', array( $this, 'ajax_validate_accounts' ) );
 		
 		// Register hooks for auto-publishing new posts
 		add_action( 'transition_post_status', array( $this, 'auto_publish_to_social_media' ), 10, 3 );
@@ -605,6 +689,12 @@ class AISTMA_Admin {
 			$message .= "\n\n" . $post->post_excerpt;
 		}
 		
+		// Add hashtags if enabled
+		$hashtags = $this->get_social_media_hashtags( $post );
+		if ( ! empty( $hashtags ) ) {
+			$message .= "\n\n" . $hashtags;
+		}
+		
 		$post_url = get_permalink( $post );
 
 		// Facebook Graph API endpoint
@@ -616,9 +706,19 @@ class AISTMA_Admin {
 			'access_token' => $account['credentials']['access_token']
 		);
 
+		// Log the Facebook API request details
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Conditional debug logging
+			error_log( sprintf( 'Facebook API request - URL: %s, Page ID: %s, Message length: %d', 
+				$api_url, 
+				$account['credentials']['page_id'], 
+				strlen( $message ) 
+			) );
+		}
+		
 		$response = wp_remote_post( $api_url, array(
 			'body' => $post_data,
-			'timeout' => 30,
+			'timeout' => 60, // Increased timeout to 60 seconds
 			'headers' => array(
 				'User-Agent' => 'AI Story Maker WordPress Plugin'
 			)
@@ -629,11 +729,12 @@ class AISTMA_Admin {
 			$this->aistma_log_manager->log( 
 				'error', 
 				sprintf( 
-					'Facebook API network error for post "%s" (ID: %d): %s (Account: %s)', 
+					'Facebook API network error for post "%s" (ID: %d): %s (Account: %s) with hashtags: %s', 
 					$post->post_title, 
 					$post->ID, 
-					$response->get_error_message(), 
-					$account['name'] 
+					$response->get_error_message(),
+					$account['name'],
+					$hashtags
 				) 
 			);
 			return array(
@@ -644,6 +745,17 @@ class AISTMA_Admin {
 
 		$response_code = wp_remote_retrieve_response_code( $response );
 		$response_body = wp_remote_retrieve_body( $response );
+		
+		// Log the Facebook API response details
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Conditional debug logging
+			error_log( sprintf( 'Facebook API response - Code: %d, Body length: %d, Body: %s', 
+				$response_code, 
+				strlen( $response_body ), 
+				substr( $response_body, 0, 500 ) // Log first 500 chars
+			) );
+		}
+		
 		$data = json_decode( $response_body, true );
 
 		if ( $response_code === 200 && isset( $data['id'] ) ) {
@@ -653,11 +765,12 @@ class AISTMA_Admin {
 			$this->aistma_log_manager->log( 
 				'info', 
 				sprintf( 
-					'Post "%s" (ID: %d) successfully published to Facebook account "%s" (Facebook Post ID: %s)', 
+					'Post "%s" (ID: %d) successfully published to Facebook account "%s" (Facebook Post ID: %s) with hashtags: %s', 
 					$post->post_title, 
 					$post->ID, 
 					$account['name'], 
-					$data['id'] 
+					$data['id'],
+					$hashtags
 				) 
 			);
 			
@@ -673,13 +786,14 @@ class AISTMA_Admin {
 			$this->aistma_log_manager->log( 
 				'error', 
 				sprintf( 
-					'Facebook API error for post "%s" (ID: %d): %s (HTTP %d) (Account: %s) (Response: %s)', 
+					'Facebook API error for post "%s" (ID: %d): %s (HTTP %d) (Account: %s) (Response: %s) with hashtags: %s', 
 					$post->post_title, 
 					$post->ID, 
 					$error_message, 
 					$response_code, 
 					$account['name'], 
-					$response_body 
+					$response_body,
+					$hashtags
 				) 
 			);
 			
@@ -688,6 +802,51 @@ class AISTMA_Admin {
 				'message' => $full_error
 			);
 		}
+	}
+
+	/**
+	 * Get hashtags for social media posting based on settings and post tags.
+	 *
+	 * @param WP_Post $post The post object.
+	 * @return string Formatted hashtags string.
+	 */
+	private function get_social_media_hashtags( $post ) {
+		$social_media_accounts = get_option( 'aistma_social_media_accounts', array( 'global_settings' => array() ) );
+		$global_settings = $social_media_accounts['global_settings'] ?? array();
+		
+		$hashtags = array();
+		
+		// Add default hashtags if set
+		if ( ! empty( $global_settings['default_hashtags'] ) ) {
+			$default_hashtags = trim( $global_settings['default_hashtags'] );
+			if ( ! empty( $default_hashtags ) ) {
+				// Split by spaces and clean up
+				$default_tags = array_filter( array_map( 'trim', explode( ' ', $default_hashtags ) ) );
+				foreach ( $default_tags as $tag ) {
+					// Ensure hashtag starts with #
+					if ( ! empty( $tag ) && $tag[0] !== '#' ) {
+						$tag = '#' . $tag;
+					}
+					$hashtags[] = $tag;
+				}
+			}
+		}
+		
+		// Add post tags as hashtags if enabled
+		if ( ! empty( $global_settings['include_hashtags'] ) ) {
+			$post_tags = get_the_tags( $post->ID );
+			if ( $post_tags && ! is_wp_error( $post_tags ) ) {
+				foreach ( $post_tags as $tag ) {
+					// Convert tag name to hashtag format
+					$hashtag = '#' . str_replace( ' ', '', $tag->name );
+					$hashtags[] = $hashtag;
+				}
+			}
+		}
+		
+		// Remove duplicates and return
+		$hashtags = array_unique( $hashtags );
+		return ! empty( $hashtags ) ? implode( ' ', $hashtags ) : '';
 	}
 
 	/**
@@ -749,40 +908,125 @@ class AISTMA_Admin {
 	}
 
 	/**
+	 * Handle AJAX request to validate complete setup for story generation.
+	 */
+	public function ajax_validate_accounts() {
+		// Verify nonce for security
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'generate_story_nonce' ) ) {
+			wp_send_json_error( array( 'message' => 'Security check failed' ) );
+		}
+
+		// Check user capabilities
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
+		}
+
+		// Validate complete setup (accounts + prompts)
+		$validation = $this->validate_complete_setup_for_generation();
+
+		if ( $validation['valid'] ) {
+			wp_send_json_success( array(
+				'message' => $validation['message'],
+				'type' => $validation['type']
+			) );
+		} else {
+			wp_send_json_error( array(
+				'message' => $validation['message'],
+				'tab' => $validation['tab'],
+				'notice' => $validation['notice']
+			) );
+		}
+	}
+
+	/**
 	 * Handle AJAX request to publish post to social media.
 	 */
 	public function ajax_publish_to_social_media() {
+		// Set longer execution time for social media API calls
+		// This is necessary because social media APIs can be slow and may timeout
+		// phpcs:ignore Squiz.PHP.DiscouragedFunctions.Discouraged -- Required for social media API calls
+		set_time_limit( 120 ); // 2 minutes
+		
+		// Log the start of the request
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Conditional debug logging
+			error_log( sprintf( 'Social media publish request started - Post ID: %s, Account ID: %s', 
+				sanitize_text_field( wp_unslash( $_POST['post_id'] ?? 'unknown' ) ), 
+				sanitize_text_field( wp_unslash( $_POST['account_id'] ?? 'unknown' ) ) 
+			) );
+		}
+		
 		// Verify nonce for security
 		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'aistma_social_media_nonce' ) ) {
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Conditional debug logging
+				error_log( 'Social media publish failed: Security check failed' );
+			}
 			wp_send_json_error( array( 'message' => 'Security check failed' ) );
 		}
 
 		// Check user capabilities
 		if ( ! current_user_can( 'edit_posts' ) ) {
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Conditional debug logging
+				error_log( 'Social media publish failed: Insufficient permissions' );
+			}
 			wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
 		}
 
-		$post_id = intval( $_POST['post_id'] ?? 0 );
+		$post_id = intval( wp_unslash( $_POST['post_id'] ?? 0 ) );
 		$account_id = sanitize_text_field( wp_unslash( $_POST['account_id'] ?? '' ) );
 
 		if ( ! $post_id || ! $account_id ) {
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Conditional debug logging
+				error_log( sprintf( 'Social media publish failed: Missing parameters - Post ID: %s, Account ID: %s', $post_id, $account_id ) );
+			}
 			wp_send_json_error( array( 'message' => 'Missing required parameters' ) );
 		}
 
 		// Get the post
 		$post = get_post( $post_id );
 		if ( ! $post || $post->post_status !== 'publish' ) {
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Conditional debug logging
+				error_log( sprintf( 'Social media publish failed: Post not found or not published - Post ID: %s, Status: %s', $post_id, $post->post_status ?? 'unknown' ) );
+			}
 			wp_send_json_error( array( 'message' => 'Post not found or not published' ) );
 		}
 
 		// Get the social media account
 		$account = $this->get_social_media_account( $account_id );
 		if ( ! $account || ! $account['enabled'] ) {
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Conditional debug logging
+				error_log( sprintf( 'Social media publish failed: Account not found or disabled - Account ID: %s', $account_id ) );
+			}
 			wp_send_json_error( array( 'message' => 'Social media account not found or disabled' ) );
+		}
+
+		// Log the attempt
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Conditional debug logging
+			error_log( sprintf( 'Attempting to publish post "%s" (ID: %d) to %s account "%s"', 
+				$post->post_title, 
+				$post->ID, 
+				$account['platform'], 
+				$account['name'] 
+			) );
 		}
 
 		// Attempt to publish
 		$result = $this->publish_post_to_social_media( $post, $account );
+
+		// Log the result
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Conditional debug logging
+			error_log( sprintf( 'Social media publish result - Success: %s, Message: %s', 
+				$result['success'] ? 'true' : 'false', 
+				$result['message'] ?? 'No message' 
+			) );
+		}
 
 		if ( $result['success'] ) {
 			wp_send_json_success( array(
@@ -838,14 +1082,18 @@ class AISTMA_Admin {
 			return;
 		}
 
+		// Get hashtags for logging
+		$hashtags = $this->get_social_media_hashtags( $post );
+
 		// Log the auto-publish attempt
 		$this->aistma_log_manager->log( 
 			'info', 
 			sprintf( 
-				'Auto-publishing post "%s" (ID: %d) to %d social media accounts', 
+				'Auto-publishing post "%s" (ID: %d) to %d social media accounts with hashtags: %s', 
 				$post->post_title, 
 				$post->ID, 
-				count( $enabled_accounts ) 
+				count( $enabled_accounts ),
+				$hashtags
 			) 
 		);
 
@@ -857,27 +1105,191 @@ class AISTMA_Admin {
 				$this->aistma_log_manager->log( 
 					'info', 
 					sprintf( 
-						'Auto-published post "%s" (ID: %d) to %s account "%s"', 
+						'Auto-published post "%s" (ID: %d) to %s account "%s" with hashtags: %s', 
 						$post->post_title, 
 						$post->ID, 
 						$account['platform'], 
-						$account['name'] 
+						$account['name'],
+						$hashtags
 					) 
 				);
 			} else {
 				$this->aistma_log_manager->log( 
 					'error', 
 					sprintf( 
-						'Auto-publish failed for post "%s" (ID: %d) to %s account "%s": %s', 
+						'Auto-publish failed for post "%s" (ID: %d) to %s account "%s": %s with hashtags: %s', 
 						$post->post_title, 
 						$post->ID, 
 						$account['platform'], 
 						$account['name'],
-						$result['message']
+						$result['message'],
+						$hashtags
 					) 
 				);
 			}
 		}
+	}
+
+	/**
+	 * Check if user has valid subscription or API keys for story generation.
+	 *
+	 * @return array Validation result with 'valid' boolean and 'message' string.
+	 */
+	public function validate_accounts_for_generation() {
+		// Check subscription status first
+		try {
+			$subscription_status = $this->aistma_get_subscription_status();
+			if ( $subscription_status['valid'] ) {
+				return array(
+					'valid' => true,
+					'message' => __( 'Valid subscription found', 'ai-story-maker' ),
+					'type' => 'subscription'
+				);
+			}
+		} catch ( \Exception $e ) {
+			// Subscription check failed, continue to API key check
+		}
+
+		// Check if we have a valid OpenAI API key as fallback
+		$openai_api_key = get_option( 'aistma_openai_api_key' );
+		if ( ! empty( $openai_api_key ) ) {
+			return array(
+				'valid' => true,
+				'message' => __( 'OpenAI API key found', 'ai-story-maker' ),
+				'type' => 'api_key'
+			);
+		}
+
+		// No valid accounts found
+		return array(
+			'valid' => false,
+			'message' => __( 'No valid subscription or API keys found. Please set up your accounts before generating stories.', 'ai-story-maker' ),
+			'type' => 'none'
+		);
+	}
+
+	/**
+	 * Check if user has saved prompts for story generation.
+	 *
+	 * @return array Validation result with 'valid' boolean and 'message' string.
+	 */
+	public function validate_prompts_for_generation() {
+		$raw_settings = get_option( 'aistma_prompts', '' );
+		$settings = json_decode( $raw_settings, true );
+
+		// Check if the settings are valid JSON and have prompts
+		if ( JSON_ERROR_NONE !== json_last_error() || empty( $settings['prompts'] ) ) {
+			return array(
+				'valid' => false,
+				'message' => __( 'No prompts found. Please create and save prompts before generating stories.', 'ai-story-maker' ),
+				'type' => 'no_prompts'
+			);
+		}
+
+		// Check if there are any active prompts
+		$active_prompts = 0;
+		foreach ( $settings['prompts'] as $prompt ) {
+			if ( isset( $prompt['active'] ) && $prompt['active'] && ! empty( $prompt['text'] ) ) {
+				$active_prompts++;
+			}
+		}
+
+		if ( $active_prompts === 0 ) {
+			return array(
+				'valid' => false,
+				'message' => __( 'No active prompts found. Please activate at least one prompt before generating stories.', 'ai-story-maker' ),
+				'type' => 'no_active_prompts'
+			);
+		}
+
+		return array(
+			'valid' => true,
+			// translators: %d is the number of active prompts
+			'message' => sprintf( __( 'Found %d active prompts', 'ai-story-maker' ), $active_prompts ),
+			'type' => 'prompts_ok',
+			'count' => $active_prompts
+		);
+	}
+
+	/**
+	 * Complete validation for story generation (accounts + prompts).
+	 *
+	 * @return array Validation result with 'valid' boolean and 'message' string.
+	 */
+	public function validate_complete_setup_for_generation() {
+		// First check accounts
+		$account_validation = $this->validate_accounts_for_generation();
+		if ( ! $account_validation['valid'] ) {
+			return array(
+				'valid' => false,
+				'message' => $account_validation['message'],
+				'type' => 'accounts_required',
+				'tab' => self::TAB_AI_WRITER,
+				'notice' => 'accounts_required'
+			);
+		}
+
+		// Then check prompts
+		$prompt_validation = $this->validate_prompts_for_generation();
+		if ( ! $prompt_validation['valid'] ) {
+			return array(
+				'valid' => false,
+				'message' => $prompt_validation['message'],
+				'type' => 'prompts_required',
+				'tab' => self::TAB_PROMPTS,
+				'notice' => 'prompts_required'
+			);
+		}
+
+		// Both validations passed
+		return array(
+			'valid' => true,
+			'message' => $account_validation['message'] . '. ' . $prompt_validation['message'],
+			'type' => 'complete_setup'
+		);
+	}
+
+	/**
+	 * Get subscription status (helper method).
+	 *
+	 * @return array Subscription status information.
+	 */
+	private function aistma_get_subscription_status() {
+		// This method should be implemented based on your subscription checking logic
+		// For now, we'll use a simplified version
+		$master_url = defined( 'AISTMA_MASTER_URL' ) ? AISTMA_MASTER_URL : '';
+		if ( empty( $master_url ) ) {
+			return array( 'valid' => false, 'error' => 'Master URL not configured' );
+		}
+
+		$current_domain = sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? '' ) );
+		if ( empty( $current_domain ) ) {
+			return array( 'valid' => false, 'error' => 'Domain not detected' );
+		}
+
+		// Make API call to check subscription status
+		$response = wp_remote_get( 
+			$master_url . 'wp-json/exaig/v1/verify-subscription?domain=' . urlencode( $current_domain ),
+			array( 'timeout' => 10 )
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return array( 'valid' => false, 'error' => 'API request failed: ' . $response->get_error_message() );
+		}
+
+		$body = wp_remote_retrieve_body( $response );
+		$data = json_decode( $body, true );
+
+		if ( isset( $data['valid'] ) && $data['valid'] ) {
+			return array(
+				'valid' => true,
+				'domain' => $current_domain,
+				'package_name' => $data['package_name'] ?? 'Unknown',
+				'package_id' => $data['package_id'] ?? null
+			);
+		}
+
+		return array( 'valid' => false, 'error' => 'No valid subscription found' );
 	}
 
 	/**

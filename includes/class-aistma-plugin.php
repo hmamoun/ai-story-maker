@@ -114,7 +114,7 @@ class AISTMA_Plugin {
 		}
 
 		if ( ! wp_next_scheduled( 'aistma_generate_story_event' ) ) {
-			$n = absint( get_option( 'aistma_generate_story_cron' ) );
+			$n = absint( get_option( 'aistma_generate_story_cron', 2 ) );
 			if ( 0 !== $n ) {
 				$next_schedule_timestamp = time() + $n * DAY_IN_SECONDS;
 				wp_schedule_event( $next_schedule_timestamp, 'daily', 'aistma_generate_story_event' );

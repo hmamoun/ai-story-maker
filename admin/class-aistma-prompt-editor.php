@@ -44,6 +44,148 @@ class AISTMA_Prompt_Editor {
 	}
 
 	/**
+	 * Validate prompts data before saving.
+	 *
+	 * @param array $data The prompts data to validate.
+	 * @return array Validation result with 'valid' boolean and 'message' string.
+	 */
+	private function validate_prompts_data( $data ) {
+		// Check if prompts array exists
+		if ( ! isset( $data['prompts'] ) || ! is_array( $data['prompts'] ) ) {
+			return array(
+				'valid' => true, // Allow saving with no prompts
+				'message' => __( 'No prompts to validate', 'ai-story-maker' )
+			);
+		}
+
+		// Check each prompt - if it has any changes (active, category, photos, auto_publish), it must have text
+		foreach ( $data['prompts'] as $index => $prompt ) {
+			// Check if prompt has any meaningful changes (not just empty text)
+			$has_changes = false;
+			
+			// Check if prompt is marked as active
+			if ( isset( $prompt['active'] ) && $prompt['active'] ) {
+				$has_changes = true;
+			}
+			
+			// Check if prompt has a category selected
+			if ( isset( $prompt['category'] ) && ! empty( trim( $prompt['category'] ) ) ) {
+				$has_changes = true;
+			}
+			
+			// Check if prompt has photos configured
+			if ( isset( $prompt['photos'] ) && $prompt['photos'] > 0 ) {
+				$has_changes = true;
+			}
+			
+			// Check if prompt has auto_publish enabled
+			if ( isset( $prompt['auto_publish'] ) && $prompt['auto_publish'] ) {
+				$has_changes = true;
+			}
+			
+			// If prompt has changes but no text content, it's invalid
+			if ( $has_changes && ( ! isset( $prompt['text'] ) || empty( trim( $prompt['text'] ) ) ) ) {
+				return array(
+					'valid' => false,
+					'message' => sprintf( 
+						// translators: %d is the prompt number (1-based index)
+						__( 'Prompt #%d has settings configured but no text content. Please provide text content or remove the settings.', 'ai-story-maker' ), 
+						$index + 1 
+					)
+				);
+			}
+		}
+
+		return array(
+			'valid' => true,
+			'message' => __( 'Validation passed', 'ai-story-maker' )
+		);
+	}
+
+	/**
+	 * Sanitize and escape prompt data for JSON storage.
+	 *
+	 * @param array $data The prompts data to sanitize.
+	 * @return array Sanitized prompts data.
+	 */
+	private function sanitize_prompts_data( $data ) {
+		if ( ! is_array( $data ) ) {
+			return array();
+		}
+
+		// Sanitize default_settings
+		if ( isset( $data['default_settings'] ) && is_array( $data['default_settings'] ) ) {
+			foreach ( $data['default_settings'] as $key => $value ) {
+				// Sanitize text content and escape special characters
+				$data['default_settings'][ $key ] = $this->sanitize_text_for_json( $value );
+			}
+		}
+
+		// Sanitize prompts array
+		if ( isset( $data['prompts'] ) && is_array( $data['prompts'] ) ) {
+			foreach ( $data['prompts'] as $index => $prompt ) {
+				if ( is_array( $prompt ) ) {
+					// Sanitize text field (main prompt content)
+					if ( isset( $prompt['text'] ) ) {
+						$data['prompts'][ $index ]['text'] = $this->sanitize_text_for_json( $prompt['text'] );
+					}
+
+					// Sanitize category field
+					if ( isset( $prompt['category'] ) ) {
+						$data['prompts'][ $index ]['category'] = sanitize_text_field( $prompt['category'] );
+					}
+
+					// Sanitize numeric fields
+					if ( isset( $prompt['photos'] ) ) {
+						$data['prompts'][ $index ]['photos'] = absint( $prompt['photos'] );
+					}
+
+					// Sanitize boolean fields
+					if ( isset( $prompt['active'] ) ) {
+						$data['prompts'][ $index ]['active'] = (bool) $prompt['active'];
+					}
+
+					if ( isset( $prompt['auto_publish'] ) ) {
+						$data['prompts'][ $index ]['auto_publish'] = (bool) $prompt['auto_publish'];
+					}
+
+					// Sanitize prompt_id
+					if ( isset( $prompt['prompt_id'] ) ) {
+						$data['prompts'][ $index ]['prompt_id'] = sanitize_text_field( $prompt['prompt_id'] );
+					}
+				}
+			}
+		}
+
+		return $data;
+	}
+
+	/**
+	 * Sanitize text content for JSON storage.
+	 *
+	 * @param string $text The text to sanitize.
+	 * @return string Sanitized text.
+	 */
+	private function sanitize_text_for_json( $text ) {
+		if ( ! is_string( $text ) ) {
+			return '';
+		}
+
+		// First sanitize the text content
+		$text = sanitize_textarea_field( $text );
+
+		// Normalize whitespace but preserve line breaks for better readability
+		$text = preg_replace( '/[ \t]+/', ' ', $text ); // Normalize spaces and tabs
+		$text = preg_replace( '/\r\n|\r|\n/', "\n", $text ); // Normalize line endings to \n
+		$text = trim( $text ); // Remove leading/trailing whitespace
+
+		// Don't escape JSON characters here - let wp_json_encode handle it properly
+		// This prevents double-escaping and maintains proper JSON structure
+		
+		return $text;
+	}
+
+	/**
 	 * Renders the Prompt Editor admin page.
 	 *
 	 * This method handles form submission, sanitizes and updates prompt settings,
@@ -58,6 +200,9 @@ class AISTMA_Prompt_Editor {
 
 			$raw_prompts_input = isset( $_POST['prompts'] ) ? sanitize_textarea_field( wp_unslash( $_POST['prompts'] ) ) : '';
 			$updated_prompts   = $raw_prompts_input ? json_decode( $raw_prompts_input, true ) : array();
+
+			// Get system_content from form if provided
+			$system_content = isset( $_POST['system_content'] ) ? sanitize_textarea_field( wp_unslash( $_POST['system_content'] ) ) : '';
 
 			// Check for JSON decode errors
 			if ( json_last_error() !== JSON_ERROR_NONE ) {
@@ -82,20 +227,50 @@ class AISTMA_Prompt_Editor {
 				$updated_prompts['prompts'] = array();
 			}
 
-			// Preserve existing default_settings if not provided in the form
+			// Handle default_settings - prioritize form input over existing data
 			$existing_settings = get_option( 'aistma_prompts', '{}' );
 			$existing_data = json_decode( $existing_settings, true );
-			if ( is_array( $existing_data ) && isset( $existing_data['default_settings'] ) && empty( $updated_prompts['default_settings'] ) ) {
-				$updated_prompts['default_settings'] = $existing_data['default_settings'];
+			
+			// Initialize default_settings
+			if ( ! isset( $updated_prompts['default_settings'] ) ) {
+				$updated_prompts['default_settings'] = array();
+			}
+			
+			// Use system_content from form if provided, otherwise use existing or default
+			if ( ! empty( $system_content ) ) {
+				$updated_prompts['default_settings']['system_content'] = $system_content;
+			} elseif ( ! isset( $updated_prompts['default_settings']['system_content'] ) ) {
+				// Use existing system_content if available
+				if ( is_array( $existing_data ) && isset( $existing_data['default_settings']['system_content'] ) ) {
+					$updated_prompts['default_settings']['system_content'] = $existing_data['default_settings']['system_content'];
+				} else {
+					// Use default system_content
+					$updated_prompts['default_settings']['system_content'] = 'Write clearly and engagingly, keeping it simple and accurate — only add details when requested.';
+				}
 			}
 
-			update_option( 'aistma_prompts', wp_json_encode( $updated_prompts ) );
+			// Sanitize the data before validation and saving
+			$updated_prompts = $this->sanitize_prompts_data( $updated_prompts );
 
-			echo '<div id="aistma-notice" class="notice notice-info"><p>✅ ' .
-			esc_html__( 'Prompts saved successfully!', 'ai-story-maker' ) .
-			'</p></div>';
+			// Validate before saving
+			$validation_result = $this->validate_prompts_data( $updated_prompts );
+			if ( ! $validation_result['valid'] ) {
+				echo '<div id="aistma-notice" class="notice notice-error"><p>❌ ' .
+				esc_html__( 'Validation Error: ', 'ai-story-maker' ) . esc_html( $validation_result['message'] ) .
+				'</p></div>';
+				
+				$this->aistma_log_manager->log( 'error', 'Validation failed: ' . $validation_result['message'] );
+				// Don't return here, continue to render the form with the data
+			} else {
+				// Use wp_json_encode for proper JSON encoding with escaping
+				update_option( 'aistma_prompts', wp_json_encode( $updated_prompts ) );
 
-			$this->aistma_log_manager->log( 'info', 'Prompts saved successfully.' );
+				echo '<div id="aistma-notice" class="notice notice-info"><p>✅ ' .
+				esc_html__( 'Prompts saved successfully!', 'ai-story-maker' ) .
+				'</p></div>';
+
+				$this->aistma_log_manager->log( 'info', 'Prompts saved successfully with sanitization applied.' );
+			}
 		}
 
 		// Prepare data for rendering.
@@ -123,10 +298,10 @@ class AISTMA_Prompt_Editor {
 
 		if ( count( $prompts ) === 0 ) {
 			$prompts[] = array(
-				'text'         => 'Write your first prompt here.. ',
+				'text'         => 'Write your prompt here.. ',
 				'category'     => '',
 				'photos'       => 0,
-				'active'       => false,
+				'active'       => true,
 				'auto_publish' => false,
 			);
 		}

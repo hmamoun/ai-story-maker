@@ -26,7 +26,7 @@ function aistma_enqueue_story_style() {
 		'all' // Media type.
 	);
 }
-aistma_enqueue_story_style();
+//aistma_enqueue_story_style();
 ?>
 <?php
 // Log the view early in the template lifecycle.

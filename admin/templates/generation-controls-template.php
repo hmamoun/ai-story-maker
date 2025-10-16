@@ -9,6 +9,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// Check if user has valid subscription or API keys
+$admin_instance = new \exedotcom\aistorymaker\AISTMA_Admin();
+$account_validation = $admin_instance->validate_accounts_for_generation();
+$has_valid_accounts = $account_validation['valid'];
+
+// Only show generation controls if user has valid accounts
+if ( $has_valid_accounts ) :
 ?>
 <div class="aistma-generation-controls" style="margin-top:20px;">
 	<?php
@@ -20,10 +27,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 	?>
 
 	<input type="hidden" id="generate-story-nonce" value="<?php echo esc_attr( wp_create_nonce( 'generate_story_nonce' ) ); ?>">
+	<input type="hidden" id="validate-accounts-nonce" value="<?php echo esc_attr( wp_create_nonce( 'generate_story_nonce' ) ); ?>">
 	<button
 		id="aistma-generate-stories-button"
 		class="button button-primary"
 		<?php echo esc_attr( $button_disabled ); ?>
+		data-validate-accounts="true"
 	>
 		<?php echo esc_html( $button_text ); ?>
 	</button>
@@ -67,7 +76,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	$next_event    = wp_next_scheduled( 'aistma_generate_story_event' );
 	$is_generating = get_transient( 'aistma_generating_lock' );
 
-	if ( $next_event ) {
+		if ( $next_event ) {
 		$time_diff = $next_event - time();
 		$days      = floor( $time_diff / ( 60 * 60 * 24 ) );
 		$hours     = floor( ( $time_diff % ( 60 * 60 * 24 ) ) / ( 60 * 60 ) );
@@ -86,16 +95,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</strong>
 		</div>
 		<?php
-	} else {
-		?>
-		<div class="notice notice-warning" style="margin-top:10px;">
-			<strong>
-				<?php esc_html_e( 'No scheduled story generation found.', 'ai-story-maker' ); ?>
-			</strong>
-		</div>
-		<?php
 	}
 	?>
 </div>
 
+<?php endif; // End of conditional check for valid accounts ?>
 

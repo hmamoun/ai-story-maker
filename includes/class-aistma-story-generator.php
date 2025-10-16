@@ -127,7 +127,7 @@ class AISTMA_Story_Generator {
 			delete_transient( $lock_key );
 		}
 		// Always schedule the next run after execution.
-		$n = absint( get_option( 'aistma_generate_story_cron' ) );
+		$n = absint( get_option( 'aistma_generate_story_cron', 2 ) );
 		if ( 0 !== $n ) {
 			$next_schedule = time() + $n * DAY_IN_SECONDS;
 			wp_schedule_single_event( $next_schedule, 'aistma_generate_story_event' );
@@ -255,7 +255,7 @@ class AISTMA_Story_Generator {
 		}
 
 		// Schedule after generate.
-		$n = absint( get_option( 'aistma_generate_story_cron' ) );
+		$n = absint( get_option( 'aistma_generate_story_cron', 2 ) );
 		if ( 0 !== $n ) {
 			// Cancel the current schedule.
 			wp_clear_scheduled_hook( 'aistma_generate_story_event' );
@@ -959,7 +959,7 @@ class AISTMA_Story_Generator {
 		$next_event = wp_next_scheduled( 'aistma_generate_story_event' );
 
 		if ( ! $next_event ) {
-			$n = absint( get_option( 'aistma_generate_story_cron' ) );
+			$n = absint( get_option( 'aistma_generate_story_cron', 2 ) );
 			if ( 0 !== $n ) {
 				$run_at = time() + $n * DAY_IN_SECONDS;
 				wp_schedule_single_event( $run_at, 'aistma_generate_story_event' );
@@ -979,7 +979,7 @@ class AISTMA_Story_Generator {
 			wp_unschedule_event( $timestamp, 'aistma_generate_story_event' );
 		}
 
-		$n = absint( get_option( 'aistma_generate_story_cron' ) );
+		$n = absint( get_option( 'aistma_generate_story_cron', 2 ) );
 		if ( 0 !== $n ) {
 			$run_at = time() + $n * DAY_IN_SECONDS;
 			wp_schedule_single_event( $run_at, 'aistma_generate_story_event' );

@@ -4,10 +4,10 @@ Tags: ai, content creation, blog automation, article generation, wordpress ai pl
 Requires at least: 5.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.1.0
+Stable tag: 2.1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
-Plugin URI: https://github.com/hmamoun/ai-story-maker
+Plugin URI: https://www.storymakerplugin.com/
 Author: Hayan Mamoun
 Author URI: https://exedotcom.ca
 
@@ -327,6 +327,28 @@ No additional personal user data is collected or stored.
 == Contributing ==
 
 We welcome contributions! Submit issues or pull requests via [GitHub](https://github.com/hmamoun/ai-story-maker).
+
+== Changelog ==
+
+= 2.1.1 =
+* **Security & Code Quality Improvements**
+  * Fixed all WordPress coding standards violations
+  * Enhanced input sanitization and nonce verification
+  * Improved debug logging with conditional WP_DEBUG checks
+  * Added proper translator comments for internationalization
+  * Removed hidden files and debug code from production
+* **Website Update**
+  * Updated plugin URI to official website: https://www.storymakerplugin.com/
+* **Bug Fixes**
+  * Resolved linting errors across all admin files
+  * Fixed set_time_limit() usage warnings with proper documentation
+  * Enhanced security for form data processing
+
+= 2.1.0 =
+* Initial release with core AI story generation features
+* Social media integration capabilities
+* Analytics dashboard and heatmap visualization
+* Prompt editor and subscription management
 
 == License ==
 

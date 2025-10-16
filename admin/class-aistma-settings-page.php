@@ -119,7 +119,7 @@ class AISTMA_Settings_Page {
 				break;
 			case 'aistma_generate_story_cron':
 				$interval = intval( $setting_value );
-				$n        = absint( get_option( 'aistma_generate_story_cron' ) );
+				$n        = absint( get_option( 'aistma_generate_story_cron', 2 ) );
 				if ( 0 === $interval ) {
 					wp_clear_scheduled_hook( 'aistma_generate_story_event' );
 				}

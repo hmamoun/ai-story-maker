@@ -155,7 +155,7 @@ if ( ! empty( $saved_subscription_email ) ) {
                 $next_billing_timestamp = isset( $next_billing_raw['date'] ) ? strtotime( $next_billing_raw['date'] ) : null;
             } elseif ( is_string( $next_billing_raw ) && $next_billing_raw !== '' ) {
                 $next_billing_timestamp = strtotime( $next_billing_raw );
-                $next_billing = $next_billing_timestamp ? gmdate( 'Y-M-d', $next_billing_timestamp ) : $next_billing_raw;
+                $next_billing = $next_billing_timestamp ? gmdate( 'M-d', $next_billing_timestamp ) : $next_billing_raw;
             }
             
             // Calculate time remaining until next billing
@@ -163,20 +163,25 @@ if ( ! empty( $saved_subscription_email ) ) {
                 $time_diff = $next_billing_timestamp - time();
                 $days = floor( $time_diff / ( 24 * 60 * 60 ) );
                 $hours = floor( ( $time_diff % ( 24 * 60 * 60 ) ) / ( 60 * 60 ) );
+                $minutes = floor( ( $time_diff % ( 60 * 60 ) ) / 60 );
                 
                 if ( $days > 0 ) {
+                    // Show only days when more than 1 day remaining
                     if ( $days === 1 ) {
                         $time_remaining = '1 day';
                     } else {
                         $time_remaining = $days . ' days';
                     }
-                    if ( $hours > 0 && $days < 7 ) { // Show hours only if less than a week
-                        $time_remaining .= ', ' . $hours . ' hour' . ( $hours === 1 ? '' : 's' );
-                    }
                 } elseif ( $hours > 0 ) {
+                    // Show only hours when less than 1 day but more than 1 hour
                     $time_remaining = $hours . ' hour' . ( $hours === 1 ? '' : 's' );
+                } elseif ( $minutes > 0 ) {
+                    // Show only minutes when less than 1 hour but more than 1 minute
+                    $time_remaining = $minutes . ' minute' . ( $minutes === 1 ? '' : 's' );
                 } else {
-                    $time_remaining = 'less than 1 hour';
+                    // Show seconds when less than 1 minute
+                    $seconds = $time_diff;
+                    $time_remaining = $seconds . ' second' . ( $seconds === 1 ? '' : 's' );
                 }
                 $time_remaining = ' (' . $time_remaining . ' remaining)';
             }
@@ -184,17 +189,17 @@ if ( ! empty( $saved_subscription_email ) ) {
             if ($credits_remaining === 0) {
                 $parts[] = "No credits remaining";
                 if ( $next_billing && 'N/A' !== $next_billing ) {
-                    $parts[] = 'Next billing: ' . $next_billing . $time_remaining;
+                    $parts[] = 'Renewal: ' . $next_billing . $time_remaining;
                 }
             } elseif ($credits_remaining === 1) {
                 $parts[] = "1 story remaining";
                 if ( $next_billing && 'N/A' !== $next_billing ) {
-                    $parts[] = 'Next billing: ' . $next_billing . $time_remaining;
+                    $parts[] = 'Renewal: ' . $next_billing . $time_remaining;
                 }
             } else {
-                $parts[] = sprintf("%d stories remaining", $credits_remaining);
+                $parts[] = sprintf("%d stories left", $credits_remaining);
                 if ( $next_billing && 'N/A' !== $next_billing ) {
-                    $parts[] = 'Next billing: ' . $next_billing . $time_remaining;
+                    $parts[] = 'Renewal: ' . $next_billing . $time_remaining;
                 }
             }
             if ( ! empty( $current_package_name ) ) {
@@ -289,7 +294,7 @@ if ( ! empty( $saved_subscription_email ) ) {
                             <div><strong>Credits:</strong> <?php echo esc_html( $subscription_info['credits_used'] ); ?> / <?php echo esc_html( $subscription_info['credits_total'] ); ?> used</div>
                         <?php endif; ?>
                         <?php if ( isset( $subscription_info['created_at'] ) ) : ?>
-                            <div><strong>Since:</strong> <?php echo esc_html( gmdate( 'M j, Y', strtotime( $subscription_info['created_at'] ) ) ); ?></div>
+                            <div><strong>Since:</strong> <?php echo esc_html( gmdate( 'M j', strtotime( $subscription_info['created_at'] ) ) ); ?></div>
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>

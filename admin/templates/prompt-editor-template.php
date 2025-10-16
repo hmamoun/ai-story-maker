@@ -21,8 +21,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<!-- Model selection hidden but still needed for JavaScript -->
 			<input type="hidden" name="model" id="model" value="<?php echo esc_attr( $data['default_settings']['model'] ?? 'gpt-4o-mini' ); ?>">
 			<div>
-				<label for="system_content"><?php esc_html_e( 'General Instructions', 'ai-story-maker' ); ?></label>
-				<textarea name="system_content" id="system_content" rows="5" style="width: 100%;"><?php echo esc_textarea( $data['default_settings']['system_content'] ?? '' ); ?></textarea>
+				<label for="system_content"><?php esc_html_e( 'General Instructions: this will set the general vibe of story writing', 'ai-story-maker' ); ?></label>
+				<textarea name="system_content" id="system_content" rows="5" style="width: 100%;"><?php echo esc_textarea( $data['default_settings']['system_content'] ?? 'Write clearly and engagingly, keeping it simple and accurate — only add details when requested.' ); ?></textarea>
 			</div>
 			<h2>Prompt List</h2>
 
@@ -31,13 +31,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<tr>
 					<th><?php esc_html_e( 'Prompt', 'ai-story-maker' ); ?></th>
 					<th width="10%">
-						<?php esc_html_e( 'Category *', 'ai-story-maker' ); ?>
+						<a href="<?php echo esc_url( admin_url( 'edit-tags.php?taxonomy=category' ) ); ?>" target="_blank"><?php esc_html_e( 'Category', 'ai-story-maker' ); ?></a>
 					</th>
 					<th width="5%">
-						<?php esc_html_e( 'Images **', 'ai-story-maker' ); ?>
+						<?php esc_html_e( 'Images', 'ai-story-maker' ); ?>
 					</th>
 					<th width="5%"><?php esc_html_e( 'Active', 'ai-story-maker' ); ?></th>
-					<th width="5%"><?php esc_html_e( 'Publish Post ***', 'ai-story-maker' ); ?></th>
+					<th width="10%"><?php esc_html_e( 'Auto Publish Post', 'ai-story-maker' ); ?></th>
 					<th width="10%"><?php esc_html_e( 'Actions', 'ai-story-maker' ); ?></th>
 				</tr>
 			</thead>
@@ -64,19 +64,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 							</select>
 						</td>
 						<td>
-							<input type="checkbox" class="toggle-active" data-field="active" <?php checked( $prompt['active'] ?? 0, '1' ); ?> />
+							<input type="checkbox" class="toggle-active" data-field="active" <?php checked( $prompt['active'] ?? 1, '1' ); ?> />
 						</td>
 						<td>
 							<input type="checkbox" class="toggle-active" data-field="auto_publish" <?php checked( $prompt['auto_publish'] ?? 0, '1' ); ?> />
 						</td>
 						<td>
-							<button class="delete-prompt button button-danger"><?php esc_html_e( 'Delete ****', 'ai-story-maker' ); ?></button>
+							<button class="delete-prompt button button-danger"><?php esc_html_e( 'Delete', 'ai-story-maker' ); ?></button>
 						</td>
 					</tr>
 				<?php endforeach; ?>
 				<tr>
 					<td colspan="6" style="text-align: right; padding: 20px;">
-						<button id="add-prompt" class="button button-primary"><?php esc_html_e( 'Add a new prompt ****', 'ai-story-maker' ); ?></button>
+						<button id="add-prompt" class="button button-primary"><?php esc_html_e( 'Add a new prompt', 'ai-story-maker' ); ?></button>
 					</td>
 				</tr>
 			</tbody>
@@ -89,16 +89,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 		</form>
 				<hr>
-	<div class="pre-generate-info">
-	<p>Please review your general settings and prompts below. When you're ready, click the button to launch the story generation process. Remember: the clearer and more detailed your prompt, the better the generated story will be.</p>
-	<p>* The dropdown list displays your WordPress post categories. You can manage them 
-	<small><a href="<?php echo esc_url( admin_url( 'edit-tags.php?taxonomy=category' ) ); ?>" target="_blank" style="text-decoration: none; color: #0073aa;"><?php esc_html_e( 'here', 'ai-story-maker' ); ?></a></small></p>
-	<p>** The module will attempt to fetch free images related to your story and include proper credits. However, the number of images per post is not guaranteed, as it depends on server load during generation.</p>
-	<p>*** If this checkbox is left unchecked, the post will be created as a draft.</p>
-	<p>**** Prompts must be saved after adding, deleting, or updating them for changes to take effect.</p>
-
-
-	</div>             
+    
 <?php // Generation controls moved to a reusable template included globally. ?>
 
 

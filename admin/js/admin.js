@@ -104,10 +104,10 @@ document.addEventListener("DOMContentLoaded", function() {
                     photosSelect.selectedIndex = 0;
                 }
                 
-                // 4. Uncheck active checkbox
+                // 4. Check active checkbox by default
                 const activeCheckbox = newRow.querySelector("[data-field='active'] input[type='checkbox']");
                 if (activeCheckbox) {
-                    activeCheckbox.checked = false;
+                    activeCheckbox.checked = true;
                     delete activeCheckbox.dataset.changed;
                 }
                 
@@ -173,7 +173,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 }
             });
 
-            promptsData.value = JSON.stringify(settings).replace(/\\"/g, '"');
+            promptsData.value = JSON.stringify(settings);
 
             // Allow the form to submit normally
             prompt_form.submit();
@@ -285,69 +285,125 @@ document.addEventListener("DOMContentLoaded", function() {
     if (document.getElementById("aistma-generate-stories-button"))
         document.getElementById("aistma-generate-stories-button").addEventListener("click", function(e) {
             e.preventDefault();
-            $originalCaption = this.innerHTML;
-            this.disabled = true;
-            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating... do not leave or close the page';
-
-            const nonce = document.getElementById("generate-story-nonce").value;
-            const showNotice = (message, type) => {
-                let messageDiv = document.getElementById("aistma-notice");
-                if (!messageDiv) {
-                    messageDiv = document.createElement('div');
-                    messageDiv.id = 'aistma-notice';
-                    const btn = document.getElementById('aistma-generate-stories-button');
-                    if (btn && btn.parentNode) {
-                        btn.insertAdjacentElement('afterend', messageDiv);
-                    } else {
-                        document.body.appendChild(messageDiv);
-                    }
-                }
-                messageDiv.className = `notice notice-${type} is-dismissible`;
-                messageDiv.style.display = 'block';
-                messageDiv.style.marginTop = '10px';
-                // Normalize and simplify common fatal error wording and strip HTML tags
-                const normalized = String(message || '')
-                    .replace(/<[^>]*>/g, '')
-                    .replace(/fatal\s+error:?/ig, 'Error')
-                    .trim();
-                messageDiv.textContent = normalized || (type === 'success' ? 'Done.' : 'Error. Please check the logs.');
-            };
-            fetch(ajaxurl, {
-                    method: "POST"
-                    , headers: {
-                        "Content-Type": "application/x-www-form-urlencoded"
-                    }
-                    , body: new URLSearchParams({
-                        action: "generate_ai_stories"
-                        , nonce: nonce
-                    })
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        return response.text().then(text => {
-                            throw new Error(text)
-                        });
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        showNotice("Story generated successfully!", 'success');
-                    } else {
-                        const serverMsg = (data && data.data && (data.data.message || data.data.error)) || data.message || "Error generating stories. Please check the logs!";
-                        showNotice(serverMsg, 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error("Fetch error:", error);
-                    const errMsg = (error && error.message) ? `Network error: ${error.message}` : 'Network error. Please try again.';
-                    showNotice(errMsg, 'error');
-                })
-                .finally(() => {
-                    this.disabled = false;
-                    this.innerHTML = $originalCaption;
-                });
+            
+            // Check if button has validation enabled
+            const validateAccounts = this.getAttribute('data-validate-accounts') === 'true';
+            
+            if (validateAccounts) {
+                // First validate accounts before proceeding
+                validateAccountsBeforeGeneration(this);
+            } else {
+                // Proceed with generation directly
+                proceedWithGeneration(this);
+            }
         });
+
+    function validateAccountsBeforeGeneration(button) {
+        const originalCaption = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Checking accounts...';
+
+        const nonce = document.getElementById("validate-accounts-nonce").value;
+        
+        fetch(ajaxurl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: new URLSearchParams({
+                action: "aistma_validate_accounts",
+                nonce: nonce
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Setup is valid, proceed with generation
+                proceedWithGeneration(button);
+            } else {
+                // Setup not valid, redirect to appropriate tab and show notice
+                const tab = data.data.tab;
+                const notice = data.data.notice;
+                
+                // Redirect to the appropriate tab first
+                const redirectUrl = `admin.php?page=aistma-settings&tab=${tab}&notice=${notice}`;
+                window.location.href = redirectUrl;
+            }
+        })
+        .catch(error => {
+            console.error("Account validation error:", error);
+            showNotice('Error validating accounts. Please try again.', 'error');
+            button.disabled = false;
+            button.innerHTML = originalCaption;
+        });
+    }
+
+    function proceedWithGeneration(button) {
+        const originalCaption = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating... do not leave or close the page';
+
+        const nonce = document.getElementById("generate-story-nonce").value;
+        
+        fetch(ajaxurl, {
+                method: "POST"
+                , headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }
+                , body: new URLSearchParams({
+                    action: "generate_ai_stories"
+                    , nonce: nonce
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(text)
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    showNotice("Story generated successfully!", 'success');
+                } else {
+                    const serverMsg = (data && data.data && (data.data.message || data.data.error)) || data.message || "Error generating stories. Please check the logs!";
+                    showNotice(serverMsg, 'error');
+                }
+            })
+            .catch(error => {
+                console.error("Fetch error:", error);
+                const errMsg = (error && error.message) ? `Network error: ${error.message}` : 'Network error. Please try again.';
+                showNotice(errMsg, 'error');
+            })
+            .finally(() => {
+                button.disabled = false;
+                button.innerHTML = originalCaption;
+            });
+    }
+
+    function showNotice(message, type) {
+        let messageDiv = document.getElementById("aistma-notice");
+        if (!messageDiv) {
+            messageDiv = document.createElement('div');
+            messageDiv.id = 'aistma-notice';
+            const btn = document.getElementById('aistma-generate-stories-button');
+            if (btn && btn.parentNode) {
+                btn.insertAdjacentElement('afterend', messageDiv);
+            } else {
+                document.body.appendChild(messageDiv);
+            }
+        }
+        messageDiv.className = `notice notice-${type} is-dismissible`;
+        messageDiv.style.display = 'block';
+        messageDiv.style.marginTop = '10px';
+        // Normalize and simplify common fatal error wording and strip HTML tags
+        const normalized = String(message || '')
+            .replace(/<[^>]*>/g, '')
+            .replace(/fatal\s+error:?/ig, 'Error')
+            .trim();
+        messageDiv.textContent = normalized || (type === 'success' ? 'Done.' : 'Error. Please check the logs.');
+    }
 
 // Enhanced Tab Switching Functionality
 document.addEventListener('DOMContentLoaded', function() {
@@ -609,10 +665,24 @@ document.addEventListener('DOMContentLoaded', function() {
             
             fetch(ajaxUrl, {
                 method: 'POST',
-                body: formData
+                body: formData,
+                timeout: 60000 // 60 second timeout
             })
-            .then(response => response.json())
+            .then(response => {
+                // Check if response is ok
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                // Try to parse JSON
+                return response.json().catch(jsonError => {
+                    console.error('JSON parsing error:', jsonError);
+                    throw new Error('Invalid response format from server');
+                });
+            })
             .then(data => {
+                console.log('Publishing response:', data); // Debug log
+                
                 if (data.success) {
                     // Show success message
                     const message = data.data.message || `Successfully published to ${platform}`;
@@ -623,7 +693,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     button.style.color = '#28a745';
                 } else {
                     // Show error message
-                    const message = data.data.message || 'Failed to publish to social media';
+                    const message = data.data?.message || 'Failed to publish to social media';
                     alert('Error: ' + message);
                     
                     // Reset button
@@ -633,8 +703,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             })
             .catch(error => {
-                console.error('Publishing error:', error);
-                alert('Network error occurred while publishing');
+                console.error('Publishing error details:', error);
+                
+                // More specific error messages
+                let errorMessage = 'Network error occurred while publishing';
+                if (error.message.includes('HTTP')) {
+                    errorMessage = `Server error: ${error.message}`;
+                } else if (error.message.includes('timeout')) {
+                    errorMessage = 'Request timed out - the post may still be publishing';
+                } else if (error.message.includes('Invalid response')) {
+                    errorMessage = 'Server returned invalid response - check if post was published';
+                }
+                
+                alert(errorMessage);
                 
                 // Reset button
                 button.textContent = originalText;

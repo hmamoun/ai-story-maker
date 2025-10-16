@@ -9,7 +9,6 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
-
 ?>
 <div class="wrap">
 	<div class="aistma-style-settings">
@@ -39,7 +38,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 			<select id="aistma_generate_story_cron" data-setting="aistma_generate_story_cron">
 				<?php for ( $i = 0; $i <= 30; $i++ ) : ?>
-					<option value="<?php echo esc_attr( $i ); ?>" <?php selected( get_option( 'aistma_generate_story_cron' ), $i ); ?>>
+					<option value="<?php echo esc_attr( $i ); ?>" <?php selected( get_option( 'aistma_generate_story_cron', 2 ), $i ); ?>>
 						<?php echo esc_attr( $i ); ?> <?php esc_html_e( 'Day(s)', 'ai-story-maker' ); ?>
 					</option>
 				<?php endfor; ?>
