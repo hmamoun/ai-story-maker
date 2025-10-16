@@ -1007,9 +1007,11 @@ class AISTMA_Story_Generator {
 		// Get master URL from WordPress constant
 		
 		if ( empty( $master_url ) ) {
+			$this->aistma_log_manager->log( 'error', 'API Gateway URL not configured' );
 			$this->subscription_status = array(
 				'valid' => false,
 				'domain' => $domain,
+				'error' => 'API Gateway URL not configured',
 			);
 			return $this->subscription_status;
 		}
@@ -1017,10 +1019,14 @@ class AISTMA_Story_Generator {
 		// Make API call to master server to check subscription status
 		$api_url = trailingslashit( $master_url ) . 'wp-json/exaig/v1/verify-subscription?domain=' . urlencode( $domain );
 		
+		$this->aistma_log_manager->log( 'info', 'Checking subscription status for domain: ' . $domain . ' at URL: ' . $api_url );
+		
 		$response = wp_remote_get( $api_url, array(
 			'timeout' => 30,
 			'headers' => array(
 				'User-Agent' => 'AI-Story-Maker/1.0',
+				'X-Caller-Url' => home_url(),
+				'X-Caller-IP' => isset( $_SERVER['SERVER_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SERVER_ADDR'] ) ) : '',
 			),
 		) );
 
@@ -1037,10 +1043,13 @@ class AISTMA_Story_Generator {
 
 		$response_code = wp_remote_retrieve_response_code( $response );
 		$response_body = wp_remote_retrieve_body( $response );
+		
+		$this->aistma_log_manager->log( 'info', 'Subscription API response code: ' . $response_code . ', body: ' . substr( $response_body, 0, 500 ) );
+		
 		$data = json_decode( $response_body, true );
 
 		if ( $response_code !== 200 ) {
-			$this->aistma_log_manager->log( 'error', 'API error checking subscription status. Response code: ' . $response_code );
+			$this->aistma_log_manager->log( 'error', 'API error checking subscription status. Response code: ' . $response_code . ', Body: ' . $response_body );
 			$this->subscription_status = array(
 				'valid' => false,
 				'error' => 'API error: HTTP ' . $response_code,
@@ -1050,7 +1059,7 @@ class AISTMA_Story_Generator {
 		}
 
 		if ( json_last_error() !== JSON_ERROR_NONE ) {
-			$this->aistma_log_manager->log( 'error', 'Invalid JSON response from subscription API' );
+			$this->aistma_log_manager->log( 'error', 'Invalid JSON response from subscription API. Body: ' . $response_body );
 			$this->subscription_status = array(
 				'valid' => false,
 				'error' => 'Invalid JSON response',
@@ -1060,6 +1069,7 @@ class AISTMA_Story_Generator {
 		}
 		// if valid but status is "active_no_credits" then set the status to false and set the message to "No credits remaining"
 		if ( isset( $data['valid'] ) && $data['valid'] && isset( $data['status'] ) && $data['status'] === 'active_no_credits' ) {
+			$this->aistma_log_manager->log( 'info', 'Subscription valid but no credits remaining for domain: ' . $domain );
 			$this->subscription_status = array(
 				'valid' => false,
 				'message' => 'No credits remaining',
@@ -1080,7 +1090,7 @@ class AISTMA_Story_Generator {
 				'next_billing_date' => $data['next_billing_date'] ?? '',
 			);
 		} else {
-			//$this->aistma_log_manager->log( 'info', 'No active subscription found for domain: ' . $domain );
+			$this->aistma_log_manager->log( 'info', 'No active subscription found for domain: ' . $domain . ', message: ' . ( $data['message'] ?? 'No message' ) );
 			$this->subscription_status = array(
 				'valid' => false,
 				'message' => $data['message'] ?? 'No subscription found',

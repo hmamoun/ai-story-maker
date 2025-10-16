@@ -1146,8 +1146,26 @@ class AISTMA_Admin {
 					'type' => 'subscription'
 				);
 			}
+			
+			// If subscription check failed but we have an error message, log it for debugging
+			if ( isset( $subscription_status['error'] ) ) {
+				$this->aistma_log_manager->log( 'warning', 'Subscription validation failed: ' . $subscription_status['error'] );
+			}
+			
+			// Try fallback: check if UI shows active subscription (packages-summary endpoint)
+			$fallback_check = $this->check_subscription_via_packages_api();
+			if ( $fallback_check['valid'] ) {
+				$this->aistma_log_manager->log( 'info', 'Subscription validated via packages API fallback' );
+				return array(
+					'valid' => true,
+					'message' => __( 'Valid subscription found (via packages API)', 'ai-story-maker' ),
+					'type' => 'subscription'
+				);
+			}
+			
 		} catch ( \Exception $e ) {
-			// Subscription check failed, continue to API key check
+			// Subscription check failed, log the exception and continue to API key check
+			$this->aistma_log_manager->log( 'warning', 'Subscription check exception: ' . $e->getMessage() );
 		}
 
 		// Check if we have a valid OpenAI API key as fallback
@@ -1250,46 +1268,59 @@ class AISTMA_Admin {
 	}
 
 	/**
+	 * Fallback method to check subscription via packages API (same as UI).
+	 *
+	 * @return array Validation result.
+	 */
+	private function check_subscription_via_packages_api() {
+		try {
+			$settings_page = AISTMA_Settings_Page::get_instance();
+			$response_body = $settings_page->aistma_get_available_packages();
+			
+			// Parse the response similar to how the UI does it
+			$decoded_wrapper = json_decode( $response_body, true );
+			if ( json_last_error() === JSON_ERROR_NONE && is_array( $decoded_wrapper ) && isset( $decoded_wrapper['body'] ) ) {
+				$packages_json = is_string( $decoded_wrapper['body'] ) ? $decoded_wrapper['body'] : json_encode( $decoded_wrapper['body'] );
+			} else {
+				$packages_json = $response_body;
+			}
+
+			$packages = json_decode( $packages_json, true );
+			if ( json_last_error() !== JSON_ERROR_NONE || ! is_array( $packages ) ) {
+				return array( 'valid' => false, 'error' => 'Invalid packages response' );
+			}
+
+			// Check if any package shows an active subscription
+			foreach ( $packages as $package ) {
+				if ( is_array( $package ) && isset( $package['subscription_status'] ) && isset( $package['subscription_info'] ) ) {
+					$subscription_info = $package['subscription_info'];
+					// Check if subscription is active and has credits
+					if ( isset( $subscription_info['credits_total'] ) && isset( $subscription_info['credits_used'] ) ) {
+						$credits_remaining = $subscription_info['credits_total'] - $subscription_info['credits_used'];
+						if ( $credits_remaining > 0 ) {
+							$this->aistma_log_manager->log( 'info', 'Active subscription found via packages API: ' . $credits_remaining . ' credits remaining' );
+							return array( 'valid' => true, 'credits_remaining' => $credits_remaining );
+						}
+					}
+				}
+			}
+			
+			return array( 'valid' => false, 'error' => 'No active subscription found in packages API' );
+		} catch ( \Exception $e ) {
+			$this->aistma_log_manager->log( 'error', 'Error checking subscription via packages API: ' . $e->getMessage() );
+			return array( 'valid' => false, 'error' => 'Packages API check failed: ' . $e->getMessage() );
+		}
+	}
+
+	/**
 	 * Get subscription status (helper method).
 	 *
 	 * @return array Subscription status information.
 	 */
 	private function aistma_get_subscription_status() {
-		// This method should be implemented based on your subscription checking logic
-		// For now, we'll use a simplified version
-		$master_url = defined( 'AISTMA_MASTER_URL' ) ? AISTMA_MASTER_URL : '';
-		if ( empty( $master_url ) ) {
-			return array( 'valid' => false, 'error' => 'Master URL not configured' );
-		}
-
-		$current_domain = sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? '' ) );
-		if ( empty( $current_domain ) ) {
-			return array( 'valid' => false, 'error' => 'Domain not detected' );
-		}
-
-		// Make API call to check subscription status
-		$response = wp_remote_get( 
-			$master_url . 'wp-json/exaig/v1/verify-subscription?domain=' . urlencode( $current_domain ),
-			array( 'timeout' => 10 )
-		);
-
-		if ( is_wp_error( $response ) ) {
-			return array( 'valid' => false, 'error' => 'API request failed: ' . $response->get_error_message() );
-		}
-
-		$body = wp_remote_retrieve_body( $response );
-		$data = json_decode( $body, true );
-
-		if ( isset( $data['valid'] ) && $data['valid'] ) {
-			return array(
-				'valid' => true,
-				'domain' => $current_domain,
-				'package_name' => $data['package_name'] ?? 'Unknown',
-				'package_id' => $data['package_id'] ?? null
-			);
-		}
-
-		return array( 'valid' => false, 'error' => 'No valid subscription found' );
+		// Use the story generator's subscription status method
+		$story_generator = new AISTMA_Story_Generator();
+		return $story_generator->aistma_get_subscription_status();
 	}
 
 	/**
