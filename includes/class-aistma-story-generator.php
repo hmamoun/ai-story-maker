@@ -576,6 +576,27 @@ class AISTMA_Story_Generator {
 			update_post_meta( $post_id, 'ai_story_maker_total_tokens', $total_tokens ?? 'N/A' );
 			update_post_meta( $post_id, 'ai_story_maker_request_id', $request_id ?? 'N/A' );
 			update_post_meta( $post_id, 'ai_story_maker_generated_via', 'master_api' );
+			
+			// Add enhancement tracking meta data
+			$package_name = isset( $data['package_name'] ) ? sanitize_text_field( $data['package_name'] ) : '';
+			if ( ! empty( $package_name ) ) {
+				// Get package ID from name (this assumes packages are stored with sequential IDs)
+				$package_id = $this->get_package_id_by_name( $package_name );
+				if ( $package_id !== false ) {
+					$enhancement_limit = $this->get_package_enhancement_limit( $package_id );
+					update_post_meta( $post_id, 'ai_story_maker_package_id', $package_id );
+					update_post_meta( $post_id, 'ai_story_maker_enhancements_limit', $enhancement_limit );
+					update_post_meta( $post_id, 'ai_story_maker_enhancements_history', wp_json_encode( [] ) );
+					
+					// Debug logging
+					$this->aistma_log_manager->log( 'info', 'Enhancement meta added to post ' . $post_id . ': package_name=' . $package_name . ', package_id=' . $package_id . ', limit=' . $enhancement_limit );
+				} else {
+					$this->aistma_log_manager->log( 'warning', 'Could not find package ID for package name: ' . $package_name );
+				}
+			} else {
+				$this->aistma_log_manager->log( 'warning', 'No package_name found in Master API response for post ' . $post_id );
+			}
+			
 			// $this->aistma_log_manager->log( 'success', 'AI-generated news article created via Master API: ' . get_permalink( $post_id ), $request_id );
 		}
 
@@ -675,6 +696,21 @@ class AISTMA_Story_Generator {
 			update_post_meta( $post_id, 'ai_story_maker_total_tokens', $total_tokens ?? 'N/A' );
 			update_post_meta( $post_id, 'ai_story_maker_request_id', $request_id ?? 'N/A' );
 			update_post_meta( $post_id, 'ai_story_maker_generated_via', 'openai_api' );
+			
+			// Add enhancement tracking meta data for OpenAI API generated posts
+			// For OpenAI API posts, we'll use a default package or get from subscription
+			$subscription_info = $this->get_subscription_info();
+			$package_name = $subscription_info['package_name'] ?? '';
+			if ( ! empty( $package_name ) ) {
+				$package_id = $this->get_package_id_by_name( $package_name );
+				if ( $package_id !== false ) {
+					$enhancement_limit = $this->get_package_enhancement_limit( $package_id );
+					update_post_meta( $post_id, 'ai_story_maker_package_id', $package_id );
+					update_post_meta( $post_id, 'ai_story_maker_enhancements_limit', $enhancement_limit );
+					update_post_meta( $post_id, 'ai_story_maker_enhancements_history', wp_json_encode( [] ) );
+				}
+			}
+			
 			$this->aistma_log_manager->log( 'success', 'AI-generated news article created via OpenAI API: ' . get_permalink( $post_id ), $request_id );
 		}
 
@@ -1205,5 +1241,99 @@ class AISTMA_Story_Generator {
 		$wp_timestamp = get_date_from_gmt( gmdate( 'Y-m-d H:i:s', $gmt_timestamp ), 'Y-m-d H:i:s' );
 		return $wp_timestamp;
 	}
+
+
+
+	/**
+	 * Get package ID by package name from API Gateway.
+	 *
+	 * @param string $package_name The package name to search for.
+	 * @return int|false Package ID if found, false otherwise.
+	 */
+	private function get_package_id_by_name( $package_name ) {
+		$gateway_url = aistma_get_api_url();
+		if ( empty( $gateway_url ) ) {
+			$this->aistma_log_manager->log( 'error', 'API Gateway URL not configured for package lookup' );
+			return false;
+		}
+
+		$api_url = trailingslashit( $gateway_url ) . 'wp-json/exaig/v1/packages-summary';
+		
+		$this->aistma_log_manager->log( 'info', 'Looking up package ID for: ' . $package_name . ' at URL: ' . $api_url );
+		
+		$response = wp_remote_get( $api_url, [
+			'timeout' => 10,
+			'headers' => [
+				'User-Agent' => 'AI-Story-Maker/1.0'
+			]
+		] );
+
+		if ( is_wp_error( $response ) ) {
+			$this->aistma_log_manager->log( 'error', 'Error fetching packages from API Gateway: ' . $response->get_error_message() );
+			return false;
+		}
+
+		$body = wp_remote_retrieve_body( $response );
+		$data = json_decode( $body, true );
+
+		if ( is_array( $data ) ) {
+			$this->aistma_log_manager->log( 'info', 'Found ' . count( $data ) . ' packages from API Gateway' );
+			$this->aistma_log_manager->log( 'info', 'Available packages: ' . implode( ', ', array_column( $data, 'name' ) ) );
+			foreach ( $data as $index => $package ) {
+				if ( isset( $package['name'] ) && $package['name'] === $package_name ) {
+					$this->aistma_log_manager->log( 'info', 'Found matching package: ' . $package_name . ' with ID: ' . $index );
+					return $index; // Return the index as package ID
+				}
+			}
+			$this->aistma_log_manager->log( 'warning', 'Package not found: ' . $package_name . ' in available packages: ' . implode( ', ', array_column( $data, 'name' ) ) );
+		} else {
+			$this->aistma_log_manager->log( 'error', 'Invalid packages data from API Gateway: ' . $body );
+		}
+
+		return false;
+	}
+
+	/**
+	 * Get package enhancement limit by package ID from API Gateway.
+	 *
+	 * @param int $package_id The package ID.
+	 * @return int Enhancement limit (0 = unlimited).
+	 */
+	private function get_package_enhancement_limit( $package_id ) {
+		$gateway_url = aistma_get_api_url();
+		if ( empty( $gateway_url ) ) {
+			$this->aistma_log_manager->log( 'error', 'API Gateway URL not configured for enhancement limit lookup' );
+			return 0;
+		}
+
+		$api_url = trailingslashit( $gateway_url ) . 'wp-json/exaig/v1/packages-summary';
+		
+		$this->aistma_log_manager->log( 'info', 'Looking up enhancement limit for package ID: ' . $package_id );
+		
+		$response = wp_remote_get( $api_url, [
+			'timeout' => 10,
+			'headers' => [
+				'User-Agent' => 'AI-Story-Maker/1.0'
+			]
+		] );
+
+		if ( is_wp_error( $response ) ) {
+			$this->aistma_log_manager->log( 'error', 'Error fetching packages for enhancement limit: ' . $response->get_error_message() );
+			return 0;
+		}
+
+		$body = wp_remote_retrieve_body( $response );
+		$data = json_decode( $body, true );
+
+		if ( isset( $data[ $package_id ]['enhancements_per_post'] ) ) {
+			$limit = (int) $data[ $package_id ]['enhancements_per_post'];
+			$this->aistma_log_manager->log( 'info', 'Found enhancement limit for package ID ' . $package_id . ': ' . $limit );
+			return $limit;
+		}
+
+		$this->aistma_log_manager->log( 'warning', 'No enhancement limit found for package ID: ' . $package_id . ', defaulting to unlimited' );
+		return 0; // Default to unlimited
+	}
+
 
 }

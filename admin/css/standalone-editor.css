@@ -617,3 +617,70 @@
     text-decoration: underline;
 }
 
+/* Enhancement Status Widget */
+.aistma-enhancement-status {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 15px;
+}
+
+.enhancement-summary {
+    margin-bottom: 15px;
+}
+
+.enhancement-counter {
+    font-size: 16px;
+    margin-bottom: 8px;
+}
+
+.enhancement-remaining {
+    color: #28a745;
+    font-weight: 500;
+}
+
+.enhancement-limit-reached {
+    color: #dc3545;
+    font-weight: 500;
+}
+
+.enhancement-history-toggle {
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.enhancement-history-details {
+    margin-top: 10px;
+}
+
+.enhancement-history-details table {
+    font-size: 12px;
+}
+
+.enhancement-type-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.enhancement-type-text_improve {
+    background: #007cba;
+    color: white;
+}
+
+.enhancement-type-image_insert,
+.enhancement-type-image_replace {
+    background: #00a32a;
+    color: white;
+}
+
+/* Disabled button state */
+.button:disabled,
+.button.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+

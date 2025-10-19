@@ -47,6 +47,7 @@ class AISTMA_Content_Editor_Handler {
         $user_prompt = sanitize_textarea_field( $_POST['user_prompt'] ?? '' );
         $operation_type = sanitize_text_field( $_POST['operation_type'] ?? 'text_improve' );
         $editor_type = sanitize_text_field( $_POST['editor_type'] ?? 'classic' );
+        $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
 
         // Validate required parameters
         if ( empty( $selected_text ) || empty( $user_prompt ) ) {
@@ -75,8 +76,14 @@ class AISTMA_Content_Editor_Handler {
                 }
             }
 
+            // Get package_id from post meta if post_id is provided
+            $package_id = 0;
+            if ( $post_id > 0 ) {
+                $package_id = get_post_meta( $post_id, 'ai_story_maker_package_id', true );
+            }
+
             // Make request to API Gateway
-            $response = $this->make_gateway_request( $domain, $selected_text, $user_prompt, $operation_type );
+            $response = $this->make_gateway_request( $domain, $selected_text, $user_prompt, $operation_type, $post_id, $package_id );
 
             if ( is_wp_error( $response ) ) {
                 wp_send_json_error( 'Gateway request failed: ' . $response->get_error_message() );
@@ -96,15 +103,26 @@ class AISTMA_Content_Editor_Handler {
                 wp_send_json_error( $error_message );
             }
 
+            // Update enhancement meta after successful enhancement
+            if ( $post_id > 0 ) {
+                $this->update_enhancement_meta( $post_id, $operation_type, $user_prompt );
+            }
+
             // Return successful response
-            wp_send_json_success( [
+            $response_data = [
                 'content' => $data['content'] ?? '',
                 'operation_type' => $operation_type,
                 'usage_info' => $data['usage_info'] ?? [],
-            ] );
+            ];
+
+            // Add enhancement status if available
+            if ( isset( $data['enhancement_status'] ) ) {
+                $response_data['enhancement_status'] = $data['enhancement_status'];
+            }
+
+            wp_send_json_success( $response_data );
 
         } catch ( \Exception $e ) {
-            error_log( 'AI Content Editor Handler Error: ' . $e->getMessage() );
             wp_send_json_error( 'An unexpected error occurred. Please try again.' );
         }
     }
@@ -155,9 +173,11 @@ class AISTMA_Content_Editor_Handler {
      * @param string $selected_text Selected text
      * @param string $user_prompt User prompt
      * @param string $operation_type Operation type
+     * @param int $post_id Post ID
+     * @param int $package_id Package ID
      * @return array|\WP_Error Response
      */
-    private function make_gateway_request( $domain, $selected_text, $user_prompt, $operation_type ) {
+    private function make_gateway_request( $domain, $selected_text, $user_prompt, $operation_type, $post_id = 0, $package_id = 0 ) {
         $gateway_url = aistma_get_api_url();
         
         if ( empty( $gateway_url ) ) {
@@ -166,12 +186,24 @@ class AISTMA_Content_Editor_Handler {
 
         $api_url = trailingslashit( $gateway_url ) . 'wp-json/exaig/v1/improve-content';
 
+        // Get current enhancement count if post_id is provided
+        $current_enhancement_count = 0;
+        if ( $post_id > 0 ) {
+            $enhancements_history_json = get_post_meta( $post_id, 'ai_story_maker_enhancements_history', true );
+            $enhancements_history = ! empty( $enhancements_history_json ) ? json_decode( $enhancements_history_json, true ) : [];
+            $current_enhancement_count = count( $enhancements_history );
+        }
+
         $request_data = [
             'domain' => $domain,
             'selected_text' => $selected_text,
             'user_prompt' => $user_prompt,
             'operation_type' => $operation_type,
+            'post_id' => $post_id,
+            'package_id' => $package_id,
+            'current_enhancement_count' => $current_enhancement_count,
         ];
+        
 
         $response = wp_remote_post( $api_url, [
             'timeout' => 60,
@@ -263,7 +295,6 @@ class AISTMA_Content_Editor_Handler {
             ] );
 
         } catch ( \Exception $e ) {
-            error_log( 'AI Content Editor Handler Error: ' . $e->getMessage() );
             wp_send_json_error( 'An unexpected error occurred. Please try again.' );
         }
     }
@@ -283,7 +314,7 @@ class AISTMA_Content_Editor_Handler {
         }
 
         // Sanitize and validate input
-        $post_id = absint( $_POST['post_id'] ?? 0 );
+        $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
         $title = sanitize_text_field( $_POST['title'] ?? '' );
         $content = wp_kses_post( $_POST['content'] ?? '' );
         $tags = sanitize_text_field( $_POST['tags'] ?? '' );
@@ -325,7 +356,6 @@ class AISTMA_Content_Editor_Handler {
             wp_send_json_success( [ 'message' => 'Post updated successfully.' ] );
 
         } catch ( \Exception $e ) {
-            error_log( 'AI Standalone Editor Save Error: ' . $e->getMessage() );
             wp_send_json_error( 'An unexpected error occurred while saving the post.' );
         }
     }
@@ -336,9 +366,10 @@ class AISTMA_Content_Editor_Handler {
      * @param string $content Content to improve
      * @param string $prompt Improvement prompt
      * @param string $operation_type Operation type
+     * @param int $post_id Post ID for enhancement tracking
      * @return array Result array
      */
-    public function handle_improve_content_standalone( $content, $prompt, $operation_type ) {
+    public function handle_improve_content_standalone( $content, $prompt, $operation_type, $post_id = 0 ) {
         try {
             // Get current domain
             $domain = $this->get_current_domain();
@@ -355,8 +386,14 @@ class AISTMA_Content_Editor_Handler {
                 }
             }
 
+            // Get package_id from post meta if post_id is provided
+            $package_id = 0;
+            if ( $post_id > 0 ) {
+                $package_id = get_post_meta( $post_id, 'ai_story_maker_package_id', true );
+            }
+
             // Make request to API Gateway
-            $response = $this->make_gateway_request( $domain, $content, $prompt, $operation_type );
+            $response = $this->make_gateway_request( $domain, $content, $prompt, $operation_type, $post_id, $package_id );
 
             if ( is_wp_error( $response ) ) {
                 return [ 'success' => false, 'data' => 'Gateway request failed: ' . $response->get_error_message() ];
@@ -376,16 +413,65 @@ class AISTMA_Content_Editor_Handler {
                 return [ 'success' => false, 'data' => $error_message ];
             }
 
+            // Update enhancement meta after successful enhancement
+            if ( $post_id > 0 ) {
+                $this->update_enhancement_meta( $post_id, $operation_type, $prompt );
+            }
+
             // Return successful response
-            return [ 'success' => true, 'data' => [
+            $response_data = [
                 'content' => $data['content'] ?? '',
                 'operation_type' => $operation_type,
                 'usage_info' => $data['usage_info'] ?? [],
-            ] ];
+            ];
+
+            // Add enhancement status if available
+            if ( isset( $data['enhancement_status'] ) ) {
+                $response_data['enhancement_status'] = $data['enhancement_status'];
+            }
+
+            return [ 'success' => true, 'data' => $response_data ];
 
         } catch ( \Exception $e ) {
-            error_log( 'AI Content Editor Handler Error: ' . $e->getMessage() );
             return [ 'success' => false, 'data' => 'An unexpected error occurred. Please try again.' ];
         }
+    }
+
+
+    /**
+     * Update enhancement meta data for a post
+     *
+     * @param int $post_id Post ID
+     * @param string $operation_type Type of enhancement
+     * @param string $user_prompt User's prompt
+     * @return void
+     */
+    private function update_enhancement_meta( $post_id, $operation_type, $user_prompt ) {
+        // Get current enhancement history
+        $history_json = get_post_meta( $post_id, 'ai_story_maker_enhancements_history', true );
+        $history = ! empty( $history_json ) ? json_decode( $history_json, true ) : [];
+        
+        // Determine the specific enhancement type based on prompt content
+        $enhancement_type = $operation_type;
+        if ( $operation_type === 'text_improve' ) {
+            $prompt_lower = strtolower( $user_prompt );
+            if ( strpos( $prompt_lower, 'tag' ) !== false || strpos( $prompt_lower, 'generate relevant tags' ) !== false ) {
+                $enhancement_type = 'tags_enhancement';
+            } elseif ( strpos( $prompt_lower, 'seo' ) !== false || strpos( $prompt_lower, 'meta description' ) !== false ) {
+                $enhancement_type = 'seo_enhancement';
+            } else {
+                $enhancement_type = 'content_enhancement';
+            }
+        }
+        
+        // Add new enhancement to history
+        $history[] = [
+            'type' => $enhancement_type,
+            'date' => current_time( 'mysql' ),
+            'prompt_snippet' => substr( $user_prompt, 0, 100 )
+        ];
+        
+        // Update the history meta
+        update_post_meta( $post_id, 'ai_story_maker_enhancements_history', wp_json_encode( $history ) );
     }
 }

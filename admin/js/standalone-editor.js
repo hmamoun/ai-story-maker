@@ -5,6 +5,12 @@
 (function($) {
     'use strict';
 
+    // Prevent multiple instances
+    if (window.aistmaStandaloneEditorInitialized) {
+        return;
+    }
+    window.aistmaStandaloneEditorInitialized = true;
+
     let currentPostId = null;
     let selectedText = '';
     let selectedRange = null;
@@ -15,18 +21,27 @@
     let originalContent = '';
     let originalTags = '';
     let originalMetaDescription = '';
+    
+    // Enhancement tracking
+    let enhancementsUsed = 0;
+    let enhancementsLimit = 0;
+    let enhancementsRemaining = 0;
+
+    // Prevent duplicate initialization
+    let isInitialized = false;
 
     // Initialize when document is ready
     $(document).ready(function() {
-        initStandaloneEditor();
+        if (!isInitialized) {
+            initStandaloneEditor();
+            isInitialized = true;
+        }
     });
 
     /**
      * Initialize the standalone editor
      */
     function initStandaloneEditor() {
-        console.log('AI Standalone Editor: Initializing...');
-        
         // Get post ID from URL
         const urlParams = new URLSearchParams(window.location.search);
         currentPostId = urlParams.get('post_id');
@@ -36,18 +51,21 @@
             return;
         }
 
-        console.log('AI Standalone Editor: Post ID found:', currentPostId);
-        console.log('AI Standalone Editor: Localized data:', typeof aistmaStandaloneEditor !== 'undefined' ? aistmaStandaloneEditor : 'Not available');
+        // Initialize enhancement tracking
+        if (typeof aistmaStandaloneEditor !== 'undefined') {
+            enhancementsUsed = aistmaStandaloneEditor.enhancements_used || 0;
+            enhancementsLimit = aistmaStandaloneEditor.enhancements_limit || 0;
+            enhancementsRemaining = aistmaStandaloneEditor.enhancements_remaining || 0;
+        }
 
         bindEvents();
         setupTextSelection();
+        checkEnhancementLimits();
         
         // Store original state after a small delay to ensure DOM is fully ready
         setTimeout(function() {
             storeOriginalState();
         }, 100);
-        
-        console.log('AI Standalone Editor: Initialization complete');
     }
 
     /**
@@ -57,6 +75,13 @@
         // Popup controls
         $('.aistma-popup-close, .aistma-popup-cancel').on('click', closePopup);
         $('#improve-selected-btn').on('click', handleImproveSelected);
+        
+        // Enhancement history toggle
+        $('.enhancement-history-toggle').on('click', function() {
+            $('.enhancement-history-details').slideToggle();
+            const buttonText = $('.enhancement-history-details').is(':visible') ? 'Hide Enhancements' : 'Show Enhancements';
+            $(this).text(buttonText);
+        });
         
         // Tags improvement
         $('#improve-tags-btn').on('click', handleImproveTags);
@@ -101,11 +126,9 @@
      */
     function setupTextSelection() {
         const $preview = $('#content-preview');
-        console.log('AI Standalone Editor: Setting up text selection for element:', $preview.length);
         
         // Handle text selection ONLY on mouse up (when user finishes selecting)
         $preview.on('mouseup', function() {
-            console.log('AI Standalone Editor: Mouse up event triggered');
             setTimeout(function() {
                 handleTextSelection();
             }, 10);
@@ -114,7 +137,6 @@
         // Also handle mouseup on document for better selection detection
         $(document).on('mouseup', function(e) {
             if ($(e.target).closest('#content-preview').length > 0) {
-                console.log('AI Standalone Editor: Document mouseup in preview area');
                 setTimeout(function() {
                     handleTextSelection();
                 }, 10);
@@ -129,12 +151,9 @@
         const selection = window.getSelection();
         const text = selection.toString().trim();
         
-        console.log('AI Standalone Editor: Text selection detected:', text.length > 0 ? text.substring(0, 50) + '...' : 'No text');
-        
         if (text.length > 0) {
             selectedText = text;
             selectedRange = selection.getRangeAt(0);
-            console.log('AI Standalone Editor: Showing selection info for:', text.substring(0, 30) + '...');
             showSelectionInfo(text);
         } else {
             hideSelectionInfo();
@@ -145,8 +164,6 @@
      * Show selection info and popup
      */
     function showSelectionInfo(text) {
-        console.log('AI Standalone Editor: Showing selection info');
-        
         // Store the selected text globally
         window.aistmaSelectedText = text;
         window.aistmaSelectedRange = selectedRange;
@@ -156,7 +173,6 @@
         $('#selection-info').show();
 
         // Show popup immediately on text selection (no timer delay)
-        console.log('AI Standalone Editor: Showing popup for text:', text.substring(0, 30) + '...');
         showPopup(text);
     }
 
@@ -174,8 +190,6 @@
      * Show improvement popup
      */
     function showPopup(text) {
-        console.log('AI Standalone Editor: Showing popup');
-        
         $('#popup-selected-text').text(text);
         $('#improvement-prompt').val('');
         $('#aistma-improvement-popup').fadeIn(300);
@@ -198,16 +212,62 @@
     }
 
     /**
+     * Check enhancement limits and disable buttons if needed
+     */
+    function checkEnhancementLimits() {
+        // If limit is 0, it means unlimited
+        if (enhancementsLimit === 0) {
+            return;
+        }
+        
+        // If no enhancements remaining, disable all improvement buttons
+        if (enhancementsRemaining <= 0) {
+            $('#improve-selected-btn').prop('disabled', true).addClass('disabled');
+            $('#improve-tags-btn').prop('disabled', true).addClass('disabled');
+            $('#improve-seo-btn').prop('disabled', true).addClass('disabled');
+            
+            // Show tooltip or notice
+            showMessage('Enhancement limit reached for this post', 'warning');
+        }
+    }
+
+    /**
+     * Update enhancement display in the UI
+     */
+    function updateEnhancementDisplay() {
+        // Update the counter display
+        const limitText = enhancementsLimit > 0 ? enhancementsLimit : '∞';
+        const remainingText = enhancementsLimit > 0 ? enhancementsRemaining : '∞';
+        
+        $('.enhancement-counter strong').text(`Enhancements: ${enhancementsUsed} of ${limitText} used`);
+        
+        if (enhancementsRemaining > 0 || enhancementsLimit === 0) {
+            $('.enhancement-remaining').text(`${remainingText} remaining`).show();
+            $('.enhancement-limit-reached').hide();
+        } else {
+            $('.enhancement-remaining').hide();
+            $('.enhancement-limit-reached').show();
+        }
+        
+        // Re-check limits
+        checkEnhancementLimits();
+    }
+
+    /**
      * Handle improve selected text
      */
     function handleImproveSelected() {
+        debugger;
+        // Check enhancement limits
+        if (enhancementsLimit > 0 && enhancementsRemaining <= 0) {
+            showMessage('Enhancement limit reached for this post', 'error');
+            return;
+        }
+
         const prompt = $('#improvement-prompt').val().trim();
         
         // Get the selected text from global storage or current selection
         const textToImprove = window.aistmaSelectedText || selectedText || '';
-        
-        console.log('AI Standalone Editor: Improving text:', textToImprove.substring(0, 50) + '...');
-        console.log('AI Standalone Editor: Prompt:', prompt);
 
         if (!textToImprove) {
             showMessage('No text selected.', 'error');
@@ -226,8 +286,6 @@
             nonce: 'test-nonce'
         };
         
-        console.log('AI Standalone Editor: Making AJAX request with data:', ajaxData);
-        
         $.ajax({
             url: ajaxData.ajaxurl,
             type: 'POST',
@@ -236,17 +294,43 @@
                 nonce: ajaxData.nonce,
                 content: textToImprove,
                 prompt: prompt,
-                operation_type: currentOperation
+                operation_type: 'text_improve',
+                post_id: currentPostId,
+                selected_text: textToImprove,
+                user_prompt: prompt
             },
             success: function(response) {
                 setLoading('#improve-selected-btn', false);
                 
                 if (response.success) {
                     const improvedText = response.data.content;
-                    console.log('AI Standalone Editor: Received improved text:', improvedText.substring(0, 50) + '...');
                     replaceSelectedText(improvedText, textToImprove);
+                    
+                    // Update enhancement counter if available
+                    if (response.data.enhancement_status) {
+                        enhancementsUsed = response.data.enhancement_status.used;
+                        enhancementsRemaining = response.data.enhancement_status.remaining;
+                        updateEnhancementDisplay();
+                    } else {
+                        // Fallback: increment locally if no status from API
+                        enhancementsUsed++;
+                        if (enhancementsLimit > 0) {
+                            enhancementsRemaining = Math.max(0, enhancementsLimit - enhancementsUsed);
+                        }
+                        updateEnhancementDisplay();
+                    }
+                    
+                    // Update enhancement history immediately with current data
+                    updateEnhancementHistoryImmediately();
+                    
+                    // Refresh enhancement data from server to get updated history
+                    refreshEnhancementData();
+                    
                     closePopup();
-                    showMessage('Text improved successfully!', 'success');
+                    const successMessage = (typeof aistmaStandaloneEditor !== 'undefined' && aistmaStandaloneEditor.strings && aistmaStandaloneEditor.strings.success) 
+                        ? aistmaStandaloneEditor.strings.success 
+                        : 'Content improved! Enhancement usage tracked.';
+                    showMessage(successMessage, 'success');
                 } else {
                     showMessage(response.data || 'Failed to improve text.', 'error');
                 }
@@ -259,10 +343,199 @@
     }
 
     /**
+     * Update enhancement display in the UI
+     */
+    function updateEnhancementDisplay() {
+        
+        // Update the enhancement counter
+        const counterElement = document.querySelector('.enhancement-counter strong');
+        if (counterElement) {
+            const limitText = enhancementsLimit > 0 ? enhancementsLimit : '∞';
+            counterElement.textContent = `Enhancements: ${enhancementsUsed} of ${limitText} used`;
+        }
+        
+        // Update the remaining count
+        const remainingElement = document.querySelector('.enhancement-remaining');
+        const limitReachedElement = document.querySelector('.enhancement-limit-reached');
+        
+        if (enhancementsRemaining > 0 || enhancementsLimit === 0) {
+            if (remainingElement) {
+                const remainingText = enhancementsLimit > 0 ? enhancementsRemaining : '∞';
+                remainingElement.textContent = `${remainingText} remaining`;
+                remainingElement.style.display = 'block';
+            }
+            if (limitReachedElement) {
+                limitReachedElement.style.display = 'none';
+            }
+        } else {
+            if (remainingElement) {
+                remainingElement.style.display = 'none';
+            }
+            if (limitReachedElement) {
+                limitReachedElement.style.display = 'block';
+            }
+        }
+        
+        // Check if we need to disable enhancement buttons
+        checkEnhancementLimits();
+    }
+    
+    /**
+     * Refresh enhancement data from server
+     */
+    function refreshEnhancementData() {
+        if (!currentPostId) return;
+        
+        const ajaxData = typeof aistmaStandaloneEditor !== 'undefined' ? aistmaStandaloneEditor : {
+            ajaxurl: ajaxurl || '/wp-admin/admin-ajax.php',
+            nonce: 'test-nonce'
+        };
+        
+        $.ajax({
+            url: ajaxData.ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'aistma_get_enhancement_data',
+                nonce: ajaxData.nonce,
+                post_id: currentPostId
+            },
+            success: function(response) {
+                if (response.success && response.data) {
+                    // Update the localized data
+                    if (typeof aistmaStandaloneEditor !== 'undefined') {
+                        aistmaStandaloneEditor.enhancements_used = response.data.enhancements_used;
+                        aistmaStandaloneEditor.enhancements_limit = response.data.enhancements_limit;
+                        aistmaStandaloneEditor.enhancements_remaining = response.data.enhancements_remaining;
+                        aistmaStandaloneEditor.enhancements_history = response.data.enhancements_history;
+                    }
+                    
+                    // Update local variables
+                    enhancementsUsed = response.data.enhancements_used;
+                    enhancementsLimit = response.data.enhancements_limit;
+                    enhancementsRemaining = response.data.enhancements_remaining;
+                    
+                    // Update the display
+                    updateEnhancementDisplay();
+                    
+                    // Update enhancement history with fresh data
+                    updateEnhancementHistoryFromData(response.data);
+                }
+            },
+            error: function() {
+                // Failed to refresh enhancement data
+            }
+        });
+    }
+
+    /**
+     * Update enhancement history immediately after enhancement
+     */
+    function updateEnhancementHistoryImmediately() {
+        const historyTable = document.querySelector('.enhancement-history-details tbody');
+        if (historyTable) {
+            // Determine enhancement type based on context
+            let enhancementType = 'content_enhancement'; // Default
+            let currentPrompt = 'Improve content';
+            
+            // Check if this was triggered by tags improvement
+            if (document.querySelector('#improve-tags-btn') && document.querySelector('#improve-tags-btn').disabled) {
+                enhancementType = 'tags_enhancement';
+                currentPrompt = 'Generate relevant tags for this content';
+            }
+            // Check if this was triggered by SEO improvement
+            else if (document.querySelector('#improve-seo-btn') && document.querySelector('#improve-seo-btn').disabled) {
+                enhancementType = 'seo_enhancement';
+                currentPrompt = 'Generate a compelling meta description';
+            }
+            // Check if this was from the main improvement popup
+            else if (document.querySelector('#improvement-prompt')) {
+                currentPrompt = document.querySelector('#improvement-prompt').value || 'Improve content';
+                // Determine type based on prompt content
+                const promptLower = currentPrompt.toLowerCase();
+                if (promptLower.includes('tag') || promptLower.includes('generate relevant tags')) {
+                    enhancementType = 'tags_enhancement';
+                } else if (promptLower.includes('seo') || promptLower.includes('meta description')) {
+                    enhancementType = 'seo_enhancement';
+                }
+            }
+            
+            // Create new row for current enhancement
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    <span class="enhancement-type-badge enhancement-type-${enhancementType}">
+                        ${enhancementType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </span>
+                </td>
+                <td>${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
+                <td>${currentPrompt.substring(0, 100)}</td>
+            `;
+            
+            // Add to the beginning of the table
+            historyTable.insertBefore(row, historyTable.firstChild);
+        }
+    }
+
+    /**
+     * Update enhancement history in the UI using fresh data from AJAX response
+     */
+    function updateEnhancementHistoryFromData(data) {
+        if (data && data.enhancements_history) {
+            const historyTable = document.querySelector('.enhancement-history-details tbody');
+            if (historyTable) {
+                // Clear existing rows
+                historyTable.innerHTML = '';
+                
+                // Add new rows from the fresh data
+                data.enhancements_history.forEach(function(enhancement) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>
+                            <span class="enhancement-type-badge enhancement-type-${enhancement.type}">
+                                ${enhancement.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </span>
+                        </td>
+                        <td>${new Date(enhancement.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
+                        <td>${enhancement.prompt_snippet}</td>
+                    `;
+                    historyTable.appendChild(row);
+                });
+            }
+        }
+    }
+
+    /**
+     * Update enhancement history in the UI
+     */
+    function updateEnhancementHistory() {
+        if (typeof aistmaStandaloneEditor !== 'undefined' && aistmaStandaloneEditor.enhancements_history) {
+            const historyTable = document.querySelector('.enhancement-history-details tbody');
+            if (historyTable) {
+                // Clear existing rows
+                historyTable.innerHTML = '';
+                
+                // Add new rows from the updated history
+                aistmaStandaloneEditor.enhancements_history.forEach(function(enhancement) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>
+                            <span class="enhancement-type-badge enhancement-type-${enhancement.type}">
+                                ${enhancement.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </span>
+                        </td>
+                        <td>${new Date(enhancement.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
+                        <td>${enhancement.prompt_snippet}</td>
+                    `;
+                    historyTable.appendChild(row);
+                });
+            }
+        }
+    }
+
+    /**
      * Replace selected text with improved version
      */
     function replaceSelectedText(improvedText, originalText) {
-        console.log('AI Standalone Editor: Replacing text:', originalText.substring(0, 30) + '...', 'with:', improvedText.substring(0, 30) + '...');
         
         // Try to use the stored range first
         let range = window.aistmaSelectedRange || selectedRange;
@@ -289,15 +562,11 @@
                 
                 // Trigger content updated event for change detection
                 $(document).trigger('contentUpdated');
-                
-                console.log('AI Standalone Editor: Text replaced successfully');
             } catch (error) {
-                console.error('AI Standalone Editor: Error replacing text:', error);
                 // Fallback: replace text in the preview content
                 replaceTextInPreview(originalText, improvedText);
             }
         } else {
-            console.log('AI Standalone Editor: No range available, using fallback method');
             // Fallback: replace text in the preview content
             replaceTextInPreview(originalText, improvedText);
         }
@@ -321,8 +590,6 @@
         
         // Trigger content updated event for change detection
         $(document).trigger('contentUpdated');
-        
-        console.log('AI Standalone Editor: Text replaced using fallback method');
     }
 
     /**
@@ -366,7 +633,10 @@
                 nonce: ajaxData.nonce,
                 content: currentTags || 'No tags',
                 prompt: prompt,
-                operation_type: 'text_improve'
+                operation_type: 'text_improve',
+                post_id: currentPostId,
+                selected_text: currentTags || 'No tags',
+                user_prompt: prompt
             },
             success: function(response) {
                 setLoading('#improve-tags-btn', false);
@@ -374,6 +644,27 @@
                 if (response.success) {
                     const improvedTags = response.data.content.replace(/[^\w\s,]/g, '').trim();
                     $('#post-tags').val(improvedTags);
+                    
+                    // Update enhancement counter if available
+                    if (response.data.enhancement_status) {
+                        enhancementsUsed = response.data.enhancement_status.used;
+                        enhancementsRemaining = response.data.enhancement_status.remaining;
+                        updateEnhancementDisplay();
+                    } else {
+                        // Fallback: increment locally if no status from API
+                        enhancementsUsed++;
+                        if (enhancementsLimit > 0) {
+                            enhancementsRemaining = Math.max(0, enhancementsLimit - enhancementsUsed);
+                        }
+                        updateEnhancementDisplay();
+                    }
+                    
+                    // Update enhancement history immediately with current data
+                    updateEnhancementHistoryImmediately();
+                    
+                    // Refresh enhancement data from server to get updated history
+                    refreshEnhancementData();
+                    
                     showMessage('Tags improved successfully!', 'success');
                     // Trigger change detection
                     checkForChanges();
@@ -418,7 +709,10 @@
                 nonce: ajaxData.nonce,
                 content: currentMeta || 'No meta description',
                 prompt: prompt,
-                operation_type: 'text_improve'
+                operation_type: 'text_improve',
+                post_id: currentPostId,
+                selected_text: currentMeta || 'No meta description',
+                user_prompt: prompt
             },
             success: function(response) {
                 setLoading('#improve-seo-btn', false);
@@ -426,6 +720,27 @@
                 if (response.success) {
                     const improvedMeta = response.data.content.trim();
                     $('#meta-description').val(improvedMeta);
+                    
+                    // Update enhancement counter if available
+                    if (response.data.enhancement_status) {
+                        enhancementsUsed = response.data.enhancement_status.used;
+                        enhancementsRemaining = response.data.enhancement_status.remaining;
+                        updateEnhancementDisplay();
+                    } else {
+                        // Fallback: increment locally if no status from API
+                        enhancementsUsed++;
+                        if (enhancementsLimit > 0) {
+                            enhancementsRemaining = Math.max(0, enhancementsLimit - enhancementsUsed);
+                        }
+                        updateEnhancementDisplay();
+                    }
+                    
+                    // Update enhancement history immediately with current data
+                    updateEnhancementHistoryImmediately();
+                    
+                    // Refresh enhancement data from server to get updated history
+                    refreshEnhancementData();
+                    
                     showMessage('Meta description generated successfully!', 'success');
                     // Trigger change detection
                     checkForChanges();
@@ -516,12 +831,6 @@
         originalTags = $('#post-tags').val();
         originalMetaDescription = $('#meta-description').val();
         
-        console.log('AI Standalone Editor: Storing original state:', {
-            title: originalTitle,
-            content: originalContent ? originalContent.substring(0, 50) + '...' : 'empty',
-            tags: originalTags,
-            meta: originalMetaDescription
-        });
         
         // Initially disable save button since no changes yet
         $('#save-post-btn').prop('disabled', true);
@@ -543,26 +852,13 @@
             currentMetaDescription !== originalMetaDescription
         );
         
-        console.log('AI Standalone Editor: Checking for changes:', {
-            hasChanges: hasChanges,
-            titleChanged: currentTitle !== originalTitle,
-            contentChanged: currentContent !== originalContent,
-            tagsChanged: currentTags !== originalTags,
-            metaChanged: currentMetaDescription !== originalMetaDescription,
-            currentTitle: currentTitle,
-            originalTitle: originalTitle,
-            currentTags: currentTags,
-            originalTags: originalTags
-        });
         
         // Enable save button if there are changes, disable if no changes
         const $saveBtn = $('#save-post-btn');
         if (hasChanges) {
             $saveBtn.prop('disabled', false);
-            console.log('AI Standalone Editor: Save button enabled due to changes');
         } else {
             $saveBtn.prop('disabled', true);
-            console.log('AI Standalone Editor: Save button disabled - no changes');
         }
     }
     
