@@ -1151,7 +1151,7 @@ class AISTMA_Admin {
 			if ( isset( $subscription_status['error'] ) ) {
 				$this->aistma_log_manager->log( 'warning', 'Subscription validation failed: ' . $subscription_status['error'] );
 			}
-			
+			error_log( 'Subscription validation failed: ' . $subscription_status['error'] );
 			// Try fallback: check if UI shows active subscription (packages-summary endpoint)
 			$fallback_check = $this->check_subscription_via_packages_api();
 			if ( $fallback_check['valid'] ) {

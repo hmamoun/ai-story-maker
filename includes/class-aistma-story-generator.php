@@ -75,14 +75,14 @@ class AISTMA_Story_Generator {
 	 * Generate AI stories with a lock to prevent concurrent executions.
 	 *
 	 * @param  bool $force Whether to force generation regardless of lock.
-	 * @return void
+	 * @return array Array with 'success' boolean and 'message' string.
 	 */
 	public static function generate_ai_stories_with_lock( $force = false ) {
 		$instance = new self();
 		$lock_key = 'aistma_generating_lock';
 		if ( ! $force && get_transient( $lock_key ) ) {
 			$instance->aistma_log_manager->log( 'info', 'Story generation skipped due to active lock.' );
-			return;
+			return array( 'success' => false, 'message' => 'Story generation is already in progress.' );
 		}
 
 		// Check subscription status and API key availability before generating stories
@@ -102,26 +102,26 @@ class AISTMA_Story_Generator {
 						: 'No valid subscription found and no OpenAI API key configured.';
 					
 					$instance->aistma_log_manager::log( 'error', $error_message );
-					throw new \RuntimeException( $error_message );
+					return array( 'success' => false, 'message' => $error_message );
 				} else {
 					$instance->aistma_log_manager::log( 'info', 'No valid subscription found, but OpenAI API key is available. Will use direct OpenAI API calls.' );
 				}
 			}
 		} catch ( \RuntimeException $e ) {
 			$error = $e->getMessage();
-			//$instance->aistma_log_manager::log( 'error', $error );
-			throw new \RuntimeException( esc_html( $error ) );
+			$instance->aistma_log_manager->log( 'error', $error );
+			return array( 'success' => false, 'message' => esc_html( $error ) );
 		}
 
 		set_transient( $lock_key, true, 10 * MINUTE_IN_SECONDS );
 		try {
 			// Pass the instance with cached subscription status to generate_ai_stories
 			$instance->generate_ai_stories();
-			//$instance->aistma_log_manager->log( 'info', 'Stories successfully generated.' );
+			$instance->aistma_log_manager->log( 'info', 'Stories successfully generated.' );
+			return array( 'success' => true, 'message' => 'Stories generated successfully.' );
 		} catch ( \Throwable $e ) {
 			$instance->aistma_log_manager->log( 'error', 'Error generating stories: ' . $e->getMessage() );
-			delete_transient( $lock_key );
-			wp_send_json_error( array( 'message' => 'Error generating stories: ' . $e->getMessage() ) );
+			return array( 'success' => false, 'message' => 'Error generating stories: ' . $e->getMessage() );
 		} finally {
 			// Always delete the lock, even if an error occurs.
 			delete_transient( $lock_key );
@@ -506,12 +506,19 @@ class AISTMA_Story_Generator {
 			$post_author = 1; // Default to admin user ID 1 if no user is logged in.
 		}
 
+		// Determine post status based on auto_publish setting
+		$auto_publish_value = isset( $prompt['auto_publish'] ) ? $prompt['auto_publish'] : false;
+		$post_status = ( 1 === $auto_publish_value || true === $auto_publish_value ) ? 'publish' : 'draft';
+		
+		// Debug logging for auto_publish
+		$this->aistma_log_manager->log( 'debug', 'Master API - Auto publish value: ' . var_export( $auto_publish_value, true ) . ' (type: ' . gettype( $auto_publish_value ) . '), Post status: ' . $post_status );
+
 		// Create the post.
 		$post_data = array(
 			'post_title'   => $title,
 			'post_content' => $content,
 			'post_excerpt' => $excerpt,
-			'post_status'  => isset( $prompt['auto_publish'] ) && 1 === $prompt['auto_publish'] ? 'publish' : 'draft',
+			'post_status'  => $post_status,
 			'post_author'  => $post_author,
 			'post_category' => array( $category_id ),
 		);
@@ -626,12 +633,19 @@ class AISTMA_Story_Generator {
 			$post_author = 1; // Default to admin user ID 1 if no user is logged in.
 		}
 
+		// Determine post status based on auto_publish setting
+		$auto_publish_value = isset( $prompt['auto_publish'] ) ? $prompt['auto_publish'] : false;
+		$post_status = ( 1 === $auto_publish_value || true === $auto_publish_value ) ? 'publish' : 'draft';
+		
+		// Debug logging for auto_publish
+		$this->aistma_log_manager->log( 'debug', 'OpenAI API - Auto publish value: ' . var_export( $auto_publish_value, true ) . ' (type: ' . gettype( $auto_publish_value ) . '), Post status: ' . $post_status );
+
 		// Create the post.
 		$post_data = array(
 			'post_title'   => $title,
 			'post_content' => $content,
 			'post_excerpt' => $excerpt,
-			'post_status'  => isset( $prompt['auto_publish'] ) && 1 === $prompt['auto_publish'] ? 'publish' : 'draft',
+			'post_status'  => $post_status,
 			'post_author'  => $post_author,
 			'post_category' => array( $category_id ),
 		);

@@ -4,23 +4,34 @@ Tags: ai, content creation, blog automation, article generation, wordpress ai pl
 Requires at least: 5.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.1.2
+Stable tag: 2.1.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Plugin URI: https://www.storymakerplugin.com/
 Author: Hayan Mamoun
 Author URI: https://exedotcom.ca
 
-AI-powered WordPress plugin to automatically generate unique stories, articles, and visuals using OpenAI and Unsplash APIs.
+AI-powered WordPress plugin to automatically generate unique stories, articles, and visuals using OpenAI and Unsplash APIs. Now featuring AI Story Enhancer for intelligent content improvement.
 
 == Description ==
 
 **AI Story Maker** helps you instantly generate unique, high-quality WordPress posts using AI and royalty-free images. It integrates with OpenAI for text generation and Unsplash for fetching dynamic images, saving you hours of content creation time.
 
+**🆕 NEW: AI Story Enhancer** - Transform your content creation workflow with intelligent, AI-powered text improvement capabilities directly within your WordPress admin interface. Simply select any text in your posts and enhance it with AI for professional-quality results.
+
 Whether you're a blogger, marketer, or educator, AI Story Maker helps you build a full content strategy effortlessly.
 
 == Features ==
 
+### AI Story Enhancer (NEW!)
+- **Smart Text Selection** – Simply select any text in your post content and enhance it with AI
+- **Context-Aware Improvements** – AI understands your content context and provides relevant enhancements
+- **One-Click Access** – "AI Story Enhancer" link appears under every post in your posts list
+- **Free Usage** – Enhanced content is free to use with usage tracking
+- **Professional Results** – AI-powered enhancements that rival professional editors
+- **Seamless Integration** – Works directly within your existing WordPress workflow
+
+### Core Features
 - **Subscription-Based Access** – Access AI generation through package subscriptions including free options.
 - **AI-Generated Stories** – Create unique, professional stories and articles using OpenAI.
 - **Smart Image Integration** – Automatic dynamic, royalty-free images from Unsplash.
@@ -121,7 +132,22 @@ You can add the shortcode:
 - In a widget area that supports shortcodes
 - In a PHP template file using: echo do_shortcode('[aistma_scroller]');
 
-=== How to Use ===
+=== How to Use AI Story Enhancer ===
+
+1. Navigate to **Posts → All Posts** in your WordPress admin
+2. Find any post and click **"AI Story Enhancer"** under the post title
+3. In the editor, select any text in the content preview area
+4. Enter your enhancement instructions (e.g., "Make this more engaging", "Add more details", "Improve readability")
+5. Click **"Improve"** to see AI-powered enhancements
+6. Review the improved text and click **"Save Changes"** when satisfied
+
+**Pro Tips:**
+- Use specific instructions for better results (e.g., "Make this more conversational" vs. "Improve this")
+- The AI understands context, so it will enhance text appropriately for your content type
+- You can enhance multiple sections of the same post
+- Changes are tracked automatically - the save button only enables when you have unsaved changes
+
+=== How to Use Core Features ===
 
 1. Edit a page or post in WordPress.
 2. Add a new Shortcode Block (or paste directly).
@@ -324,11 +350,53 @@ Privacy note:
 
 No additional personal user data is collected or stored.
 
+== FAQ ==
+
+= What is AI Story Enhancer? =
+
+AI Story Enhancer is a new feature that allows you to enhance any text in your WordPress posts using AI. Simply select text, provide instructions, and get professional-quality improvements instantly.
+
+= How do I access AI Story Enhancer? =
+
+Navigate to **Posts → All Posts** in your WordPress admin and click **"AI Story Enhancer"** under any post title. This will open the enhancement interface.
+
+= Is AI Story Enhancer free to use? =
+
+Yes! AI Story Enhancer is completely free to use. There are no subscription fees or usage limits for content enhancement.
+
+= What types of improvements can AI Story Enhancer make? =
+
+AI Story Enhancer can improve readability, add details, enhance engagement, improve SEO, make content more conversational, and much more. The AI understands context and provides relevant enhancements.
+
+= Can I enhance multiple sections of the same post? =
+
+Yes! You can enhance as many sections as you want in the same post. Each enhancement is independent and can be saved together.
+
+= Does AI Story Enhancer work with all WordPress themes? =
+
+Yes, AI Story Enhancer is designed to work with all WordPress themes and doesn't interfere with your site's styling.
+
+= How does the smart save system work? =
+
+The save button is automatically disabled when there are no changes. It only enables when you make changes to the content, tags, or meta description, ensuring you only save when necessary.
+
 == Contributing ==
 
 We welcome contributions! Submit issues or pull requests via [GitHub](https://github.com/hmamoun/ai-story-maker).
 
 == Changelog ==
+
+= 2.1.3 =
+* **NEW: AI Story Enhancer**
+  * Added intelligent text enhancement capabilities
+  * Smart text selection and AI-powered improvements
+  * One-click access from posts list
+  * Free usage with usage tracking
+  * Professional-quality content enhancements
+  * Seamless WordPress integration
+  * Smart save system with change detection
+  * Enhanced tags and SEO management
+  * Modern, responsive interface
 
 = 2.1.2 =
 * **Maintenance Release**

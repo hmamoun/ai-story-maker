@@ -1,0 +1,353 @@
+/**
+ * AI Content Editor Styles
+ *
+ * Styles for the AI Content Editor sidebar panel in both Classic and Block editors.
+ */
+
+/* Classic Editor Meta Box Styles */
+#aistma-content-editor-panel {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.aistma-editor-status {
+    padding: 15px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.aistma-editor-status .status-message {
+    margin: 0;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.aistma-editor-status .dashicons {
+    color: #0073aa;
+}
+
+.aistma-editor-selection {
+    margin-bottom: 15px;
+}
+
+.aistma-editor-selection h4 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #333;
+}
+
+.selected-text-preview {
+    background: #f1f1f1;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 15px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #555;
+    max-height: 100px;
+    overflow-y: auto;
+}
+
+#aistma-improvement-prompt {
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 8px;
+    font-size: 13px;
+    line-height: 1.4;
+    resize: vertical;
+    min-height: 60px;
+}
+
+#aistma-improvement-prompt:focus {
+    border-color: #0073aa;
+    box-shadow: 0 0 0 1px #0073aa;
+    outline: none;
+}
+
+.operation-type-selection {
+    margin: 15px 0;
+}
+
+.operation-type-selection label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.operation-type-selection input[type="radio"] {
+    margin-right: 8px;
+}
+
+.aistma-editor-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.aistma-editor-actions .button {
+    flex: 1;
+    justify-content: center;
+}
+
+.aistma-editor-actions .spinner {
+    float: none;
+    margin: 0;
+    margin-left: 8px;
+}
+
+/* Result Panel Styles */
+.aistma-editor-result {
+    margin-top: 15px;
+    padding: 15px;
+    background: #f0f8ff;
+    border: 1px solid #0073aa;
+    border-radius: 4px;
+}
+
+.aistma-editor-result h4 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #0073aa;
+}
+
+.result-preview {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 15px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #333;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.result-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.result-actions .button {
+    flex: 1;
+    justify-content: center;
+}
+
+/* Error Panel Styles */
+.aistma-editor-error {
+    margin-top: 15px;
+    padding: 15px;
+    background: #ffeaea;
+    border: 1px solid #dc3232;
+    border-radius: 4px;
+}
+
+.aistma-editor-error .error-message {
+    margin: 0 0 10px 0;
+    color: #dc3232;
+    font-size: 13px;
+}
+
+/* Block Editor Plugin Styles */
+.aistma-content-editor-panel {
+    margin-bottom: 20px;
+}
+
+.aistma-selection-status {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #f0f8ff;
+    border: 1px solid #0073aa;
+    border-radius: 4px;
+}
+
+.aistma-selection-status .selection-info {
+    margin: 0;
+    font-size: 13px;
+    color: #0073aa;
+}
+
+.aistma-selection-status em {
+    display: block;
+    margin-top: 5px;
+    font-style: normal;
+    background: #fff;
+    padding: 5px;
+    border-radius: 3px;
+    border: 1px solid #0073aa;
+}
+
+.no-selection {
+    margin: 0;
+    color: #666;
+    font-style: italic;
+    font-size: 13px;
+    text-align: center;
+    padding: 20px;
+    background: #f9f9f9;
+    border-radius: 4px;
+}
+
+.aistma-editor-actions {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+}
+
+.aistma-editor-actions .button {
+    flex: 1;
+    justify-content: center;
+}
+
+.improve-button {
+    position: relative;
+}
+
+.improve-button .components-spinner {
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.aistma-error {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.aistma-error p {
+    margin: 0 0 10px 0;
+    font-size: 13px;
+}
+
+.aistma-result {
+    margin-top: 15px;
+    padding: 15px;
+    background: #f0f8ff;
+    border: 1px solid #0073aa;
+    border-radius: 4px;
+}
+
+.aistma-result h4 {
+    margin: 0 0 10px 0;
+    color: #0073aa;
+    font-size: 14px;
+}
+
+.aistma-result .result-preview {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 15px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #333;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.result-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.result-actions .button {
+    flex: 1;
+    justify-content: center;
+}
+
+/* Responsive Design */
+@media (max-width: 782px) {
+    .aistma-editor-actions,
+    .result-actions {
+        flex-direction: column;
+    }
+    
+    .aistma-editor-actions .button,
+    .result-actions .button {
+        width: 100%;
+    }
+    
+    .operation-type-selection label {
+        margin-bottom: 5px;
+        font-size: 12px;
+    }
+    
+    .selected-text-preview,
+    .result-preview {
+        font-size: 12px;
+        max-height: 80px;
+    }
+}
+
+/* Loading States */
+.button.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.button.loading .button-text {
+    opacity: 0;
+}
+
+.button.loading .spinner {
+    display: inline-block !important;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Image Preview Styles */
+.result-preview img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    margin: 5px 0;
+}
+
+/* Animation for smooth transitions */
+.aistma-editor-selection,
+.aistma-editor-result,
+.aistma-editor-error {
+    transition: all 0.3s ease;
+}
+
+/* Focus states for accessibility */
+.operation-type-selection input[type="radio"]:focus,
+#aistma-improvement-prompt:focus,
+.button:focus {
+    outline: 2px solid #0073aa;
+    outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .aistma-editor-status,
+    .aistma-editor-result,
+    .aistma-editor-error {
+        border-width: 2px;
+    }
+    
+    .selected-text-preview,
+    .result-preview {
+        border-width: 2px;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .aistma-editor-selection,
+    .aistma-editor-result,
+    .aistma-editor-error {
+        transition: none;
+    }
+}

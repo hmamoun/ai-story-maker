@@ -153,16 +153,19 @@ class AISTMA_Settings_Page {
 	public function aistma_get_available_packages(): string {
 
 		$url      = aistma_get_api_url( 'wp-json/exaig/v1/packages-summary' );
+		$args = array(
+			'timeout' => 10,
+			'headers' => array(
+				'X-Caller-Url' => home_url(),
+				'X-Caller-IP'  => isset( $_SERVER['SERVER_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SERVER_ADDR'] ) ) : '',
+			),
+		);
 		$response = wp_remote_get(
 			$url,
-			array(
-				'timeout' => 10,
-				'headers' => array(
-					'X-Caller-Url' => home_url(),
-					'X-Caller-IP'  => isset( $_SERVER['SERVER_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SERVER_ADDR'] ) ) : '',
-				),
-			)
+			$args
 		);
+
+		error_log( 'URL: ' . $url );
 
 		// Prepare the standardized wrapper structure
 		$standard_response = [
