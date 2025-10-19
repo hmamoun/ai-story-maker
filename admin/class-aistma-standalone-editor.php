@@ -26,8 +26,10 @@ class AISTMA_Standalone_Editor {
         // Register the page but don't show it in the menu
         add_action( 'admin_menu', [ $this, 'add_admin_menu' ] );
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
+        
+        // AJAX handlers for standalone editor functionality
+        // Note: wp_ajax_aistma_standalone_save_post is handled by AISTMA_Content_Editor_Handler
         add_action( 'wp_ajax_aistma_standalone_improve_content', [ $this, 'handle_improve_content' ] );
-        add_action( 'wp_ajax_aistma_standalone_save_post', [ $this, 'handle_save_post' ] );
         add_action( 'wp_ajax_aistma_standalone_get_post_data', [ $this, 'handle_get_post_data' ] );
         add_action( 'wp_ajax_aistma_check_enhancement_eligibility', [ $this, 'handle_check_enhancement_eligibility' ] );
         add_action( 'wp_ajax_aistma_get_enhancement_data', [ $this, 'handle_get_enhancement_data' ] );
@@ -409,58 +411,6 @@ class AISTMA_Standalone_Editor {
         }
     }
 
-    /**
-     * Handle AJAX request to save post
-     */
-    public function handle_save_post() {
-        // Verify nonce
-        if ( ! check_ajax_referer( 'aistma_standalone_editor_nonce', 'nonce', false ) ) {
-            wp_send_json_error( 'Security check failed.' );
-        }
-
-        // Check user permissions
-        if ( ! current_user_can( 'edit_posts' ) ) {
-            wp_send_json_error( 'You do not have permission to perform this action.' );
-        }
-
-        $post_id = intval( $_POST['post_id'] ?? 0 );
-        $title = sanitize_text_field( $_POST['title'] ?? '' );
-        $content = wp_kses_post( $_POST['content'] ?? '' );
-        $tags = sanitize_text_field( $_POST['tags'] ?? '' );
-        $meta_description = sanitize_textarea_field( $_POST['meta_description'] ?? '' );
-
-        if ( ! $post_id ) {
-            wp_send_json_error( 'Invalid post ID.' );
-        }
-
-        try {
-            // Update post
-            $result = wp_update_post( [
-                'ID' => $post_id,
-                'post_title' => $title,
-                'post_content' => $content,
-            ] );
-
-            if ( is_wp_error( $result ) ) {
-                wp_send_json_error( 'Failed to update post: ' . $result->get_error_message() );
-            }
-
-            // Update tags
-            if ( ! empty( $tags ) ) {
-                wp_set_post_tags( $post_id, $tags );
-            }
-
-            // Update meta description if Yoast is active
-            if ( ! empty( $meta_description ) && class_exists( 'WPSEO_Meta' ) ) {
-                update_post_meta( $post_id, '_yoast_wpseo_metadesc', $meta_description );
-            }
-
-            wp_send_json_success( 'Post updated successfully.' );
-
-        } catch ( \Exception $e ) {
-            wp_send_json_error( 'An unexpected error occurred while saving.' );
-        }
-    }
 
     /**
      * Handle AJAX request to get post data

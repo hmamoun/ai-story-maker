@@ -23,8 +23,12 @@ class AISTMA_Content_Editor_Handler {
      * Constructor
      */
     public function __construct() {
+        // AJAX handlers for content improvement and standalone editor functionality
         add_action( 'wp_ajax_aistma_improve_content', [ $this, 'handle_improve_content' ] );
         add_action( 'wp_ajax_aistma_standalone_improve_content', [ $this, 'handle_standalone_improve_content' ] );
+        
+        // Centralized handler for standalone editor save post functionality
+        // This replaces the duplicate handler that was previously in AISTMA_Standalone_Editor
         add_action( 'wp_ajax_aistma_standalone_save_post', [ $this, 'handle_standalone_save_post' ] );
     }
 
