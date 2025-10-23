@@ -446,7 +446,6 @@ class AISTMA_Admin {
 		
 		// Register hooks for auto-publishing new posts
 		add_action( 'transition_post_status', array( $this, 'auto_publish_to_social_media' ), 10, 3 );
-		add_action( 'wp_insert_post', array( $this, 'handle_new_published_post' ), 10, 3 );
 	}
 
 	/**
@@ -689,13 +688,16 @@ class AISTMA_Admin {
 			$message .= "\n\n" . $post->post_excerpt;
 		}
 		
+		$post_url = get_permalink( $post );
+		
+		// Add "Read More.." with post link
+		$message .= "\n\nRead More.. " . $post_url;
+		
 		// Add hashtags if enabled
 		$hashtags = $this->get_social_media_hashtags( $post );
 		if ( ! empty( $hashtags ) ) {
 			$message .= "\n\n" . $hashtags;
 		}
-		
-		$post_url = get_permalink( $post );
 
 		// Facebook Graph API endpoint
 		$api_url = 'https://graph.facebook.com/v18.0/' . $account['credentials']['page_id'] . '/feed';
@@ -832,15 +834,13 @@ class AISTMA_Admin {
 			}
 		}
 		
-		// Add post tags as hashtags if enabled
-		if ( ! empty( $global_settings['include_hashtags'] ) ) {
-			$post_tags = get_the_tags( $post->ID );
-			if ( $post_tags && ! is_wp_error( $post_tags ) ) {
-				foreach ( $post_tags as $tag ) {
-					// Convert tag name to hashtag format
-					$hashtag = '#' . str_replace( ' ', '', $tag->name );
-					$hashtags[] = $hashtag;
-				}
+		// Always add post tags as hashtags
+		$post_tags = get_the_tags( $post->ID );
+		if ( $post_tags && ! is_wp_error( $post_tags ) ) {
+			foreach ( $post_tags as $tag ) {
+				// Convert tag name to hashtag format
+				$hashtag = '#' . str_replace( ' ', '', $tag->name );
+				$hashtags[] = $hashtag;
 			}
 		}
 		
@@ -1150,8 +1150,11 @@ class AISTMA_Admin {
 			// If subscription check failed but we have an error message, log it for debugging
 			if ( isset( $subscription_status['error'] ) ) {
 				$this->aistma_log_manager->log( 'warning', 'Subscription validation failed: ' . $subscription_status['error'] );
+				// Additional debug logging only in debug mode
+				if ( defined( 'WP_DEBUG' ) && WP_DEBUG && function_exists( 'wp_debug_log' ) ) {
+					wp_debug_log( 'Subscription validation failed: ' . $subscription_status['error'] );
+				}
 			}
-			error_log( 'Subscription validation failed: ' . $subscription_status['error'] );
 			// Try fallback: check if UI shows active subscription (packages-summary endpoint)
 			$fallback_check = $this->check_subscription_via_packages_api();
 			if ( $fallback_check['valid'] ) {
@@ -1323,41 +1326,6 @@ class AISTMA_Admin {
 		return $story_generator->aistma_get_subscription_status();
 	}
 
-	/**
-	 * Handle posts that are created directly with 'publish' status.
-	 *
-	 * @param int     $post_id Post ID.
-	 * @param WP_Post $post    Post object.
-	 * @param bool    $update  Whether this is an existing post being updated.
-	 */
-	public function handle_new_published_post( $post_id, $post, $update ) {
-		// Only process new posts (not updates)
-		if ( $update ) {
-			return;
-		}
-	
-		// Only process posts that are published
-		if ( $post->post_status !== 'publish' ) {
-			return;
-		}
-	
-		// Only process standard posts (not pages, attachments, etc.)
-		if ( $post->post_type !== 'post' ) {
-			return;
-		}
-	
-		// Check if this post was already shared (prevent duplicates)
-		$already_shared = get_post_meta( $post_id, '_aistma_social_shared', true );
-		if ( $already_shared ) {
-			return;
-		}
-	
-		// Mark as shared before processing
-		update_post_meta( $post_id, '_aistma_social_shared', true );
-	
-		// Call the same auto-publish logic
-		$this->auto_publish_to_social_media( 'publish', 'new', $post );
-	}
 }
 
 // Instantiate the Admin class.

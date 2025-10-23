@@ -67,6 +67,12 @@ Tested up to: 6.7
 		color: #777;
 		font-size: 0.9rem;
 	}
+	.post-featured-image {
+		max-width: 100%;
+		height: auto;
+		border-radius: 8px;
+		box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+	}
 	.ai-story-content {
 		font-size: 1.1rem;
 		line-height: 1.6;
@@ -108,4 +114,19 @@ Tested up to: 6.7
 
 	.ai-story-maker-footer {
 		font-size: 0.9em; text-align: center; margin-top: 2em; color: #777;
+	}
+
+	/* Responsive design for mobile devices */
+	@media (max-width: 768px) {
+		.ai-story-container {
+			flex-direction: column;
+			padding: 10px;
+		}
+		.ai-story-article {
+			padding-right: 0;
+			margin-bottom: 20px;
+		}
+		.post-featured-image {
+			max-width: 80%;
+		}
 	}

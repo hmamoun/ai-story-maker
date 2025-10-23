@@ -71,7 +71,10 @@ class AISTMA_Content_Editor {
         // Check if the JavaScript file exists
         $js_file = AISTMA_PATH . 'admin/js/block-editor-integration.js';
         if ( ! file_exists( $js_file ) ) {
-            error_log( 'AI Content Editor: JavaScript file not found: ' . $js_file );
+            // Log missing file for debugging using WordPress logging
+            if ( defined( 'WP_DEBUG' ) && WP_DEBUG && function_exists( 'wp_debug_log' ) ) {
+                wp_debug_log( 'AI Content Editor: JavaScript file not found: ' . $js_file );
+            }
             return;
         }
 

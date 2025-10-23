@@ -165,7 +165,10 @@ class AISTMA_Settings_Page {
 			$args
 		);
 
-		error_log( 'URL: ' . $url );
+		// Debug logging only in debug mode
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG && function_exists( 'wp_debug_log' ) ) {
+			wp_debug_log( 'URL: ' . $url );
+		}
 
 		// Prepare the standardized wrapper structure
 		$standard_response = [

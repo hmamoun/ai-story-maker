@@ -511,7 +511,7 @@ class AISTMA_Story_Generator {
 		$post_status = ( 1 === $auto_publish_value || true === $auto_publish_value ) ? 'publish' : 'draft';
 		
 		// Debug logging for auto_publish
-		$this->aistma_log_manager->log( 'debug', 'Master API - Auto publish value: ' . var_export( $auto_publish_value, true ) . ' (type: ' . gettype( $auto_publish_value ) . '), Post status: ' . $post_status );
+		$this->aistma_log_manager->log( 'debug', 'Master API - Auto publish value: ' . ( $auto_publish_value ? 'true' : 'false' ) . ' (type: ' . gettype( $auto_publish_value ) . '), Post status: ' . $post_status );
 
 		// Create the post.
 		$post_data = array(
@@ -659,7 +659,7 @@ class AISTMA_Story_Generator {
 		$post_status = ( 1 === $auto_publish_value || true === $auto_publish_value ) ? 'publish' : 'draft';
 		
 		// Debug logging for auto_publish
-		$this->aistma_log_manager->log( 'debug', 'OpenAI API - Auto publish value: ' . var_export( $auto_publish_value, true ) . ' (type: ' . gettype( $auto_publish_value ) . '), Post status: ' . $post_status );
+		$this->aistma_log_manager->log( 'debug', 'OpenAI API - Auto publish value: ' . ( $auto_publish_value ? 'true' : 'false' ) . ' (type: ' . gettype( $auto_publish_value ) . '), Post status: ' . $post_status );
 
 		// Create the post.
 		$post_data = array(

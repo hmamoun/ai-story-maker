@@ -282,6 +282,16 @@ if ( ! empty( $saved_subscription_email ) ) {
                     }
                     ?>
             </span>
+            
+            <?php
+            // Display enhancements per post if available
+            $enhancements_per_post = isset($package['enhancements_per_post']) ? intval($package['enhancements_per_post']) : 0;
+            if ($enhancements_per_post > 0) {
+                echo '<span style="display: block; margin-top: 4px;"><strong>Enhancements:</strong> ' . esc_html($enhancements_per_post . ' per post') . '</span>';
+            } elseif ($enhancements_per_post === 0) {
+                echo '<span style="display: block; margin-top: 4px;"><strong>Enhancements:</strong> Unlimited per post</span>';
+            }
+            ?>
                 <div class="aistma-current-plan-line" style="<?php echo $is_current && $status_line ? 'display:block;margin-top:8px;font-weight:600;color:#0073aa;' : 'display:none;'; ?>"><?php echo $is_current ? esc_html( $status_line ) : ''; ?></div>
                 
                 <?php if ( $has_subscription && $subscription_info ) : ?>

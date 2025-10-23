@@ -66,15 +66,19 @@ if ( class_exists( '\\exedotcom\\aistorymaker\\AISTMA_Traffic_Logger' ) ) {
 	<aside class="ai-story-sidebar">
 	<p><a href="<?php echo esc_url( home_url() ); ?>">
 <?php
-// show the icon and the title of the website, add an anchro tag to the home page.
-$custom_logo_id = get_theme_mod( 'custom_logo' );
-$logo           = wp_get_attachment_image_src( $custom_logo_id, 'full' );
-if ( has_custom_logo() ) {
-	echo wp_get_attachment_image( $custom_logo_id, 'full' );
+// Show the post's featured image if it exists, otherwise show the site logo/name
+if ( has_post_thumbnail() ) {
+	the_post_thumbnail( 'medium', array( 'class' => 'post-featured-image' ) );
 } else {
-	echo esc_html( get_bloginfo( 'name' ) );
+	// Fallback to site logo or name
+	$custom_logo_id = get_theme_mod( 'custom_logo' );
+	$logo           = wp_get_attachment_image_src( $custom_logo_id, 'full' );
+	if ( has_custom_logo() ) {
+		echo wp_get_attachment_image( $custom_logo_id, 'full' );
+	} else {
+		echo esc_html( get_bloginfo( 'name' ) );
+	}
 }
-
 ?>
 
 	</a></p> 

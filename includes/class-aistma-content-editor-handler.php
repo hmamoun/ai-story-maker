@@ -47,10 +47,10 @@ class AISTMA_Content_Editor_Handler {
         }
 
         // Get and sanitize request parameters
-        $selected_text = sanitize_textarea_field( $_POST['selected_text'] ?? '' );
-        $user_prompt = sanitize_textarea_field( $_POST['user_prompt'] ?? '' );
-        $operation_type = sanitize_text_field( $_POST['operation_type'] ?? 'text_improve' );
-        $editor_type = sanitize_text_field( $_POST['editor_type'] ?? 'classic' );
+        $selected_text = sanitize_textarea_field( wp_unslash( $_POST['selected_text'] ?? '' ) );
+        $user_prompt = sanitize_textarea_field( wp_unslash( $_POST['user_prompt'] ?? '' ) );
+        $operation_type = sanitize_text_field( wp_unslash( $_POST['operation_type'] ?? 'text_improve' ) );
+        $editor_type = sanitize_text_field( wp_unslash( $_POST['editor_type'] ?? 'classic' ) );
         $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
 
         // Validate required parameters
@@ -226,7 +226,8 @@ class AISTMA_Content_Editor_Handler {
      */
     public function handle_standalone_improve_content() {
         // Verify nonce
-        if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'aistma_standalone_editor_nonce' ) ) {
+        $nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
+        if ( ! wp_verify_nonce( $nonce, 'aistma_standalone_editor_nonce' ) ) {
             wp_send_json_error( 'Invalid nonce.' );
         }
 
@@ -236,9 +237,9 @@ class AISTMA_Content_Editor_Handler {
         }
 
         // Sanitize and validate input
-        $content = sanitize_textarea_field( $_POST['content'] ?? '' );
-        $prompt = sanitize_textarea_field( $_POST['prompt'] ?? '' );
-        $operation_type = sanitize_text_field( $_POST['operation_type'] ?? 'text_improve' );
+        $content = sanitize_textarea_field( wp_unslash( $_POST['content'] ?? '' ) );
+        $prompt = sanitize_textarea_field( wp_unslash( $_POST['prompt'] ?? '' ) );
+        $operation_type = sanitize_text_field( wp_unslash( $_POST['operation_type'] ?? 'text_improve' ) );
 
         if ( empty( $content ) ) {
             wp_send_json_error( 'Content is required.' );
@@ -308,7 +309,8 @@ class AISTMA_Content_Editor_Handler {
      */
     public function handle_standalone_save_post() {
         // Verify nonce
-        if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'aistma_standalone_editor_nonce' ) ) {
+        $nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
+        if ( ! wp_verify_nonce( $nonce, 'aistma_standalone_editor_nonce' ) ) {
             wp_send_json_error( 'Invalid nonce.' );
         }
 
@@ -318,11 +320,11 @@ class AISTMA_Content_Editor_Handler {
         }
 
         // Sanitize and validate input
-        $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
-        $title = sanitize_text_field( $_POST['title'] ?? '' );
-        $content = wp_kses_post( $_POST['content'] ?? '' );
-        $tags = sanitize_text_field( $_POST['tags'] ?? '' );
-        $meta_description = sanitize_textarea_field( $_POST['meta_description'] ?? '' );
+        $post_id = isset( $_POST['post_id'] ) ? absint( sanitize_text_field( wp_unslash( $_POST['post_id'] ) ) ) : 0;
+        $title = sanitize_text_field( wp_unslash( $_POST['title'] ?? '' ) );
+        $content = wp_kses_post( wp_unslash( $_POST['content'] ?? '' ) );
+        $tags = sanitize_text_field( wp_unslash( $_POST['tags'] ?? '' ) );
+        $meta_description = sanitize_textarea_field( wp_unslash( $_POST['meta_description'] ?? '' ) );
 
         if ( ! $post_id ) {
             wp_send_json_error( 'Post ID is required.' );
