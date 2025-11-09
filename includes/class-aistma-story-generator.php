@@ -830,22 +830,20 @@ class AISTMA_Story_Generator {
 	 */
 	public function replace_image_placeholders( $article_content, $post_id = 0 ) {
 		$self = $this; // Assign $this to $self.
-		$first_image_url = null;
+		$image_urls = array();
 		$image_count = 0;
 		
 		$processed_content = preg_replace_callback(
 			'/\{img_unsplash:([a-zA-Z0-9,_ ]+)\}/',
-			function ( $matches ) use ( $self, &$first_image_url, &$image_count ) {
+			function ( $matches ) use ( $self, &$image_urls, &$image_count ) {
 				$keywords = explode( ',', $matches[1] );
 				$image_data = $self->fetch_unsplash_image_data( $keywords );
 				
 				if ( $image_data ) {
 					$image_count++;
 					
-					// Store the first image URL for featured image
-					if ( $image_count === 1 && ! $first_image_url ) {
-						$first_image_url = $image_data['url'];
-					}
+					// Store all image URLs for featured image selection
+					$image_urls[] = $image_data['url'];
 					
 					return $image_data['html'];
 				}
@@ -855,9 +853,16 @@ class AISTMA_Story_Generator {
 			$article_content
 		);
 		
-		// Set the first image as featured image if we have a post ID
-		if ( $post_id && $first_image_url ) {
-			$this->set_featured_image_from_url( $post_id, $first_image_url );
+		// Try to set a featured image from the collected URLs if we have a post ID
+		if ( $post_id && ! empty( $image_urls ) ) {
+			// Try each image until we find one that's not already used
+			foreach ( $image_urls as $image_url ) {
+				$result = $this->set_featured_image_from_url( $post_id, $image_url );
+				if ( $result ) {
+					// Successfully set featured image, stop trying
+					break;
+				}
+			}
 		}
 		
 		return $processed_content;
@@ -942,6 +947,14 @@ class AISTMA_Story_Generator {
 			return false;
 		}
 
+		// Check if this attachment is already used as a featured image by another post
+		if ( $this->is_attachment_used_as_featured_image( $upload, $post_id ) ) {
+			$this->aistma_log_manager->log( 'warning', 'Attachment ' . $upload . ' is already used as featured image by another post. Skipping.' );
+			// Delete the uploaded attachment since we won't use it
+			wp_delete_attachment( $upload, true );
+			return false;
+		}
+
 		// Set as featured image
 		$result = set_post_thumbnail( $post_id, $upload );
 		
@@ -968,16 +981,27 @@ class AISTMA_Story_Generator {
 			return false;
 		}
 
-		// Extract first image URL from content
-		$image_url = $this->extract_first_image_url( $content );
+		// Extract all image URLs from content
+		$image_urls = $this->extract_all_image_urls( $content );
 		
-		if ( ! $image_url ) {
+		if ( empty( $image_urls ) ) {
 			$this->aistma_log_manager->log( 'info', 'No image found in content for featured image on post ' . $post_id );
 			return false;
 		}
 
-		// Set featured image from URL
-		return $this->set_featured_image_from_url( $post_id, $image_url );
+		// Try each image URL until we find one that's not already used
+		foreach ( $image_urls as $image_url ) {
+			$result = $this->set_featured_image_from_url( $post_id, $image_url );
+			if ( $result ) {
+				// Successfully set featured image
+				return $result;
+			}
+			// If failed (e.g., already used), try the next image
+		}
+
+		// All images were already used or failed to download
+		$this->aistma_log_manager->log( 'warning', 'All images in content are already used as featured images by other posts for post ' . $post_id );
+		return false;
 	}
 
 	/**
@@ -998,6 +1022,57 @@ class AISTMA_Story_Generator {
 		}
 
 		return false;
+	}
+
+	/**
+	 * Extract all image URLs from HTML content.
+	 *
+	 * @param  string $content The HTML content to search.
+	 * @return array Array of image URLs found in the content.
+	 */
+	private function extract_all_image_urls( $content ) {
+		$image_urls = array();
+
+		// Look for all img tags
+		if ( preg_match_all( '/<img[^>]+src=["\']([^"\']+)["\'][^>]*>/i', $content, $matches ) ) {
+			$image_urls = array_merge( $image_urls, $matches[1] );
+		}
+
+		// Look for figure tags with img inside
+		if ( preg_match_all( '/<figure[^>]*>.*?<img[^>]+src=["\']([^"\']+)["\'][^>]*>/is', $content, $matches ) ) {
+			$image_urls = array_merge( $image_urls, $matches[1] );
+		}
+
+		// Remove duplicates
+		$image_urls = array_unique( $image_urls );
+
+		return array_values( $image_urls );
+	}
+
+	/**
+	 * Check if an attachment is already used as a featured image by another post.
+	 *
+	 * @param  int $attachment_id The attachment ID to check.
+	 * @param  int $current_post_id The current post ID (to exclude from check).
+	 * @return bool True if the attachment is used by another post, false otherwise.
+	 */
+	private function is_attachment_used_as_featured_image( $attachment_id, $current_post_id ) {
+		global $wpdb;
+
+		// Query to find posts that use this attachment as their featured image
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$posts_using_image = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(post_id) FROM {$wpdb->postmeta} 
+				WHERE meta_key = '_thumbnail_id' 
+				AND meta_value = %d 
+				AND post_id != %d",
+				$attachment_id,
+				$current_post_id
+			)
+		);
+
+		return $posts_using_image > 0;
 	}
 
 	/**
