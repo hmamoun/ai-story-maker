@@ -123,11 +123,11 @@ function aistma_handle_generate_story_event() {
 	}
 }
 function aistma_get_master_url(string $path = ''): string {
-	$base_url = defined('AISTMA_MASTER_URL') ? AISTMA_MASTER_URL : 'https://exedotcom.ca';
+	$base_url = defined('AISTMA_MASTER_URL') ? AISTMA_MASTER_URL : 'https://www.storymakerplugin.com';
     return rtrim($base_url, '/') . '/' . ltrim($path, '/');
 }
 function aistma_get_api_url(string $path = ''): string {
-    $base_url = defined('AISTMA_MASTER_API') ? AISTMA_MASTER_API : 'https://exedotcom.ca';
+    $base_url = defined('AISTMA_MASTER_API') ? AISTMA_MASTER_API : 'https://www.storymakerplugin.com';
     return rtrim($base_url, '/') . '/' . ltrim($path, '/');
 }
 function aistma_get_instructions_url(): string {

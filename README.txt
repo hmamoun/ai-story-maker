@@ -11,7 +11,7 @@ Plugin URI: https://www.storymakerplugin.com/
 Author: Hayan Mamoun
 Author URI: https://exedotcom.ca
 
-AI Story Maker is a powerful AI-driven WordPress plugin that helps you generate high-quality stories and articles instantly, using OpenAI and Unsplash APIs. Now includes the AI Story Enhancer tool for upgrading existing content with one click.
+AI-powered WordPress plugin that generates high-quality stories instantly with OpenAI and Unsplash. Includes AI Story Enhancer for content upgrades.
 
 == Description ==
 
