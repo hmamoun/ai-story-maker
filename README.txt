@@ -4,7 +4,7 @@ Tags: ai, content creation, blog automation, article generation, wordpress ai pl
 Requires at least: 5.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.1.3
+Stable tag: 2.1.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Plugin URI: https://www.storymakerplugin.com/
@@ -70,6 +70,10 @@ Ideal for bloggers, marketers, coaches, educators, and content creators.
 - Collects domain/email for license validation only (no personal user data shared)
 
 == Changelog Highlights ==
+
+= 2.1.4 =
+* Bug fixes and performance improvements
+* Enhanced stability and code quality
 
 = 2.1.3 =
 * NEW: AI Story Enhancer feature for post-level improvements

@@ -68,6 +68,7 @@ class AISTMA_Admin {
 	const TAB_ANALYTICS = 'analytics';
 	const TAB_LOG     = 'log';
 	const TAB_SHORTCODES = 'shortcodes';
+	const TAB_FAQ = 'faq';
 
 
 	/**
@@ -158,6 +159,7 @@ class AISTMA_Admin {
 			self::TAB_ANALYTICS,
 			self::TAB_LOG,
 			self::TAB_SHORTCODES,
+			self::TAB_FAQ,
 		);
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Tab selection only affects UI; no action taken
 		$active_tab = isset( $_GET['tab'] ) && in_array( sanitize_key( $_GET['tab'] ), $allowed_tabs, true ) ? sanitize_key( $_GET['tab'] ) : self::TAB_WELCOME;
@@ -190,6 +192,9 @@ class AISTMA_Admin {
 			</a>
 			<a href="?page=aistma-settings&tab=<?php echo esc_attr( self::TAB_LOG ); ?>" class="nav-tab <?php echo ( self::TAB_LOG === $active_tab ) ? 'nav-tab-active' : ''; ?>">
 		<?php esc_html_e( 'Log', 'ai-story-maker' ); ?>
+			</a>
+			<a href="?page=aistma-settings&tab=<?php echo esc_attr( self::TAB_FAQ ); ?>" class="nav-tab <?php echo ( self::TAB_FAQ === $active_tab ) ? 'nav-tab-active' : ''; ?>">
+		<?php esc_html_e( 'FAQ', 'ai-story-maker' ); ?>
 			</a>
 		</h2>
 		<?php
@@ -232,6 +237,8 @@ class AISTMA_Admin {
 		} elseif ( self::TAB_LOG === $active_tab ) {
 			$this->aistma_log_manager = new AISTMA_Log_Manager();
 			$this->aistma_log_manager->aistma_log_table_render();
+		} elseif ( self::TAB_FAQ === $active_tab ) {
+			include_once AISTMA_PATH . 'admin/templates/faq-template.php';
 		}
 
 		// Include generation controls on all tabs
