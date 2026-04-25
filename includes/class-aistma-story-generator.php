@@ -283,6 +283,35 @@ class AISTMA_Story_Generator {
 	 * @param  array  $subscription_info Subscription information.
 	 * @return void
 	 */
+	private function get_gateway_api_key() {
+		if ( defined( 'AISTMA_GATEWAY_API_KEY' ) && AISTMA_GATEWAY_API_KEY ) {
+			return sanitize_text_field( AISTMA_GATEWAY_API_KEY );
+		}
+
+		return sanitize_text_field( get_option( 'aistma_gateway_api_key', '' ) );
+	}
+
+	/**
+	 * Build standard gateway headers.
+	 *
+	 * @param bool $include_auth Whether to include the configured auth key.
+	 * @return array
+	 */
+	private function get_gateway_request_headers( $include_auth = true ) {
+		$headers = array(
+			'User-Agent'   => 'AI-Story-Maker/1.0',
+			'X-Caller-Url' => home_url(),
+			'X-Caller-IP'  => isset( $_SERVER['SERVER_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SERVER_ADDR'] ) ) : '',
+		);
+
+		$gateway_api_key = $this->get_gateway_api_key();
+		if ( $include_auth && ! empty( $gateway_api_key ) ) {
+			$headers['Authorization'] = 'Bearer ' . $gateway_api_key;
+		}
+
+		return $headers;
+	}
+
 	private function generate_story_via_master_api( $prompt_id, $prompt, $merged_settings, $the_prompt, $subscription_info ) {
 		// Get recent posts to avoid duplication
 		$recent_posts = $this->aistma_get_recent_posts( 20, $prompt['category'] ?? '' );
@@ -313,12 +342,18 @@ class AISTMA_Story_Generator {
 			'photos' => $prompt['photos'] ?? 0,
 		);
 
+		$headers = $this->get_gateway_request_headers();
+		$headers['Content-Type'] = 'application/json';
+
+		if ( empty( $headers['Authorization'] ) ) {
+			$this->aistma_log_manager->log( 'warning', 'Gateway API key missing; falling back to direct OpenAI call for protected generation endpoint.' );
+			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $this->api_key, $the_prompt );
+			return;
+		}
+
 		$response = wp_remote_post( $api_url, array(
 			'timeout' => 60,
-			'headers' => array(
-				'Content-Type' => 'application/json',
-				'User-Agent' => 'AI-Story-Maker/1.0',
-			),
+			'headers' => $headers,
 			'body' => wp_json_encode( $request_data ),
 		) );
 
@@ -1148,11 +1183,7 @@ class AISTMA_Story_Generator {
 		
 		$response = wp_remote_get( $api_url, array(
 			'timeout' => 30,
-			'headers' => array(
-				'User-Agent' => 'AI-Story-Maker/1.0',
-				'X-Caller-Url' => home_url(),
-				'X-Caller-IP' => isset( $_SERVER['SERVER_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SERVER_ADDR'] ) ) : '',
-			),
+			'headers' => $this->get_gateway_request_headers(),
 		) );
 
 		if ( is_wp_error( $response ) ) {
@@ -1203,16 +1234,17 @@ class AISTMA_Story_Generator {
 			return $this->subscription_status;
 		}
 		if ( isset( $data['valid'] ) && $data['valid'] ) {
-			$this->aistma_log_manager->log( 'info', 'Subscription found for domain: ' . $domain . ' - Credits remaining: ' . ( $data['credits_remaining'] ?? 0 ) );
+			$this->aistma_log_manager->log( 'info', 'Subscription found for domain: ' . $domain . ' - Credits remaining: ' . ( $data['credits_remaining'] ?? 'n/a' ) );
 			$this->subscription_status = array(
 				'valid' => true,
 				'domain' => $data['domain'] ?? $domain,
-				'credits_remaining' => intval( $data['credits_remaining'] ?? 0 ),
+				'credits_remaining' => isset( $data['credits_remaining'] ) ? intval( $data['credits_remaining'] ) : null,
 				'package_id' => $data['package_id'] ?? '',
 				'package_name' => $data['package_name'] ?? '',
 				'price' => floatval( $data['price'] ?? 0 ),
 				'created_at' => $data['created_at'] ?? '',
 				'next_billing_date' => $data['next_billing_date'] ?? '',
+				'authenticated' => ! empty( $data['authenticated'] ),
 			);
 		} else {
 			$this->aistma_log_manager->log( 'info', 'No active subscription found for domain: ' . $domain . ', message: ' . ( $data['message'] ?? 'No message' ) );

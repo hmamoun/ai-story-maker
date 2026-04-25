@@ -186,7 +186,9 @@ if ( ! empty( $saved_subscription_email ) ) {
                 $time_remaining = ' (' . $time_remaining . ' remaining)';
             }
             $parts = [];
-            if ($credits_remaining === 0) {
+            if ( null === $credits_remaining ) {
+                $parts[] = __( 'Managed subscription detected', 'ai-story-maker' );
+            } elseif ($credits_remaining === 0) {
                 $parts[] = "No credits remaining";
                 if ( $next_billing && 'N/A' !== $next_billing ) {
                     $parts[] = 'Renewal: ' . $next_billing . $time_remaining;
@@ -389,6 +391,14 @@ document.addEventListener('DOMContentLoaded', function() {
 		<label for="aistma_unsplash_api_secret"><?php esc_html_e( 'Secret:', 'ai-story-maker' ); ?></label>
 		<input type="text" id="aistma_unsplash_api_secret" data-setting="aistma_unsplash_api_secret" value="<?php echo esc_attr( get_option( 'aistma_unsplash_api_secret' ) ); ?>">
 	</div>
+
+	<label for="aistma_gateway_api_key">
+		<?php esc_html_e( 'ExeDotCom hosted service auth key:', 'ai-story-maker' ); ?>
+	</label>
+	<input type="password" id="aistma_gateway_api_key" data-setting="aistma_gateway_api_key" value="<?php echo esc_attr( get_option( 'aistma_gateway_api_key' ) ); ?>" autocomplete="off">
+	<p class="description">
+		<?php esc_html_e( 'Advanced: only required when ExeDotCom provides a managed-service auth key for protected gateway calls.', 'ai-story-maker' ); ?>
+	</p>
 </div>
 </div>
 
