@@ -1,0 +1,751 @@
+/**
+ * Activation Wizard & Preview Modal Styles
+ *
+ * @package AI_Story_Maker
+ * @since   2.2.0
+ */
+
+/* ============================================================================
+   Modal Overlay
+   ============================================================================ */
+
+.aistma-wizard-overlay,
+.aistma-preview-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: rgba(0, 0, 0, 0.5);
+	z-index: 9998;
+	animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+/* ============================================================================
+   Activation Wizard Modal
+   ============================================================================ */
+
+.aistma-wizard-modal {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 9999;
+}
+
+.aistma-wizard-content {
+	position: relative;
+	background: #fff;
+	border-radius: 8px;
+	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+	max-width: 900px;
+	width: 90%;
+	max-height: 90vh;
+	overflow-y: auto;
+	animation: slideUp 0.3s ease-in-out;
+	z-index: 9999;
+}
+
+@keyframes slideUp {
+	from {
+		transform: translateY(30px);
+		opacity: 0;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
+/* Header */
+.aistma-wizard-header {
+	padding: 30px;
+	border-bottom: 1px solid #e5e5e5;
+	position: relative;
+}
+
+.aistma-wizard-header h2 {
+	margin: 0 0 10px 0;
+	font-size: 28px;
+	color: #1d2327;
+	line-height: 1.3;
+}
+
+.aistma-wizard-header p {
+	margin: 0;
+	color: #646970;
+	font-size: 16px;
+}
+
+.aistma-wizard-close {
+	position: absolute;
+	top: 15px;
+	right: 15px;
+	background: none;
+	border: none;
+	font-size: 32px;
+	cursor: pointer;
+	color: #646970;
+	padding: 0;
+	width: 32px;
+	height: 32px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: color 0.2s ease;
+}
+
+.aistma-wizard-close:hover {
+	color: #1d2327;
+}
+
+/* Body - Prompts Grid */
+.aistma-wizard-body {
+	padding: 30px;
+	min-height: 400px;
+}
+
+.aistma-prompts-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+	gap: 20px;
+}
+
+/* Prompt Card */
+.aistma-prompt-card {
+	background: #f8f9fa;
+	border: 2px solid #e5e5e5;
+	border-radius: 8px;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	transition: all 0.3s ease;
+	cursor: pointer;
+	overflow: hidden;
+}
+
+.aistma-prompt-card:hover {
+	border-color: #0073aa;
+	box-shadow: 0 4px 12px rgba(0, 115, 170, 0.15);
+	transform: translateY(-2px);
+}
+
+.aistma-prompt-card.selected {
+	border-color: #0073aa;
+	background: #f0f6fb;
+	box-shadow: 0 4px 12px rgba(0, 115, 170, 0.25);
+}
+
+.aistma-prompt-card-header {
+	padding: 15px;
+	background: #fff;
+	border-bottom: 1px solid #e5e5e5;
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 10px;
+}
+
+.aistma-prompt-card-header h3 {
+	margin: 0;
+	font-size: 16px;
+	font-weight: 600;
+	color: #1d2327;
+	flex: 1;
+}
+
+.aistma-prompt-category {
+	display: inline-block;
+	background: #dcdcde;
+	color: #1d2327;
+	padding: 4px 10px;
+	border-radius: 12px;
+	font-size: 12px;
+	font-weight: 500;
+	white-space: nowrap;
+}
+
+.aistma-prompt-card-body {
+	padding: 15px;
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.aistma-prompt-card-body p {
+	margin: 0;
+	font-size: 14px;
+	color: #646970;
+	line-height: 1.5;
+}
+
+.aistma-prompt-example {
+	background: #fff;
+	padding: 10px;
+	border-radius: 4px;
+	border-left: 3px solid #0073aa;
+	margin-top: auto;
+}
+
+.aistma-prompt-example small {
+	color: #646970;
+	font-style: italic;
+	display: block;
+	line-height: 1.4;
+}
+
+.aistma-prompt-card-footer {
+	padding: 15px;
+	border-top: 1px solid #e5e5e5;
+	background: #fff;
+}
+
+.aistma-select-prompt {
+	width: 100%;
+	margin: 0;
+}
+
+/* Footer */
+.aistma-wizard-footer {
+	padding: 20px 30px;
+	border-top: 1px solid #e5e5e5;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	background: #fafbfc;
+}
+
+.aistma-wizard-checkbox {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	cursor: pointer;
+	user-select: none;
+	font-size: 14px;
+	color: #646970;
+}
+
+.aistma-wizard-checkbox input[type="checkbox"] {
+	cursor: pointer;
+	margin: 0;
+}
+
+.aistma-wizard-actions {
+	display: flex;
+	gap: 10px;
+}
+
+.aistma-wizard-actions .button {
+	margin: 0;
+}
+
+.aistma-wizard-generate:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* Loading State */
+.aistma-wizard-loading {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(255, 255, 255, 0.95);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 20px;
+	z-index: 10000;
+	border-radius: 8px;
+}
+
+.aistma-wizard-loading p {
+	margin: 0;
+	color: #646970;
+	font-size: 16px;
+}
+
+/* ============================================================================
+   Preview Modal
+   ============================================================================ */
+
+.aistma-preview-modal {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 9999;
+}
+
+.aistma-preview-content {
+	position: relative;
+	background: #fff;
+	border-radius: 8px;
+	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+	max-width: 700px;
+	width: 90%;
+	max-height: 90vh;
+	overflow-y: auto;
+	animation: slideUp 0.3s ease-in-out;
+	z-index: 9999;
+	display: flex;
+	flex-direction: column;
+}
+
+/* Preview Header */
+.aistma-preview-header {
+	padding: 30px;
+	border-bottom: 1px solid #e5e5e5;
+	position: relative;
+}
+
+.aistma-preview-title {
+	margin: 0;
+	font-size: 28px;
+	color: #1d2327;
+	line-height: 1.3;
+	word-break: break-word;
+}
+
+.aistma-preview-close {
+	position: absolute;
+	top: 15px;
+	right: 15px;
+	background: none;
+	border: none;
+	font-size: 32px;
+	cursor: pointer;
+	color: #646970;
+	padding: 0;
+	width: 32px;
+	height: 32px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: color 0.2s ease;
+}
+
+.aistma-preview-close:hover {
+	color: #1d2327;
+}
+
+/* Preview Body */
+.aistma-preview-body {
+	padding: 30px;
+	flex: 1;
+	overflow-y: auto;
+}
+
+.aistma-preview-image-container {
+	margin-bottom: 20px;
+	border-radius: 8px;
+	overflow: hidden;
+	background: #f0f0f0;
+}
+
+.aistma-preview-image {
+	width: 100%;
+	height: auto;
+	display: block;
+}
+
+.aistma-preview-credits {
+	padding: 12px;
+	background: #f0f6fb;
+	border-left: 4px solid #0073aa;
+	border-radius: 4px;
+	margin-bottom: 20px;
+	font-size: 14px;
+	color: #646970;
+}
+
+.aistma-preview-credits strong {
+	color: #0073aa;
+	font-weight: 600;
+}
+
+.aistma-preview-excerpt {
+	margin: 0;
+	color: #1d2327;
+	font-size: 16px;
+	line-height: 1.8;
+	word-break: break-word;
+}
+
+/* Loading State */
+.aistma-preview-loading {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 20px;
+	min-height: 400px;
+}
+
+.aistma-preview-loading p {
+	margin: 0;
+	color: #646970;
+	font-size: 16px;
+}
+
+/* Error State */
+.aistma-preview-error {
+	background: #fde7e7;
+	border-left: 4px solid #d63638;
+	padding: 15px;
+	border-radius: 4px;
+	margin: 0;
+}
+
+.aistma-preview-error-message {
+	margin: 0;
+	color: #d63638;
+	font-size: 14px;
+}
+
+/* Preview Footer */
+.aistma-preview-footer {
+	padding: 20px 30px;
+	border-top: 1px solid #e5e5e5;
+	background: #fafbfc;
+}
+
+.aistma-preview-actions {
+	display: flex;
+	gap: 10px;
+	justify-content: flex-end;
+}
+
+.aistma-preview-actions .button {
+	margin: 0;
+}
+
+/* ============================================================================
+   Loading Spinner
+   ============================================================================ */
+
+.aistma-spinner {
+	width: 40px;
+	height: 40px;
+	border: 4px solid #e5e5e5;
+	border-top-color: #0073aa;
+	border-radius: 50%;
+	animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+/* ============================================================================
+   Responsive Design
+   ============================================================================ */
+
+@media (max-width: 768px) {
+	.aistma-wizard-content,
+	.aistma-preview-content {
+		width: 95%;
+		max-height: 95vh;
+	}
+
+	.aistma-wizard-header,
+	.aistma-wizard-body,
+	.aistma-wizard-footer {
+		padding: 20px;
+	}
+
+	.aistma-wizard-header h2 {
+		font-size: 24px;
+	}
+
+	.aistma-prompts-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.aistma-wizard-footer {
+		flex-direction: column;
+		gap: 15px;
+		align-items: flex-start;
+	}
+
+	.aistma-wizard-actions {
+		width: 100%;
+		flex-direction: column;
+	}
+
+	.aistma-wizard-actions .button {
+		width: 100%;
+	}
+
+	.aistma-preview-header,
+	.aistma-preview-body,
+	.aistma-preview-footer {
+		padding: 20px;
+	}
+
+	.aistma-preview-title {
+		font-size: 24px;
+	}
+
+	.aistma-preview-actions {
+		flex-direction: column;
+	}
+
+	.aistma-preview-actions .button {
+		width: 100%;
+	}
+}
+
+@media (max-width: 480px) {
+	.aistma-wizard-header h2,
+	.aistma-preview-title {
+		font-size: 20px;
+	}
+
+	.aistma-prompt-card-header {
+		flex-direction: column;
+	}
+
+	.aistma-wizard-close,
+	.aistma-preview-close {
+		width: 28px;
+		height: 28px;
+		font-size: 28px;
+	}
+
+	.aistma-wizard-checkbox {
+		font-size: 12px;
+	}
+}
+
+/* ============================================================================
+   Weekly Confirmation Modal Styles
+   ============================================================================ */
+
+.aistma-weekly-confirmation-modal {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 10000;
+}
+
+.aistma-weekly-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: rgba(0, 0, 0, 0.5);
+	z-index: 9998;
+	animation: fadeIn 0.3s ease-in-out;
+}
+
+.aistma-weekly-modal-content {
+	position: relative;
+	background: #fff;
+	border-radius: 8px;
+	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+	max-width: 500px;
+	width: 90%;
+	animation: slideUp 0.3s ease-in-out;
+	z-index: 10001;
+}
+
+/* Header */
+.aistma-weekly-header {
+	padding: 30px;
+	border-bottom: 1px solid #e5e5e5;
+	position: relative;
+}
+
+.aistma-weekly-header h2 {
+	margin: 0;
+	font-size: 24px;
+	color: #1d2327;
+	line-height: 1.3;
+}
+
+.aistma-weekly-close {
+	position: absolute;
+	top: 15px;
+	right: 15px;
+	background: none;
+	border: none;
+	font-size: 32px;
+	cursor: pointer;
+	color: #646970;
+	padding: 0;
+	width: 32px;
+	height: 32px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: color 0.2s;
+}
+
+.aistma-weekly-close:hover {
+	color: #000;
+}
+
+/* Body */
+.aistma-weekly-body {
+	padding: 30px;
+	color: #1d2327;
+}
+
+.aistma-weekly-body p {
+	margin: 0 0 20px 0;
+	line-height: 1.6;
+	color: #646970;
+}
+
+.aistma-weekly-info {
+	background: #f1f1f1;
+	border-radius: 6px;
+	padding: 20px;
+	margin: 20px 0;
+}
+
+.aistma-weekly-info-item {
+	display: flex;
+	justify-content: space-between;
+	margin-bottom: 12px;
+	line-height: 1.6;
+}
+
+.aistma-weekly-info-item:last-child {
+	margin-bottom: 0;
+}
+
+.aistma-weekly-info-item strong {
+	color: #1d2327;
+	font-weight: 600;
+}
+
+.aistma-weekly-info-item span {
+	color: #646970;
+}
+
+.aistma-weekly-note {
+	font-size: 13px;
+	color: #999;
+	margin: 15px 0 0 0;
+}
+
+/* Footer */
+.aistma-weekly-footer {
+	padding: 20px 30px;
+	border-top: 1px solid #e5e5e5;
+	display: flex;
+	gap: 10px;
+	justify-content: flex-end;
+}
+
+.aistma-weekly-footer .button {
+	min-width: 120px;
+}
+
+.aistma-weekly-cancel {
+	background: #f0f0f0;
+	border-color: #ccc;
+	color: #1d2327;
+}
+
+.aistma-weekly-cancel:hover {
+	background: #e0e0e0;
+	border-color: #999;
+}
+
+.aistma-weekly-confirm {
+	background: #0073aa;
+	border-color: #005a87;
+	color: #fff;
+}
+
+.aistma-weekly-confirm:hover {
+	background: #005a87;
+	border-color: #004075;
+}
+
+/* Preview Modal Weekly Toggle */
+.aistma-preview-weekly-toggle {
+	padding: 15px 30px;
+	border-top: 1px solid #e5e5e5;
+	background: #fafafa;
+}
+
+.aistma-weekly-toggle-label {
+	display: flex;
+	align-items: center;
+	cursor: pointer;
+	margin: 0 0 8px 0;
+	font-weight: 500;
+}
+
+.aistma-weekly-toggle-checkbox {
+	margin: 0 10px 0 0;
+	cursor: pointer;
+	width: 18px;
+	height: 18px;
+}
+
+.aistma-weekly-toggle-text {
+	color: #1d2327;
+	font-size: 14px;
+}
+
+.aistma-weekly-toggle-help {
+	margin: 0 0 0 28px;
+	color: #999;
+	font-size: 12px;
+	line-height: 1.4;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+	.aistma-weekly-modal-content {
+		max-width: 100%;
+		margin: 20px;
+	}
+
+	.aistma-weekly-header,
+	.aistma-weekly-body,
+	.aistma-weekly-footer {
+		padding: 20px;
+	}
+
+	.aistma-weekly-footer {
+		flex-direction: column-reverse;
+	}
+
+	.aistma-weekly-footer .button {
+		width: 100%;
+	}
+}

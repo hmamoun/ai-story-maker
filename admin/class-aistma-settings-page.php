@@ -69,6 +69,7 @@ class AISTMA_Settings_Page {
 		add_action( 'wp_ajax_aistma_delete_social_media_account', [ $this, 'aistma_ajax_delete_social_media_account' ] );
 		add_action( 'wp_ajax_aistma_test_social_media_account', [ $this, 'aistma_ajax_test_social_media_account' ] );
 		add_action( 'wp_ajax_aistma_facebook_oauth_callback', [ $this, 'aistma_ajax_facebook_oauth_callback' ] );
+		add_action( 'wp_ajax_aistma_toggle_weekly_user', [ $this, 'aistma_ajax_toggle_weekly_user' ] );
 		
 		// Hook into init to handle Facebook OAuth redirect
 		add_action( 'init', [ $this, 'handle_facebook_oauth_redirect' ] );
@@ -865,6 +866,41 @@ class AISTMA_Settings_Page {
 		}
 		
 		wp_die();
+	}
+
+	/**
+	 * AJAX handler for toggling weekly auto-generation.
+	 *
+	 * @return void
+	 */
+	public function aistma_ajax_toggle_weekly_user() {
+		// Check nonce
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'aistma_weekly_nonce' ) ) {
+			wp_send_json_error( [ 'message' => __( 'Security check failed.', 'ai-story-maker' ) ] );
+		}
+
+		// Only admins can do this
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( [ 'message' => __( 'You do not have permission to perform this action.', 'ai-story-maker' ) ] );
+		}
+
+		$user_id = isset( $_POST['user_id'] ) ? absint( $_POST['user_id'] ) : 0;
+		$action = isset( $_POST['action_type'] ) ? sanitize_text_field( wp_unslash( $_POST['action_type'] ) ) : '';
+
+		if ( ! $user_id || ! in_array( $action, [ 'enable', 'disable' ], true ) ) {
+			wp_send_json_error( [ 'message' => __( 'Invalid parameters.', 'ai-story-maker' ) ] );
+		}
+
+		if ( ! class_exists( __NAMESPACE__ . '\\AISTMA_Weekly_Scheduler' ) ) {
+			AISTMA_Plugin::aistma_load_dependencies( [ 'includes/class-aistma-weekly-scheduler.php' ] );
+		}
+
+		if ( 'disable' === $action ) {
+			AISTMA_Weekly_Scheduler::disable_weekly( $user_id );
+			wp_send_json_success( [ 'message' => __( 'Weekly auto-generation disabled.', 'ai-story-maker' ) ] );
+		} else {
+			wp_send_json_error( [ 'message' => __( 'Enable action not yet implemented through admin.', 'ai-story-maker' ) ] );
+		}
 	}
 
 

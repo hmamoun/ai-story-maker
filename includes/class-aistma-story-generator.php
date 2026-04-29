@@ -148,7 +148,17 @@ class AISTMA_Story_Generator {
 	 */
 	public function generate_ai_story( $prompt_id, $prompt, $default_settings, $api_key, $aistma_master_instructions ) {
 		$merged_settings        = array_merge( $default_settings, $prompt );
-	
+		
+		// Check credits before proceeding with generation
+		$current_user_id = get_current_user_id();
+		if ( $current_user_id > 0 && class_exists( __NAMESPACE__ . '\\AISTMA_Credits_Manager' ) ) {
+			if ( ! AISTMA_Credits_Manager::has_credits( $current_user_id, 1 ) ) {
+				$error = __( 'You do not have enough credits to generate a story. Please purchase more credits.', 'ai-story-maker' );
+				$this->aistma_log_manager->log( 'warning', $error . ' (User: ' . $current_user_id . ')' );
+				throw new \RuntimeException( esc_html( $error ) );
+			}
+		}
+		
 		$recent_posts = $this->aistma_get_recent_posts( 20, $prompt['category'] );
 
 		// Append recent posts titles if provided and not empty.
@@ -529,6 +539,22 @@ class AISTMA_Story_Generator {
 			$error = __( 'Error creating post: ', 'ai-story-maker' ) . $post_id->get_error_message();
 			$this->aistma_log_manager->log( 'error', $error );
 			throw new \RuntimeException( esc_html( $error ) );
+		}
+
+		// Deduct credit after successful post creation
+		if ( $post_id ) {
+			$current_user_id = get_current_user_id();
+			if ( $current_user_id > 0 && class_exists( __NAMESPACE__ . '\\AISTMA_Credits_Manager' ) ) {
+				$new_balance = AISTMA_Credits_Manager::deduct_credits( $current_user_id, 1, 'Story generation for post ' . $post_id );
+				if ( false !== $new_balance ) {
+					$this->aistma_log_manager->log( 'info', 'Credit deducted for user ' . $current_user_id . '. New balance: ' . $new_balance );
+					
+					// Log event to gateway
+					if ( class_exists( __NAMESPACE__ . '\\AISTMA_Gateway_Logger' ) ) {
+						AISTMA_Gateway_Logger::log_story_generated( $current_user_id, $post_id, $prompt_id, 1 );
+					}
+				}
+			}
 		}
 
 		// Set featured image from first image in content (Master API already processes images)
@@ -1408,6 +1434,78 @@ class AISTMA_Story_Generator {
 
 		$this->aistma_log_manager->log( 'warning', 'No enhancement limit found for package ID: ' . $package_id . ', defaulting to unlimited' );
 		return 0; // Default to unlimited
+	}
+
+	/**
+	 * Generate a story for a specific user with a given prompt.
+	 *
+	 * @param int $user_id   The user ID to generate the story for.
+	 * @param int $prompt_id The prompt ID to use for generation.
+	 * @return int|false The post ID if successful, false otherwise.
+	 */
+	public static function generate_ai_story_for_user( $user_id, $prompt_id ) {
+		try {
+			$instance = new self();
+			$user_id = absint( $user_id );
+			$prompt_id = absint( $prompt_id );
+
+			if ( ! $user_id || ! $prompt_id ) {
+				return false;
+			}
+
+			// Get prompt
+			$prompt_post = get_post( $prompt_id );
+			if ( ! $prompt_post || 'aistma_prompt' !== $prompt_post->post_type ) {
+				return false;
+			}
+
+			// Get prompt meta
+			$prompt_text = get_post_meta( $prompt_id, '_aistma_prompt_text', true );
+			if ( ! $prompt_text ) {
+				return false;
+			}
+
+			// Generate the story
+			// Temporarily set current user to the target user for the generation
+			$original_user = get_current_user_id();
+			wp_set_current_user( $user_id );
+
+			try {
+				$instance->generate_ai_story(
+					$prompt_id,
+					array(
+						'text'       => $prompt_text,
+						'category'   => get_post_meta( $prompt_id, '_aistma_category', true ),
+						'post_type'  => 'post',
+					),
+					$instance->default_settings,
+					$instance->api_key,
+					''
+				);
+
+				// Get the last created post (most recent by the target user)
+				$posts = get_posts( array(
+					'author' => $user_id,
+					'post_type' => 'post',
+					'numberposts' => 1,
+					'meta_query' => array(
+						array(
+							'key' => '_aistma_prompt_id',
+							'value' => $prompt_id,
+						),
+					),
+				) );
+
+				$post_id = $posts ? $posts[0]->ID : false;
+
+				return $post_id;
+			} finally {
+				// Restore original user
+				wp_set_current_user( $original_user );
+			}
+		} catch ( \Throwable $e ) {
+			return false;
+		}
 	}
 
 

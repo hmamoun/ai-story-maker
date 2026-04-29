@@ -82,6 +82,10 @@ class AISTMA_Admin {
 			'admin/class-aistma-api-keys.php',
 			'admin/class-aistma-settings-page.php',
 			'includes/class-aistma-log-manager.php',
+			'includes/class-aistma-activation-wizard.php',
+			'includes/class-aistma-credits-manager.php',
+			'includes/class-aistma-gateway-logger.php',
+			'includes/class-aistma-rating-request.php',
 			'admin/widgets/widgets-manager.php',
 		);
 		AISTMA_Plugin::aistma_load_dependencies( $files );
@@ -90,8 +94,16 @@ class AISTMA_Admin {
 		$this->aistma_log_manager = new AISTMA_Log_Manager();
 
 		add_action( 'admin_enqueue_scripts', array( $this, 'aistma_admin_enqueue_scripts' ) );
+		add_action( 'admin_footer', array( $this, 'aistma_render_wizard_modals' ) );
 		add_action( 'admin_menu', array( $this, 'aistma_add_admin_menu' ) );
 		add_action( 'admin_head-edit.php', array( $this, 'aistma_add_posts_page_button' ) );
+		add_action( 'wp_ajax_aistma_wizard_generate', array( $this, 'aistma_wizard_generate' ) );
+		add_action( 'wp_ajax_aistma_wizard_save', array( $this, 'aistma_wizard_save' ) );
+		add_action( 'wp_ajax_aistma_wizard_dismiss', array( $this, 'aistma_wizard_dismiss' ) );
+		add_action( 'wp_ajax_aistma_confirm_weekly', array( $this, 'aistma_confirm_weekly' ) );
+		add_action( 'wp_ajax_aistma_submit_rating', array( $this, 'aistma_submit_rating' ) );
+		add_action( 'wp_ajax_aistma_dismiss_rating', array( $this, 'aistma_dismiss_rating' ) );
+		add_action( 'wp_ajax_aistma_never_show_rating', array( $this, 'aistma_never_show_rating' ) );
 
 		// Initialize social media bulk actions
 		$this->init_social_media_bulk_actions();
@@ -123,6 +135,62 @@ class AISTMA_Admin {
 			array(),
 			filemtime( AISTMA_PATH . 'admin/css/admin.css' )
 		);
+
+		// Enqueue wizard scripts and styles
+		wp_enqueue_script(
+			'aistma-wizard-js',
+			AISTMA_URL . 'admin/js/activation-wizard.js',
+			array( 'jquery' ),
+			filemtime( AISTMA_PATH . 'admin/js/activation-wizard.js' ),
+			true
+		);
+
+		// Localize wizard script with nonces and settings
+		wp_localize_script( 'aistma-wizard-js', 'aistmaWizardL10n', array(
+			'showWizard' => AISTMA_Activation_Wizard::maybe_show_wizard() ? '1' : '0',
+			'generateNonce' => wp_create_nonce( 'aistma_wizard_generate_nonce' ),
+			'saveNonce' => wp_create_nonce( 'aistma_wizard_save_nonce' ),
+			'dismissNonce' => wp_create_nonce( 'aistma_wizard_dismiss_nonce' ),
+			'weeklyNonce' => wp_create_nonce( 'aistma_confirm_weekly_nonce' ),
+			'selectPrompt' => __( 'Please select a prompt first.', 'ai-story-maker' ),
+			'generateError' => __( 'An error occurred while generating the story. Please try again.', 'ai-story-maker' ),
+			'saveError' => __( 'An error occurred while saving. Please try again.', 'ai-story-maker' ),
+			'saveSuccess' => __( 'Story saved successfully!', 'ai-story-maker' ),
+			'unknownError' => __( 'An unknown error occurred.', 'ai-story-maker' ),
+			'editPostUrl' => admin_url( 'post.php?action=edit' ),
+			'postsPageUrl' => admin_url( 'edit.php' ),
+			'redirectAfterSave' => true,
+		) );
+
+		// Enqueue wizard CSS
+		wp_enqueue_style(
+			'aistma-wizard-css',
+			AISTMA_URL . 'admin/css/activation-wizard.css',
+			array(),
+			filemtime( AISTMA_PATH . 'admin/css/activation-wizard.css' )
+		);
+
+		// Enqueue rating modal CSS and JS
+		wp_enqueue_style(
+			'aistma-rating-css',
+			AISTMA_URL . 'admin/css/rating-modal.css',
+			array(),
+			filemtime( AISTMA_PATH . 'admin/css/rating-modal.css' )
+		);
+
+		wp_enqueue_script(
+			'aistma-rating-js',
+			AISTMA_URL . 'admin/js/rating-modal.js',
+			array( 'jquery' ),
+			filemtime( AISTMA_PATH . 'admin/js/rating-modal.js' ),
+			true
+		);
+
+		// Localize rating script with nonces
+		wp_localize_script( 'aistma-rating-js', 'aistmaRatingL10n', array(
+			'submitNonce' => wp_create_nonce( 'aistma_submit_rating_nonce' ),
+			'dismissNonce' => wp_create_nonce( 'aistma_dismiss_rating_nonce' ),
+		) );
 	}
 
 	/**
@@ -1331,6 +1399,433 @@ class AISTMA_Admin {
 		// Use the story generator's subscription status method
 		$story_generator = new AISTMA_Story_Generator();
 		return $story_generator->aistma_get_subscription_status();
+	}
+
+	/**
+	 * AJAX handler for wizard generation.
+	 *
+	 * Generates a story from a selected prompt and returns preview data.
+	 *
+	 * @return void
+	 */
+
+	/**
+	 * Render wizard and preview modals in admin footer.
+	 *
+	 * @return void
+	 */
+	public function aistma_render_wizard_modals() {
+		// Only render in admin pages where posts can be edited
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			return;
+		}
+
+		// Render modals using the wizard class
+		echo AISTMA_Activation_Wizard::get_wizard_modal_html();
+		echo AISTMA_Activation_Wizard::get_preview_modal_html();
+
+		// Render weekly confirmation modal template
+		include AISTMA_PATH . 'admin/templates/weekly-confirmation-modal-template.php';
+
+		// Render rating modal template
+		include AISTMA_PATH . 'admin/templates/rating-modal-template.php';
+
+		// Conditionally show rating modal if user qualifies
+		$user_id = get_current_user_id();
+		if ( AISTMA_Rating_Request::should_show_rating( $user_id ) ) {
+			?>
+			<script type="text/javascript">
+				jQuery(document).ready(function () {
+					if (typeof AistmaRating !== 'undefined') {
+						AistmaRating.show();
+					}
+				});
+			</script>
+			<?php
+		}
+	}
+	public function aistma_wizard_generate() {
+		// Check nonce
+		if ( ! check_ajax_referer( 'aistma_wizard_generate_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'ai-story-maker' ) ) );
+		}
+
+		// Check capabilities
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'ai-story-maker' ) ) );
+		}
+
+		try {
+			$user_id = get_current_user_id();
+			$prompt_id = isset( $_POST['prompt_id'] ) ? sanitize_text_field( wp_unslash( $_POST['prompt_id'] ) ) : '';
+
+			if ( empty( $prompt_id ) ) {
+				wp_send_json_error( array( 'message' => __( 'No prompt selected.', 'ai-story-maker' ) ) );
+			}
+
+			// Check credits
+			if ( ! AISTMA_Credits_Manager::has_credits( $user_id, 1 ) ) {
+				wp_send_json_error( array( 'message' => __( 'You do not have enough credits to generate a story.', 'ai-story-maker' ) ) );
+			}
+
+			// Get the selected prompt
+			$prompts = AISTMA_Activation_Wizard::get_default_prompts();
+			$selected_prompt = null;
+			foreach ( $prompts as $prompt ) {
+				if ( $prompt['id'] === $prompt_id ) {
+					$selected_prompt = $prompt;
+					break;
+				}
+			}
+
+			if ( ! $selected_prompt ) {
+				wp_send_json_error( array( 'message' => __( 'Invalid prompt selected.', 'ai-story-maker' ) ) );
+			}
+
+			// Create a draft post with prompt information
+			// The actual content generation via OpenAI will happen when user saves
+			$post_title = $selected_prompt['name'] . ': ' . substr( $selected_prompt['description'], 0, 50 );
+			$post_content = sprintf(
+				"<p>%s</p>\n<p>%s</p>\n<p><em>%s</em></p>",
+				esc_html( $selected_prompt['description'] ),
+				esc_html( __( 'This is a preview of your story. Edit below to customize before publishing.', 'ai-story-maker' ) ),
+				esc_html( $selected_prompt['example'] )
+			);
+
+			$post_args = array(
+				'post_type' => 'post',
+				'post_status' => 'draft',
+				'post_author' => $user_id,
+				'post_title' => sanitize_text_field( $post_title ),
+				'post_content' => wp_kses_post( $post_content ),
+				'post_excerpt' => sanitize_text_field( $selected_prompt['description'] ),
+			);
+
+			// Insert the draft post
+			$post_id = wp_insert_post( $post_args );
+
+			if ( is_wp_error( $post_id ) ) {
+				wp_send_json_error( array( 'message' => __( 'Failed to create post.', 'ai-story-maker' ) ) );
+			}
+
+			// Store the prompt ID in post meta for reference
+			update_post_meta( $post_id, '_aistma_prompt_id', sanitize_text_field( $prompt_id ) );
+
+			// Log the prompt selection event
+			AISTMA_Gateway_Logger::log_prompt_selected( $user_id, $prompt_id, array( 'post_id' => $post_id ) );
+
+			// Prepare response with preview data
+			$credits_remaining = AISTMA_Credits_Manager::get_user_credits( $user_id );
+
+			wp_send_json_success( array(
+				'post_id' => $post_id,
+				'prompt_id' => $prompt_id,
+				'title' => get_the_title( $post_id ),
+				'excerpt' => wp_trim_words( get_the_content( '', false, $post_id ), 20 ),
+				'featured_image_url' => '',
+				'credits_remaining' => $credits_remaining,
+			) );
+
+		} catch ( \Throwable $e ) {
+			$this->aistma_log_manager->log( 'error', 'Wizard generation error: ' . $e->getMessage() );
+			wp_send_json_error( array( 'message' => __( 'An error occurred during generation.', 'ai-story-maker' ) ) );
+		}
+	}
+
+	/**
+	 * AJAX handler for saving wizard-generated story.
+	 *
+	 * Saves the draft post and deducts credits.
+	 *
+	 * @return void
+	 */
+	public function aistma_wizard_save() {
+		// Check nonce
+		if ( ! check_ajax_referer( 'aistma_wizard_save_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'ai-story-maker' ) ) );
+		}
+
+		// Check capabilities
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'ai-story-maker' ) ) );
+		}
+
+		try {
+			$user_id = get_current_user_id();
+			$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
+
+			if ( ! $post_id || get_post_author( $post_id ) !== $user_id ) {
+				wp_send_json_error( array( 'message' => __( 'Invalid post.', 'ai-story-maker' ) ) );
+			}
+
+			// Deduct credit
+			$new_balance = AISTMA_Credits_Manager::deduct_credits( $user_id, 1, 'Story generated from activation wizard' );
+
+			if ( false === $new_balance ) {
+				wp_send_json_error( array( 'message' => __( 'Could not deduct credits.', 'ai-story-maker' ) ) );
+			}
+
+			// Publish the post
+			wp_update_post( array(
+				'ID' => $post_id,
+				'post_status' => 'publish',
+			) );
+
+			// Get the prompt ID from post meta if available
+			$prompt_id = get_post_meta( $post_id, '_aistma_prompt_id', true ) ?: 'wizard';
+			
+			// Get the actual prompt post ID for weekly scheduling
+			$wizard_prompt_id = $prompt_id;
+			if ( 'wizard' !== $wizard_prompt_id ) {
+				// Try to find the actual prompt post by matching the ID
+				$prompt_post = get_post( absint( $wizard_prompt_id ) );
+				if ( $prompt_post && 'aistma_prompt' === $prompt_post->post_type ) {
+					// Store the wizard prompt ID so confirmWeekly can access it
+					update_post_meta( $post_id, '_aistma_wizard_prompt_id', absint( $wizard_prompt_id ) );
+				}
+			}
+
+			// Increment generation count for rating request logic
+			AISTMA_Rating_Request::increment_generation_count( $user_id );
+
+			// Log story generation event
+			AISTMA_Gateway_Logger::log_story_generated( $user_id, $post_id, $prompt_id, 1 );
+
+			// Check if rating should be shown
+			$show_rating = AISTMA_Rating_Request::should_show_rating( $user_id );
+
+			wp_send_json_success( array(
+				'post_id' => $post_id,
+				'credits_remaining' => AISTMA_Credits_Manager::get_user_credits( $user_id ),
+				'edit_url' => get_edit_post_link( $post_id, 'raw' ),
+				'show_rating' => $show_rating,
+			) );
+
+		} catch ( \Throwable $e ) {
+			$this->aistma_log_manager->log( 'error', 'Wizard save error: ' . $e->getMessage() );
+			wp_send_json_error( array( 'message' => __( 'An error occurred while saving.', 'ai-story-maker' ) ) );
+		}
+	}
+
+	/**
+	 * AJAX handler for dismissing the wizard.
+	 *
+	 * @return void
+	 */
+	public function aistma_wizard_dismiss() {
+		// Check nonce
+		if ( ! check_ajax_referer( 'aistma_wizard_dismiss_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'ai-story-maker' ) ) );
+		}
+
+		// Check capabilities
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'ai-story-maker' ) ) );
+		}
+
+		AISTMA_Activation_Wizard::dismiss_wizard();
+		wp_send_json_success();
+	}
+
+	/**
+	 * AJAX handler for confirming weekly auto-generation.
+	 *
+	 * @return void
+	 */
+	public function aistma_confirm_weekly() {
+		// Check nonce
+		if ( ! check_ajax_referer( 'aistma_confirm_weekly_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'ai-story-maker' ) ) );
+		}
+
+		// Check capabilities
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'ai-story-maker' ) ) );
+		}
+
+		try {
+			$user_id   = get_current_user_id();
+			$prompt_id = isset( $_POST['prompt_id'] ) ? absint( $_POST['prompt_id'] ) : 0;
+
+			if ( ! $prompt_id ) {
+				wp_send_json_error( array( 'message' => __( 'Invalid prompt ID.', 'ai-story-maker' ) ) );
+			}
+
+			// Load weekly scheduler
+			if ( ! class_exists( __NAMESPACE__ . '\\AISTMA_Weekly_Scheduler' ) ) {
+				AISTMA_Plugin::aistma_load_dependencies( array( 'includes/class-aistma-weekly-scheduler.php' ) );
+			}
+
+			// Enable weekly generation
+			$enabled = AISTMA_Weekly_Scheduler::enable_weekly( $user_id, $prompt_id );
+
+			if ( ! $enabled ) {
+				wp_send_json_error( array( 'message' => __( 'Could not enable weekly generation.', 'ai-story-maker' ) ) );
+			}
+
+			// Log the event
+			if ( class_exists( __NAMESPACE__ . '\\AISTMA_Gateway_Logger' ) ) {
+				AISTMA_Gateway_Logger::log_event( 'aistma_weekly_schedule_enabled', array(
+					'user_id' => $user_id,
+					'prompt_id' => $prompt_id,
+				) );
+			}
+
+			wp_send_json_success( array(
+				'message' => __( 'Weekly auto-generation enabled!', 'ai-story-maker' ),
+			) );
+
+		} catch ( \Throwable $e ) {
+			$this->aistma_log_manager->log( 'error', 'Weekly confirm error: ' . $e->getMessage() );
+			wp_send_json_error( array( 'message' => __( 'An error occurred while enabling weekly generation.', 'ai-story-maker' ) ) );
+		}
+	}
+
+	/**
+	 * AJAX handler for rating submission.
+	 *
+	 * @return void
+	 */
+	public function aistma_submit_rating() {
+		// Check nonce
+		if ( ! check_ajax_referer( 'aistma_submit_rating_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'ai-story-maker' ) ) );
+		}
+
+		// Check capabilities
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'ai-story-maker' ) ) );
+		}
+
+		try {
+			$user_id = get_current_user_id();
+			$rating = isset( $_POST['rating'] ) ? absint( $_POST['rating'] ) : 0;
+			$never_ask = isset( $_POST['never_ask'] ) ? (bool) absint( $_POST['never_ask'] ) : false;
+
+			// Validate rating value
+			if ( $rating < 1 || $rating > 5 ) {
+				wp_send_json_error( array( 'message' => __( 'Invalid rating value.', 'ai-story-maker' ) ) );
+			}
+
+			// Mark rating as shown
+			AISTMA_Rating_Request::mark_rating_shown( $user_id );
+
+			// Mark never ask if checked
+			if ( $never_ask ) {
+				AISTMA_Rating_Request::mark_never_show( $user_id );
+			}
+
+			// Log the rating submission event
+			AISTMA_Gateway_Logger::log_rating_submitted( $user_id, 0, $rating );
+
+			// Log local event
+			$this->aistma_log_manager->log(
+				'info',
+				sprintf(
+					'User %d submitted rating: %d stars',
+					$user_id,
+					$rating
+				)
+			);
+
+			wp_send_json_success( array(
+				'message' => __( 'Thank you for your rating!', 'ai-story-maker' ),
+			) );
+
+		} catch ( \Throwable $e ) {
+			$this->aistma_log_manager->log( 'error', 'Rating submission error: ' . $e->getMessage() );
+			wp_send_json_error( array( 'message' => __( 'An error occurred while submitting your rating.', 'ai-story-maker' ) ) );
+		}
+	}
+
+	/**
+	 * AJAX handler for dismissing rating modal.
+	 *
+	 * @return void
+	 */
+	public function aistma_dismiss_rating() {
+		// Check nonce
+		if ( ! check_ajax_referer( 'aistma_dismiss_rating_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'ai-story-maker' ) ) );
+		}
+
+		// Check capabilities
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'ai-story-maker' ) ) );
+		}
+
+		try {
+			$user_id = get_current_user_id();
+
+			// Mark rating as shown (starts cooldown)
+			AISTMA_Rating_Request::mark_rating_shown( $user_id );
+
+			// Log dismiss event
+			AISTMA_Gateway_Logger::log_event( array(
+				'event_type' => 'aistma_rating_dismissed',
+				'user_id' => $user_id,
+				'timestamp' => current_time( 'mysql' ),
+			) );
+
+			$this->aistma_log_manager->log(
+				'info',
+				sprintf(
+					'User %d dismissed rating modal (remind in 7 days)',
+					$user_id
+				)
+			);
+
+			wp_send_json_success();
+
+		} catch ( \Throwable $e ) {
+			$this->aistma_log_manager->log( 'error', 'Rating dismiss error: ' . $e->getMessage() );
+			wp_send_json_error( array( 'message' => __( 'An error occurred.', 'ai-story-maker' ) ) );
+		}
+	}
+
+	/**
+	 * AJAX handler for never showing rating again.
+	 *
+	 * @return void
+	 */
+	public function aistma_never_show_rating() {
+		// Check nonce
+		if ( ! check_ajax_referer( 'aistma_dismiss_rating_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'ai-story-maker' ) ) );
+		}
+
+		// Check capabilities
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'ai-story-maker' ) ) );
+		}
+
+		try {
+			$user_id = get_current_user_id();
+
+			// Mark never show
+			AISTMA_Rating_Request::mark_never_show( $user_id );
+
+			// Log event
+			AISTMA_Gateway_Logger::log_event( array(
+				'event_type' => 'aistma_rating_never',
+				'user_id' => $user_id,
+				'timestamp' => current_time( 'mysql' ),
+			) );
+
+			$this->aistma_log_manager->log(
+				'info',
+				sprintf(
+					'User %d selected "never ask again" for rating',
+					$user_id
+				)
+			);
+
+			wp_send_json_success();
+
+		} catch ( \Throwable $e ) {
+			$this->aistma_log_manager->log( 'error', 'Rating never show error: ' . $e->getMessage() );
+			wp_send_json_error( array( 'message' => __( 'An error occurred.', 'ai-story-maker' ) ) );
+		}
 	}
 
 }

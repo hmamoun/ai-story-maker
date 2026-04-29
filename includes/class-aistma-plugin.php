@@ -36,6 +36,8 @@ class AISTMA_Plugin {
 				'includes/shortcode-story-scroller.php',
 				'includes/class-aistma-log-manager.php',
 				'includes/class-aistma-traffic-logger.php',
+				'includes/class-aistma-credits-manager.php',
+				'includes/class-aistma-gateway-logger.php',
 			)
 		);
 
@@ -111,6 +113,27 @@ class AISTMA_Plugin {
 		// Ensure traffic logging table exists
 		if ( class_exists( __NAMESPACE__ . '\\AISTMA_Traffic_Logger' ) ) {
 			AISTMA_Traffic_Logger::ensure_tables();
+		}
+
+		// Initialize credits system for current user
+		$current_user_id = get_current_user_id();
+		if ( $current_user_id > 0 ) {
+			// Load credits manager
+			if ( class_exists( __NAMESPACE__ . '\\AISTMA_Credits_Manager' ) ) {
+				$startup_credits = absint( get_option( 'aistma_startup_credit_amount', 5 ) );
+				
+				// Only grant credits if user doesn't have any yet (first time)
+				$existing_balance = AISTMA_Credits_Manager::get_user_credits( $current_user_id );
+				if ( 0 === $existing_balance ) {
+					AISTMA_Credits_Manager::add_credits( $current_user_id, $startup_credits, 'Plugin activation - startup grant' );
+					$log_manager->log( 'info', sprintf( 'User %d granted %d startup credits on plugin activation.', $current_user_id, $startup_credits ) );
+				}
+				
+				// Log the wizard activation event to gateway
+				if ( class_exists( __NAMESPACE__ . '\\AISTMA_Gateway_Logger' ) ) {
+					AISTMA_Gateway_Logger::log_wizard_activated( $current_user_id );
+				}
+			}
 		}
 
 		if ( ! wp_next_scheduled( 'aistma_generate_story_event' ) ) {

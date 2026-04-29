@@ -109,5 +109,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<?php // Generation controls moved to a reusable template included globally. ?>
 </div>
 
-</div> 
+</div>
+
+<?php
+// Include weekly management template for admins
+if ( current_user_can( 'manage_options' ) ) {
+	include AISTMA_PATH . 'admin/templates/weekly-management-template.php';
+}
+?>
 </div>

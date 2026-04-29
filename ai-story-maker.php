@@ -35,6 +35,8 @@ require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-posts-gadget.p
 require_once plugin_dir_path( __FILE__ ) . 'admin/class-aistma-standalone-editor.php';
 require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-content-editor-handler.php';
 require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-open-graph.php';
+require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-activation-wizard.php';
+require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-weekly-scheduler.php';
 
 // Hooks.
 register_activation_hook( __FILE__, array( 'exedotcom\\aistorymaker\\AISTMA_Plugin', 'aistma_activate' ) );
@@ -112,6 +114,12 @@ add_action( 'aistma_generate_story_event', __NAMESPACE__ . '\\aistma_handle_gene
  * Callback for WP-Cron to generate new stories.
  */
 function aistma_handle_generate_story_event() {
+	use exedotcom\aistorymaker\AISTMA_Story_Generator;
+	use exedotcom\aistorymaker\AISTMA_Weekly_Scheduler;
+	use exedotcom\aistorymaker\AISTMA_Credits_Manager;
+	use exedotcom\aistorymaker\AISTMA_Gateway_Logger;
+	use exedotcom\aistorymaker\AISTMA_Log_Manager;
+	
 	$result = AISTMA_Story_Generator::generate_ai_stories_with_lock();
 	// Log the result for cron jobs (only in debug mode)
 	if ( defined( 'WP_DEBUG' ) && WP_DEBUG && function_exists( 'wp_debug_log' ) ) {
@@ -119,6 +127,75 @@ function aistma_handle_generate_story_event() {
 			wp_debug_log( 'AI Story Maker Cron: ' . $result['message'] );
 		} else {
 			wp_debug_log( 'AI Story Maker Cron Error: ' . $result['message'] );
+		}
+	}
+	
+	// Handle weekly auto-generation
+	aistma_process_weekly_generations();
+}
+
+/**
+ * Process weekly auto-generation for eligible users.
+ */
+function aistma_process_weekly_generations() {
+	use exedotcom\aistorymaker\AISTMA_Weekly_Scheduler;
+	use exedotcom\aistorymaker\AISTMA_Story_Generator;
+	use exedotcom\aistorymaker\AISTMA_Credits_Manager;
+	use exedotcom\aistorymaker\AISTMA_Gateway_Logger;
+	use exedotcom\aistorymaker\AISTMA_Log_Manager;
+	
+	$log_manager = new AISTMA_Log_Manager();
+	$weekly_users = AISTMA_Weekly_Scheduler::get_weekly_enabled_users();
+	
+	if ( empty( $weekly_users ) ) {
+		return;
+	}
+	
+	foreach ( $weekly_users as $user_id ) {
+		// Check if it's time to generate
+		if ( ! AISTMA_Weekly_Scheduler::should_generate_weekly( $user_id ) ) {
+			continue;
+		}
+		
+		// Get saved prompt
+		$prompt_id = AISTMA_Weekly_Scheduler::get_weekly_prompt( $user_id );
+		if ( ! $prompt_id ) {
+			$log_manager->log( 'warning', sprintf( 'User %d has weekly enabled but no prompt saved.', $user_id ) );
+			continue;
+		}
+		
+		// Check user has credits
+		if ( ! AISTMA_Credits_Manager::has_credits( $user_id, 1 ) ) {
+			$log_manager->log( 'info', sprintf( 'User %d out of credits for weekly generation.', $user_id ) );
+			continue;
+		}
+		
+		// Perform story generation
+		try {
+			$post_id = AISTMA_Story_Generator::generate_ai_story_for_user( $user_id, $prompt_id );
+			
+			if ( $post_id ) {
+				// Deduct credit
+				AISTMA_Credits_Manager::deduct_credits( $user_id, 1, 'Weekly auto-generated story' );
+				
+				// Update last generated timestamp
+				AISTMA_Weekly_Scheduler::update_last_generated( $user_id );
+				
+				// Log event
+				if ( class_exists( 'exedotcom\\aistorymaker\\AISTMA_Gateway_Logger' ) ) {
+					AISTMA_Gateway_Logger::log_event( 'aistma_weekly_generated', array(
+						'user_id' => $user_id,
+						'post_id' => $post_id,
+						'prompt_id' => $prompt_id,
+					) );
+				}
+				
+				$log_manager->log( 'info', sprintf( 'Weekly story generated for user %d (post %d)', $user_id, $post_id ) );
+			} else {
+				$log_manager->log( 'error', sprintf( 'Failed to generate weekly story for user %d', $user_id ) );
+			}
+		} catch ( \Throwable $e ) {
+			$log_manager->log( 'error', sprintf( 'Weekly generation error for user %d: %s', $user_id, $e->getMessage() ) );
 		}
 	}
 }
