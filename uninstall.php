@@ -27,6 +27,8 @@ $options = array(
 	'aistma_widget_activity_days',
 	'aistma_widget_recent_posts_limit',
 	'aistma_widget_hide_empty_columns',
+	'aistma_startup_credit_amount',
+	'aistma_wizard_prompts',
 );
 foreach ( $options as $option ) {
 	if ( get_option( $option ) ) {
@@ -58,4 +60,22 @@ delete_transient( 'aistma_exaig_cached_master_instructions' );
 // Remove plugin-related post meta keys.
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 $wpdb->query( "DELETE FROM `{$wpdb->postmeta}` WHERE meta_key IN ('_aistma_generated','_ai_story_maker_sources','ai_story_maker_request_id')" );
+
+// Remove all user meta keys related to wizard, credits, and ratings.
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+$user_meta_keys = array(
+	'aistma_wizard_shown',       // Wizard display flag
+	'aistma_user_credits',       // User credit balance
+	'aistma_credit_history',     // Credit transaction history
+	'aistma_rating_shown',       // Rating modal shown flag
+	'aistma_rating_never_show',  // Never show rating again flag
+	'aistma_weekly_enabled',     // Weekly generation enabled flag
+	'aistma_weekly_prompt_id',   // Weekly prompt ID
+	'aistma_weekly_last_generated', // Last weekly generation timestamp
+);
+
+foreach ( $user_meta_keys as $meta_key ) {
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+	$wpdb->query( $wpdb->prepare( "DELETE FROM `{$wpdb->usermeta}` WHERE meta_key = %s", $meta_key ) );
+}
 
