@@ -412,14 +412,13 @@
 				return;
 			}
 
-			// Check if weekly is checked and show confirmation modal
+			// If weekly is checked, enable it and save immediately (no confirmation modal)
 			if (this.weeklyToggleChecked && this.postData.prompt_id) {
-				// Show weekly confirmation modal before saving
-				this.showWeeklyModal();
+				this.enableWeeklyAndSave();
 				return;
 			}
 
-			// Proceed with normal save if weekly is not checked
+			// Proceed with normal save
 			this.performSave();
 		},
 
@@ -506,43 +505,35 @@
 		},
 
 		/**
-		 * Confirm weekly auto-generation and save
+		 * Enable weekly and save immediately (replaces confirmWeekly)
 		 */
-		confirmWeekly: function () {
+		enabledWeeklyAndSave: function () {
 			const self = this;
 
-			if (!this.postData || !this.postData.post_id) {
+			if (!this.postData || !this.postData.prompt_id) {
+				this.performSave();
 				return;
 			}
 
-			// Close the weekly modal
-			this.closeWeeklyModal();
+			// Enable weekly via AJAX
+			$.ajax({
+				url: ajaxurl,
+				type: 'POST',
+				dataType: 'json',
+				data: {
+					action: 'aistma_confirm_weekly',
+					nonce: aistmaWizardL10n.weeklyNonce || '',
+					prompt_id: this.postData.prompt_id,
+				},
+				success: function () {
+					console.log('Weekly enabled.');
+				},
+				error: function () {
+					console.error('Failed to enable weekly.');
+				},
+			});
 
-			// Get the prompt ID from post data
-			const promptId = this.postData.prompt_id || null;
-
-			if (promptId) {
-				// Enable weekly via AJAX
-				$.ajax({
-					url: ajaxurl,
-					type: 'POST',
-					dataType: 'json',
-					data: {
-						action: 'aistma_confirm_weekly',
-						nonce: aistmaWizardL10n.weeklyNonce || '',
-						prompt_id: promptId,
-					},
-					success: function () {
-						// Log the event
-						console.log('Weekly auto-generation enabled for prompt ' + promptId);
-					},
-					error: function () {
-						console.error('Failed to enable weekly auto-generation');
-					},
-				});
-			}
-
-			// Now perform the save
+			// Save immediately
 			this.performSave();
 		},
 
