@@ -1474,7 +1474,7 @@ class AISTMA_Admin {
 				wp_send_json_error( array( 'message' => __( 'You do not have enough credits to generate a story.', 'ai-story-maker' ) ) );
 			}
 
-			// Get the selected prompt
+			// Get the selected prompt from wizard defaults
 			$prompts = AISTMA_Activation_Wizard::get_default_prompts();
 			$selected_prompt = null;
 			foreach ( $prompts as $prompt ) {
@@ -1488,49 +1488,62 @@ class AISTMA_Admin {
 				wp_send_json_error( array( 'message' => __( 'Invalid prompt selected.', 'ai-story-maker' ) ) );
 			}
 
-			// Create a draft post with prompt information
-			// The actual content generation via OpenAI will happen when user saves
-			$post_title = $selected_prompt['name'] . ': ' . substr( $selected_prompt['description'], 0, 50 );
-			$post_content = sprintf(
-				"<p>%s</p>\n<p>%s</p>\n<p><em>%s</em></p>",
-				esc_html( $selected_prompt['description'] ),
-				esc_html( __( 'This is a preview of your story. Edit below to customize before publishing.', 'ai-story-maker' ) ),
-				esc_html( $selected_prompt['example'] )
-			);
-
-			$post_args = array(
-				'post_type' => 'post',
-				'post_status' => 'draft',
-				'post_author' => $user_id,
-				'post_title' => sanitize_text_field( $post_title ),
-				'post_content' => wp_kses_post( $post_content ),
-				'post_excerpt' => sanitize_text_field( $selected_prompt['description'] ),
-			);
-
-			// Insert the draft post
-			$post_id = wp_insert_post( $post_args );
-
-			if ( is_wp_error( $post_id ) ) {
-				wp_send_json_error( array( 'message' => __( 'Failed to create post.', 'ai-story-maker' ) ) );
+			// Get subscription and API key info for story generation
+			$story_generator = new exedotcom\aistorymaker\AISTMA_Story_Generator();
+			$subscription_info = $story_generator->get_subscription_info();
+			$has_valid_subscription = $subscription_info['valid'];
+			
+			// Get API key only if no valid subscription
+			$api_key = null;
+			if ( ! $has_valid_subscription ) {
+				$api_key = get_option( 'aistma_openai_api_key' );
+				if ( ! $api_key ) {
+					wp_send_json_error( array( 'message' => __( 'Story generation is not configured properly. Please check API settings.', 'ai-story-maker' ) ) );
+				}
 			}
 
-			// Store the prompt ID in post meta for reference
-			update_post_meta( $post_id, '_aistma_prompt_id', sanitize_text_field( $prompt_id ) );
+			// Get default settings from plugin options
+			$raw_settings = get_option( 'aistma_prompts', '' );
+			$settings = json_decode( $raw_settings, true );
+			$default_settings = isset( $settings['default_settings'] ) ? $settings['default_settings'] : array();
 
-			// Log the prompt selection event
-			AISTMA_Gateway_Logger::log_prompt_selected( $user_id, $prompt_id, array( 'post_id' => $post_id ) );
-
-			// Prepare response with preview data
-			$credits_remaining = AISTMA_Credits_Manager::get_user_credits( $user_id );
-
-			wp_send_json_success( array(
-				'post_id' => $post_id,
+			// Format the selected prompt to match system prompt structure
+			$prompt_for_generation = array(
 				'prompt_id' => $prompt_id,
-				'title' => wp_specialchars_decode( get_the_title( $post_id ) ),
-				'excerpt' => wp_trim_words( get_the_content( '', false, $post_id ), 20 ),
-				'featured_image_url' => '',
-				'credits_remaining' => $credits_remaining,
-			) );
+				'text' => $selected_prompt['description'],
+				'category' => $selected_prompt['category'],
+				'active' => 1,
+			);
+
+			// Get master instructions
+			$aistma_master_instructions = $story_generator->aistma_get_master_instructions();
+
+			// Call the existing story generation function
+			try {
+				$post_id = $story_generator->generate_ai_story( $prompt_id, $prompt_for_generation, $default_settings, $api_key, $aistma_master_instructions );
+
+				if ( is_wp_error( $post_id ) || ! $post_id ) {
+					wp_send_json_error( array( 'message' => __( 'Failed to generate story.', 'ai-story-maker' ) ) );
+				}
+
+				// Log the prompt selection event
+				exedotcom\aistorymaker\AISTMA_Gateway_Logger::log_prompt_selected( $user_id, $prompt_id, array( 'post_id' => $post_id ) );
+
+				// Prepare response with generated post data
+				$credits_remaining = exedotcom\aistorymaker\AISTMA_Credits_Manager::get_user_credits( $user_id );
+
+				wp_send_json_success( array(
+					'post_id' => $post_id,
+					'prompt_id' => $prompt_id,
+					'title' => wp_specialchars_decode( get_the_title( $post_id ) ),
+					'excerpt' => wp_trim_words( get_the_content( '', false, $post_id ), 30 ),
+					'featured_image_url' => get_the_post_thumbnail_url( $post_id ) ?: '',
+					'credits_remaining' => $credits_remaining,
+				) );
+
+			} catch ( \RuntimeException $e ) {
+				wp_send_json_error( array( 'message' => $e->getMessage() ) );
+			}
 
 		} catch ( \Throwable $e ) {
 			$this->aistma_log_manager->log( 'error', 'Wizard generation error: ' . $e->getMessage() );
