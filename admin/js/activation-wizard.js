@@ -414,7 +414,7 @@
 
 			// If weekly is checked, enable it and save immediately (no confirmation modal)
 			if (this.weeklyToggleChecked && this.postData.prompt_id) {
-				this.enableWeeklyAndSave();
+				this.enabledWeeklyAndSave();
 				return;
 			}
 
