@@ -106,6 +106,7 @@ class AISTMA_Admin {
 		add_action( 'wp_ajax_aistma_never_show_rating', array( $this, 'aistma_never_show_rating' ) );
 		add_action( 'wp_ajax_aistma_ensure_startup_credits', array( $this, 'aistma_ensure_startup_credits' ) );
 		add_action( 'wp_ajax_aistma_log_wizard_escape', array( $this, 'aistma_log_wizard_escape' ) );
+		add_action( 'wp_ajax_aistma_mark_wizard_shown_today', array( $this, 'aistma_mark_wizard_shown_today' ) );
 
 		// Initialize social media bulk actions
 		$this->init_social_media_bulk_actions();
@@ -156,6 +157,7 @@ class AISTMA_Admin {
 			'weeklyNonce' => wp_create_nonce( 'aistma_confirm_weekly_nonce' ),
 			'startupCreditsNonce' => wp_create_nonce( 'aistma_ensure_startup_credits_nonce' ),
 			'escapeNonce' => wp_create_nonce( 'aistma_log_wizard_escape_nonce' ),
+			'showTodayNonce' => wp_create_nonce( 'aistma_mark_wizard_shown_today_nonce' ),
 			'selectPrompt' => __( 'Please select a prompt first.', 'ai-story-maker' ),
 			'generateError' => __( 'An error occurred while generating the story. Please try again.', 'ai-story-maker' ),
 			'saveError' => __( 'An error occurred while saving. Please try again.', 'ai-story-maker' ),
@@ -1904,6 +1906,37 @@ class AISTMA_Admin {
 
 		} catch ( \Throwable $e ) {
 			$this->aistma_log_manager->log( 'error', 'Log wizard escape error: ' . $e->getMessage() );
+			wp_send_json_error( array( 'message' => __( 'An error occurred.', 'ai-story-maker' ) ) );
+		}
+	}
+
+	/**
+	 * AJAX handler to mark wizard as shown today (24-hour throttling).
+	 *
+	 * @return void
+	 */
+	public function aistma_mark_wizard_shown_today() {
+		// Check nonce
+		if ( ! check_ajax_referer( 'aistma_mark_wizard_shown_today_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'ai-story-maker' ) ) );
+		}
+
+		// Check capabilities
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'ai-story-maker' ) ) );
+		}
+
+		try {
+			if ( class_exists( __NAMESPACE__ . '\\AISTMA_Activation_Wizard' ) ) {
+				exedotcom\aistorymaker\AISTMA_Activation_Wizard::mark_wizard_shown_today();
+			}
+
+			wp_send_json_success( array(
+				'message' => __( 'Wizard marked as shown today.', 'ai-story-maker' ),
+			) );
+
+		} catch ( \Throwable $e ) {
+			$this->aistma_log_manager->log( 'error', 'Mark wizard shown today error: ' . $e->getMessage() );
 			wp_send_json_error( array( 'message' => __( 'An error occurred.', 'ai-story-maker' ) ) );
 		}
 	}

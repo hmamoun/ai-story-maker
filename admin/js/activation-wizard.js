@@ -218,10 +218,26 @@
 		},
 
 		/**
+		 * Mark wizard as shown today for 24-hour throttling.
+		 */
+		markShownToday: function () {
+			$.ajax({
+				url: ajaxurl,
+				type: 'POST',
+				data: {
+					action: 'aistma_mark_wizard_shown_today',
+					nonce: aistmaWizardL10n.showTodayNonce || '',
+				},
+			});
+		},
+
+		/**
 		 * Show the wizard modal
 		 */
 		show: function () {
 			this.$modal.fadeIn(200);
+			// Mark as shown today for 24-hour throttling (auto-popup only)
+			this.markShownToday();
 		},
 	};
 

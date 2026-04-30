@@ -36,31 +36,51 @@ class AISTMA_Wizard_Action_Widget {
 	 */
 	public static function render_widget() {
 		?>
-		<div id="aistma-widget-content" style="text-align: center; padding: 20px;">
-			<p><?php esc_html_e( 'Generate engaging stories with our AI-powered wizard.', 'ai-story-maker' ); ?></p>
-			<button type="button" id="aistma-widget-open-wizard" class="button button-primary button-hero" style="margin-top: 10px;">
+		<div id="aistma-widget-content" style="text-align: center; padding: 30px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+			<p style="margin: 0 0 15px 0;"><?php esc_html_e( 'Generate engaging stories with our AI-powered wizard.', 'ai-story-maker' ); ?></p>
+			<button type="button" id="aistma-widget-open-wizard" class="button button-primary button-large" style="margin: 0 0 15px 0;">
 				<?php esc_html_e( 'Create a Story Now', 'ai-story-maker' ); ?>
 			</button>
-			<p style="margin-top: 15px; color: #666; font-size: 12px;">
+			<p style="margin: 0; color: #666; font-size: 12px;">
 				<?php esc_html_e( 'Click the button to launch the story creation wizard.', 'ai-story-maker' ); ?>
 			</p>
 		</div>
 
-		<script>
-			(function() {
-				const btn = document.getElementById('aistma-widget-open-wizard');
-				if (btn) {
-					btn.addEventListener('click', function() {
-						// Show the wizard modal if jQuery and the wizard object exist
-						if (typeof jQuery !== 'undefined' && typeof AistmaWizard !== 'undefined') {
-							jQuery('#aistma-wizard-modal').fadeIn(200);
-							AistmaWizard.$modal = jQuery('#aistma-wizard-modal');
-							AistmaWizard.selectedPromptId = null;
-							AistmaWizard.$cards.removeClass('selected');
+		<script type="text/javascript">
+			(function($) {
+				'use strict';
+				
+				function openWizardFromWidget() {
+					const btn = $('#aistma-widget-open-wizard');
+					if (!btn.length) return;
+					
+					btn.on('click', function(e) {
+						e.preventDefault();
+						
+						const modal = $('#aistma-wizard-modal');
+						if (modal.length) {
+							// Reset wizard state for fresh start
+							modal.find('.aistma-prompt-card').removeClass('selected');
+							modal.find('#aistma-wizard-dont-show').prop('checked', false);
+							
+							// Show modal
+							modal.fadeIn(200);
+							
+							// Log widget action
+							if (typeof AistmaWizard !== 'undefined') {
+								AistmaWizard.selectedPromptId = null;
+							}
 						}
 					});
 				}
-			})();
+				
+				// Wait for jQuery and DOM to be ready
+				if (document.readyState === 'loading') {
+					document.addEventListener('DOMContentLoaded', openWizardFromWidget);
+				} else {
+					openWizardFromWidget();
+				}
+			})(jQuery);
 		</script>
 		<?php
 	}
