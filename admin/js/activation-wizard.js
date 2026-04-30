@@ -17,6 +17,7 @@
 		selectedPromptId: null,
 		generatedPost: null,
 		dontShowAgain: false,
+		closeWithoutGenerating: false,
 
 		/**
 		 * Initialize wizard interactions
@@ -24,6 +25,33 @@
 		init: function () {
 			this.cacheDom();
 			this.bindEvents();
+			this.initializeStartupCredits();
+		},
+
+		/**
+		 * Initialize startup credits if user doesn't have any
+		 */
+		initializeStartupCredits: function () {
+			const self = this;
+			
+			// AJAX request to ensure user has startup credits
+			$.ajax({
+				url: ajaxurl,
+				type: 'POST',
+				dataType: 'json',
+				data: {
+					action: 'aistma_ensure_startup_credits',
+					nonce: aistmaWizardL10n.startupCreditsNonce || '',
+				},
+				success: function (response) {
+					if (response.success) {
+						console.log('Startup credits ensured for user.');
+					}
+				},
+				error: function () {
+					console.error('Failed to ensure startup credits');
+				},
+			});
 		},
 
 		/**
@@ -33,9 +61,7 @@
 			this.$modal = $('#aistma-wizard-modal');
 			this.$overlay = this.$modal.find('.aistma-wizard-overlay');
 			this.$cards = this.$modal.find('.aistma-prompt-card');
-			this.$generateBtn = this.$modal.find('.aistma-wizard-generate');
 			this.$closeBtn = this.$modal.find('.aistma-wizard-close');
-			this.$cancelBtn = this.$modal.find('.aistma-wizard-cancel');
 			this.$dontShowCheckbox = this.$modal.find('#aistma-wizard-dont-show');
 			this.$loading = this.$modal.find('.aistma-wizard-loading');
 			this.$content = this.$modal.find('.aistma-wizard-content');
@@ -52,30 +78,20 @@
 				self.close();
 			});
 
-			// Cancel button
-			this.$cancelBtn.on('click', function () {
-				self.close();
-			});
-
 			// Overlay click
 			this.$overlay.on('click', function () {
 				self.close();
 			});
 
-			// Prompt card selection
+			// Prompt card selection - triggers generation directly
 			this.$cards.on('click', function () {
-				self.selectPrompt($(this));
+				self.selectAndGenerate($(this));
 			});
 
-			// Select button within card
+			// Select button within card - triggers generation directly
 			this.$modal.on('click', '.aistma-select-prompt', function (e) {
 				e.stopPropagation();
-				self.selectPrompt($(this).closest('.aistma-prompt-card'));
-			});
-
-			// Generate button
-			this.$generateBtn.on('click', function () {
-				self.generate();
+				self.selectAndGenerate($(this).closest('.aistma-prompt-card'));
 			});
 
 			// Don't show again checkbox
@@ -90,9 +106,9 @@
 		},
 
 		/**
-		 * Select a prompt
+		 * Select a prompt and generate immediately
 		 */
-		selectPrompt: function ($card) {
+		selectAndGenerate: function ($card) {
 			// Remove previous selection
 			this.$cards.removeClass('selected');
 
@@ -102,8 +118,8 @@
 			// Store selected prompt ID
 			this.selectedPromptId = $card.data('prompt-id');
 
-			// Enable generate button
-			this.$generateBtn.prop('disabled', false);
+			// Trigger generation immediately
+			this.generate();
 		},
 
 		/**
@@ -119,7 +135,6 @@
 
 			// Show loading state
 			this.$loading.show();
-			this.$generateBtn.prop('disabled', true);
 
 			// AJAX request
 			$.ajax({
@@ -145,7 +160,6 @@
 				},
 				complete: function () {
 					self.$loading.hide();
-					self.$generateBtn.prop('disabled', false);
 				},
 			});
 		},
@@ -161,10 +175,32 @@
 		 * Close the wizard modal
 		 */
 		close: function () {
+			// Log if user closed without generating
+			if (!this.selectedPromptId) {
+				this.logCloseWithoutGeneration();
+			}
+
 			if (this.dontShowAgain) {
 				this.dismissWizard();
 			}
 			this.$modal.fadeOut(200);
+		},
+
+		/**
+		 * Log user closing without generating
+		 */
+		logCloseWithoutGeneration: function () {
+			$.ajax({
+				url: ajaxurl,
+				type: 'POST',
+				data: {
+					action: 'aistma_log_wizard_escape',
+					nonce: aistmaWizardL10n.escapeNonce || '',
+				},
+				error: function () {
+					console.error('Failed to log wizard escape');
+				},
+			});
 		},
 
 		/**

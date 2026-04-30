@@ -104,6 +104,8 @@ class AISTMA_Admin {
 		add_action( 'wp_ajax_aistma_submit_rating', array( $this, 'aistma_submit_rating' ) );
 		add_action( 'wp_ajax_aistma_dismiss_rating', array( $this, 'aistma_dismiss_rating' ) );
 		add_action( 'wp_ajax_aistma_never_show_rating', array( $this, 'aistma_never_show_rating' ) );
+		add_action( 'wp_ajax_aistma_ensure_startup_credits', array( $this, 'aistma_ensure_startup_credits' ) );
+		add_action( 'wp_ajax_aistma_log_wizard_escape', array( $this, 'aistma_log_wizard_escape' ) );
 
 		// Initialize social media bulk actions
 		$this->init_social_media_bulk_actions();
@@ -152,6 +154,8 @@ class AISTMA_Admin {
 			'saveNonce' => wp_create_nonce( 'aistma_wizard_save_nonce' ),
 			'dismissNonce' => wp_create_nonce( 'aistma_wizard_dismiss_nonce' ),
 			'weeklyNonce' => wp_create_nonce( 'aistma_confirm_weekly_nonce' ),
+			'startupCreditsNonce' => wp_create_nonce( 'aistma_ensure_startup_credits_nonce' ),
+			'escapeNonce' => wp_create_nonce( 'aistma_log_wizard_escape_nonce' ),
 			'selectPrompt' => __( 'Please select a prompt first.', 'ai-story-maker' ),
 			'generateError' => __( 'An error occurred while generating the story. Please try again.', 'ai-story-maker' ),
 			'saveError' => __( 'An error occurred while saving. Please try again.', 'ai-story-maker' ),
@@ -1824,6 +1828,82 @@ class AISTMA_Admin {
 
 		} catch ( \Throwable $e ) {
 			$this->aistma_log_manager->log( 'error', 'Rating never show error: ' . $e->getMessage() );
+			wp_send_json_error( array( 'message' => __( 'An error occurred.', 'ai-story-maker' ) ) );
+		}
+	}
+
+	/**
+	 * AJAX handler to ensure startup credits are granted.
+	 *
+	 * @return void
+	 */
+	public function aistma_ensure_startup_credits() {
+		// Check nonce
+		if ( ! check_ajax_referer( 'aistma_ensure_startup_credits_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'ai-story-maker' ) ) );
+		}
+
+		// Check capabilities
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'ai-story-maker' ) ) );
+		}
+
+		try {
+			$user_id = get_current_user_id();
+			$existing_balance = exedotcom\aistorymaker\AISTMA_Credits_Manager::get_user_credits( $user_id );
+
+			// Only grant credits if user doesn't have any yet
+			if ( 0 === $existing_balance ) {
+				$startup_credits = absint( get_option( 'aistma_startup_credit_amount', 5 ) );
+				exedotcom\aistorymaker\AISTMA_Credits_Manager::add_credits( $user_id, $startup_credits, 'Wizard view - startup grant' );
+				$this->aistma_log_manager->log( 'info', sprintf( 'User %d granted %d startup credits on wizard view.', $user_id, $startup_credits ) );
+			}
+
+			wp_send_json_success( array(
+				'message' => __( 'Credits ensured.', 'ai-story-maker' ),
+				'credits' => exedotcom\aistorymaker\AISTMA_Credits_Manager::get_user_credits( $user_id ),
+			) );
+
+		} catch ( \Throwable $e ) {
+			$this->aistma_log_manager->log( 'error', 'Ensure startup credits error: ' . $e->getMessage() );
+			wp_send_json_error( array( 'message' => __( 'An error occurred.', 'ai-story-maker' ) ) );
+		}
+	}
+
+	/**
+	 * AJAX handler to log when user closes wizard without generating.
+	 *
+	 * @return void
+	 */
+	public function aistma_log_wizard_escape() {
+		// Check nonce
+		if ( ! check_ajax_referer( 'aistma_log_wizard_escape_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'ai-story-maker' ) ) );
+		}
+
+		// Check capabilities
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'ai-story-maker' ) ) );
+		}
+
+		try {
+			$user_id = get_current_user_id();
+
+			// Log the escape event
+			if ( class_exists( __NAMESPACE__ . '\\AISTMA_Gateway_Logger' ) ) {
+				exedotcom\aistorymaker\AISTMA_Gateway_Logger::log_event( 'aistma_wizard_closed_without_generating', array(
+					'user_id' => $user_id,
+					'timestamp' => current_time( 'mysql' ),
+				) );
+			}
+
+			// Log locally
+			$this->aistma_log_manager->log( 'info', sprintf( 'User %d closed wizard without generating a story.', $user_id ) );
+
+			wp_send_json_success();
+
+		} catch ( \Throwable $e ) {
+			$this->aistma_log_manager->log( 'error', 'Log wizard escape error: ' . $e->getMessage() );
 			wp_send_json_error( array( 'message' => __( 'An error occurred.', 'ai-story-maker' ) ) );
 		}
 	}
