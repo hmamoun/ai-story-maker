@@ -150,15 +150,22 @@ class AISTMA_Activation_Wizard {
 	 * @param int $user_id Optional user ID. If not provided, resets for all users.
 	 * @return void
 	 */
-	public static function reset_wizard( $user_id = 0 ) {
+	public static function reset_wizard( $user_id = -1 ) {
+		global $wpdb;
+		
 		if ( $user_id > 0 ) {
+			// Reset for specific user
 			delete_user_meta( $user_id, self::WIZARD_SHOWN_KEY );
-		} else {
-			// Reset for current user if no ID provided
-			$user_id = get_current_user_id();
-			if ( $user_id > 0 ) {
-				delete_user_meta( $user_id, self::WIZARD_SHOWN_KEY );
+		} elseif ( $user_id === -1 ) {
+			// Reset for current user if -1
+			$current_user_id = get_current_user_id();
+			if ( $current_user_id > 0 ) {
+				delete_user_meta( $current_user_id, self::WIZARD_SHOWN_KEY );
 			}
+		} else {
+			// Reset for ALL users if 0
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->query( $wpdb->prepare( "DELETE FROM `{$wpdb->usermeta}` WHERE meta_key = %s", self::WIZARD_SHOWN_KEY ) );
 		}
 	}
 

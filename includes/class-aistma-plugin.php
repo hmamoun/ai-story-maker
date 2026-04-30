@@ -153,6 +153,11 @@ class AISTMA_Plugin {
 	public static function aistma_deactivate() {
 		wp_clear_scheduled_hook( 'aistma_generate_story_event' );
 		delete_transient( 'aistma_generating_lock' );
+		
+		// Reset wizard for all users on deactivation
+		if ( class_exists( __NAMESPACE__ . '\\AISTMA_Activation_Wizard' ) ) {
+			AISTMA_Activation_Wizard::reset_wizard();
+		}
 	}
 
 	/**
