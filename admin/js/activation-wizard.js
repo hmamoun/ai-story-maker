@@ -221,6 +221,11 @@
 		 * Mark wizard as shown today for 24-hour throttling.
 		 */
 		markShownToday: function () {
+			// Set localStorage flag to prevent double-showing on this browser
+			const today = new Date().toDateString();
+			localStorage.setItem('aistma_wizard_shown_date', today);
+			
+			// Also mark server-side
 			$.ajax({
 				url: ajaxurl,
 				type: 'POST',
@@ -235,9 +240,9 @@
 		 * Show the wizard modal
 		 */
 		show: function () {
-			this.$modal.fadeIn(200);
-			// Mark as shown today for 24-hour throttling (auto-popup only)
+			// Mark as shown today BEFORE displaying (prevents showing again today)
 			this.markShownToday();
+			this.$modal.fadeIn(200);
 		},
 	};
 
@@ -564,9 +569,15 @@
 		AistmaWizard.init();
 		AistmaPreview.init();
 
-		// Check if wizard should be shown
+		// Check if wizard should be shown (and not already shown today)
 		if (aistmaWizardL10n.showWizard === '1') {
-			AistmaWizard.show();
+			const today = new Date().toDateString();
+			const lastShownDate = localStorage.getItem('aistma_wizard_shown_date');
+			
+			// Only show if not already shown today on this browser
+			if (lastShownDate !== today) {
+				AistmaWizard.show();
+			}
 		}
 	});
 })(jQuery);
