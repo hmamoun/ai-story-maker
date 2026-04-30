@@ -70,6 +70,55 @@
 	}
 }
 
+/* Top Bar */
+.aistma-wizard-top-bar {
+	padding: 15px 30px;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	border-bottom: 1px solid #e5e5e5;
+	background: #fff;
+	gap: 15px;
+}
+
+.aistma-wizard-checkbox {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	cursor: pointer;
+	user-select: none;
+	font-size: 14px;
+	color: #646970;
+}
+
+.aistma-wizard-checkbox input[type="checkbox"] {
+	cursor: pointer;
+	margin: 0;
+}
+
+.aistma-wizard-close {
+	background: none;
+	border: none;
+	font-size: 14px;
+	cursor: pointer;
+	color: #646970;
+	padding: 8px 12px;
+	width: auto;
+	height: auto;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	transition: color 0.2s ease;
+	border-radius: 4px;
+	position: relative;
+	z-index: 10001;
+}
+
+.aistma-wizard-close:hover {
+	background-color: #f0f0f0;
+	color: #1d2327;
+}
+
 /* Header */
 .aistma-wizard-header {
 	padding: 30px;
@@ -88,28 +137,6 @@
 	margin: 0;
 	color: #646970;
 	font-size: 16px;
-}
-
-.aistma-wizard-close {
-	position: absolute;
-	top: 15px;
-	right: 15px;
-	background: none;
-	border: none;
-	font-size: 32px;
-	cursor: pointer;
-	color: #646970;
-	padding: 0;
-	width: 32px;
-	height: 32px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	transition: color 0.2s ease;
-}
-
-.aistma-wizard-close:hover {
-	color: #1d2327;
 }
 
 /* Body - Prompts Grid */
@@ -219,44 +246,7 @@
 	margin: 0;
 }
 
-/* Footer */
-.aistma-wizard-footer {
-	padding: 20px 30px;
-	border-top: 1px solid #e5e5e5;
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	background: #fafbfc;
-}
-
-.aistma-wizard-checkbox {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	cursor: pointer;
-	user-select: none;
-	font-size: 14px;
-	color: #646970;
-}
-
-.aistma-wizard-checkbox input[type="checkbox"] {
-	cursor: pointer;
-	margin: 0;
-}
-
-.aistma-wizard-actions {
-	display: flex;
-	gap: 10px;
-}
-
-.aistma-wizard-actions .button {
-	margin: 0;
-}
-
-.aistma-wizard-generate:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
+/* Footer - removed, no longer needed */
 
 /* Loading State */
 .aistma-wizard-loading {
@@ -470,9 +460,12 @@
 		max-height: 95vh;
 	}
 
+	.aistma-wizard-top-bar {
+		padding: 12px 20px;
+	}
+
 	.aistma-wizard-header,
-	.aistma-wizard-body,
-	.aistma-wizard-footer {
+	.aistma-wizard-body {
 		padding: 20px;
 	}
 
@@ -484,19 +477,9 @@
 		grid-template-columns: 1fr;
 	}
 
-	.aistma-wizard-footer {
-		flex-direction: column;
-		gap: 15px;
-		align-items: flex-start;
-	}
-
-	.aistma-wizard-actions {
-		width: 100%;
-		flex-direction: column;
-	}
-
-	.aistma-wizard-actions .button {
-		width: 100%;
+	.aistma-wizard-close {
+		padding: 6px 10px;
+		font-size: 13px;
 	}
 
 	.aistma-preview-header,
