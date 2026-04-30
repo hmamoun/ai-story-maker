@@ -1526,7 +1526,7 @@ class AISTMA_Admin {
 			wp_send_json_success( array(
 				'post_id' => $post_id,
 				'prompt_id' => $prompt_id,
-				'title' => get_the_title( $post_id ),
+				'title' => wp_specialchars_decode( get_the_title( $post_id ) ),
 				'excerpt' => wp_trim_words( get_the_content( '', false, $post_id ), 20 ),
 				'featured_image_url' => '',
 				'credits_remaining' => $credits_remaining,
