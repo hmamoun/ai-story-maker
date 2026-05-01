@@ -1489,7 +1489,7 @@ class AISTMA_Admin {
 			}
 
 			// Get subscription and API key info for story generation
-			$story_generator = new exedotcom\aistorymaker\AISTMA_Story_Generator();
+			$story_generator = new AISTMA_Story_Generator();
 			$subscription_info = $story_generator->get_subscription_info();
 			$has_valid_subscription = $subscription_info['valid'];
 			
@@ -1527,10 +1527,10 @@ class AISTMA_Admin {
 				}
 
 				// Log the prompt selection event
-				exedotcom\aistorymaker\AISTMA_Gateway_Logger::log_prompt_selected( $user_id, $prompt_id, array( 'post_id' => $post_id ) );
+				AISTMA_Gateway_Logger::log_prompt_selected( $user_id, $prompt_id, array( 'post_id' => $post_id ) );
 
 				// Prepare response with generated post data
-				$credits_remaining = exedotcom\aistorymaker\AISTMA_Credits_Manager::get_user_credits( $user_id );
+				$credits_remaining = AISTMA_Credits_Manager::get_user_credits( $user_id );
 
 				wp_send_json_success( array(
 					'post_id' => $post_id,
@@ -1865,18 +1865,18 @@ class AISTMA_Admin {
 
 		try {
 			$user_id = get_current_user_id();
-			$existing_balance = exedotcom\aistorymaker\AISTMA_Credits_Manager::get_user_credits( $user_id );
+			$existing_balance = AISTMA_Credits_Manager::get_user_credits( $user_id );
 
 			// Only grant credits if user doesn't have any yet
 			if ( 0 === $existing_balance ) {
 				$startup_credits = absint( get_option( 'aistma_startup_credit_amount', 5 ) );
-				exedotcom\aistorymaker\AISTMA_Credits_Manager::add_credits( $user_id, $startup_credits, 'Wizard view - startup grant' );
+				AISTMA_Credits_Manager::add_credits( $user_id, $startup_credits, 'Wizard view - startup grant' );
 				$this->aistma_log_manager->log( 'info', sprintf( 'User %d granted %d startup credits on wizard view.', $user_id, $startup_credits ) );
 			}
 
 			wp_send_json_success( array(
 				'message' => __( 'Credits ensured.', 'ai-story-maker' ),
-				'credits' => exedotcom\aistorymaker\AISTMA_Credits_Manager::get_user_credits( $user_id ),
+				'credits' => AISTMA_Credits_Manager::get_user_credits( $user_id ),
 			) );
 
 		} catch ( \Throwable $e ) {
@@ -1906,7 +1906,7 @@ class AISTMA_Admin {
 
 			// Log the escape event
 			if ( class_exists( __NAMESPACE__ . '\\AISTMA_Gateway_Logger' ) ) {
-				exedotcom\aistorymaker\AISTMA_Gateway_Logger::log_event( 'aistma_wizard_closed_without_generating', array(
+				AISTMA_Gateway_Logger::log_event( 'aistma_wizard_closed_without_generating', array(
 					'user_id' => $user_id,
 					'timestamp' => current_time( 'mysql' ),
 				) );
@@ -1941,7 +1941,7 @@ class AISTMA_Admin {
 
 		try {
 			if ( class_exists( __NAMESPACE__ . '\\AISTMA_Activation_Wizard' ) ) {
-				exedotcom\aistorymaker\AISTMA_Activation_Wizard::mark_wizard_shown_today();
+				AISTMA_Activation_Wizard::mark_wizard_shown_today();
 			}
 
 			wp_send_json_success( array(
