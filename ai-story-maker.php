@@ -32,7 +32,13 @@ use exedotcom\aistorymaker\AISTMA_Story_Generator;
 
 require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-plugin.php';
 require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-posts-gadget.php';
+require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-log-manager.php';
+require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-credits-manager.php';
+require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-gateway-logger.php';
+require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-story-generator.php';
+require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-rating-request.php';
 require_once plugin_dir_path( __FILE__ ) . 'admin/class-aistma-standalone-editor.php';
+require_once plugin_dir_path( __FILE__ ) . 'admin/class-aistma-settings-page.php';
 require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-content-editor-handler.php';
 require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-open-graph.php';
 require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-activation-wizard.php';
