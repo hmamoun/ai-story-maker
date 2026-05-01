@@ -31,13 +31,13 @@ class AISTMA_Plugin {
 		add_filter( 'template_include', array( $this, 'aistma_template_include_filter' ) );
 		$this->aistma_load_dependencies(
 			array(
-				'admin/class-aistma-admin.php',
-				'includes/class-aistma-story-generator.php',
-				'includes/shortcode-story-scroller.php',
 				'includes/class-aistma-log-manager.php',
 				'includes/class-aistma-traffic-logger.php',
 				'includes/class-aistma-credits-manager.php',
 				'includes/class-aistma-gateway-logger.php',
+				'includes/class-aistma-story-generator.php',
+				'includes/shortcode-story-scroller.php',
+				'admin/class-aistma-admin.php',
 			)
 		);
 
