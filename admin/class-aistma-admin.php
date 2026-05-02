@@ -1513,7 +1513,11 @@ class AISTMA_Admin {
 				'text' => $selected_prompt['description'],
 				'category' => $selected_prompt['category'],
 				'active' => 1,
+				'photos' => isset( $selected_prompt['photos'] ) ? absint( $selected_prompt['photos'] ) : 1,
 			);
+
+			// Save the selected prompt to user prompts
+			$this->save_prompt_from_wizard( $prompt_id, $prompt_for_generation );
 
 			// Get master instructions
 			$aistma_master_instructions = $story_generator->aistma_get_master_instructions();
@@ -1548,6 +1552,56 @@ class AISTMA_Admin {
 		} catch ( \Throwable $e ) {
 			$this->aistma_log_manager->log( 'error', 'Wizard generation error: ' . $e->getMessage() );
 			wp_send_json_error( array( 'message' => __( 'An error occurred during generation.', 'ai-story-maker' ) ) );
+		}
+	}
+
+	/**
+	 * Save a wizard prompt to the user's saved prompts.
+	 *
+	 * Adds the selected wizard prompt to the aistma_prompts option if not already present.
+	 *
+	 * @param string $prompt_id The prompt ID.
+	 * @param array  $prompt_data The prompt data including text, category, photos.
+	 * @return void
+	 */
+	private function save_prompt_from_wizard( $prompt_id, $prompt_data ) {
+		// Get existing prompts
+		$raw_json = get_option( 'aistma_prompts', '{}' );
+		$settings = json_decode( $raw_json, true );
+		if ( ! is_array( $settings ) ) {
+			$settings = array();
+		}
+
+		$prompts = isset( $settings['prompts'] ) ? $settings['prompts'] : array();
+		if ( ! is_array( $prompts ) ) {
+			$prompts = array();
+		}
+
+		// Check if prompt already exists
+		$exists = false;
+		foreach ( $prompts as $p ) {
+			if ( isset( $p['prompt_id'] ) && $p['prompt_id'] === $prompt_id ) {
+				$exists = true;
+				break;
+			}
+		}
+
+		// If not exists, add it
+		if ( ! $exists ) {
+			$prompts[] = array(
+				'prompt_id' => $prompt_id,
+				'text' => $prompt_data['text'],
+				'category' => $prompt_data['category'],
+				'photos' => isset( $prompt_data['photos'] ) ? absint( $prompt_data['photos'] ) : 1,
+				'active' => true,
+				'auto_publish' => false,
+			);
+
+			// Save back
+			$settings['prompts'] = $prompts;
+			update_option( 'aistma_prompts', wp_json_encode( $settings ) );
+
+			$this->aistma_log_manager->log( 'info', sprintf( 'Prompt %s saved from wizard selection.', $prompt_id ) );
 		}
 	}
 

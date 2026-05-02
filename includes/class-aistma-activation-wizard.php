@@ -82,6 +82,7 @@ class AISTMA_Activation_Wizard {
 				'description' => 'Create an engaging travel story about exploring new destinations.',
 				'category'    => 'Travel',
 				'example'     => 'A mysterious island with ancient ruins...',
+				'photos'      => 2,
 			),
 			array(
 				'id'          => 'tech-innovation',
@@ -89,6 +90,7 @@ class AISTMA_Activation_Wizard {
 				'description' => 'Generate a story about cutting-edge technology and its impact.',
 				'category'    => 'Technology',
 				'example'     => 'The future of artificial intelligence...',
+				'photos'      => 1,
 			),
 			array(
 				'id'          => 'wellness-guide',
@@ -96,6 +98,7 @@ class AISTMA_Activation_Wizard {
 				'description' => 'Write a comprehensive guide about health and wellness tips.',
 				'category'    => 'Health',
 				'example'     => '10 ways to improve your daily wellness routine...',
+				'photos'      => 2,
 			),
 			array(
 				'id'          => 'business-insights',
@@ -103,6 +106,7 @@ class AISTMA_Activation_Wizard {
 				'description' => 'Share valuable business strategies and entrepreneurship lessons.',
 				'category'    => 'Business',
 				'example'     => 'How to scale your startup from 0 to 6 figures...',
+				'photos'      => 1,
 			),
 			array(
 				'id'          => 'lifestyle-trends',
@@ -110,6 +114,7 @@ class AISTMA_Activation_Wizard {
 				'description' => 'Explore the latest lifestyle and fashion trends.',
 				'category'    => 'Lifestyle',
 				'example'     => 'The best minimalist lifestyle hacks for 2024...',
+				'photos'      => 2,
 			),
 			array(
 				'id'          => 'food-culture',
@@ -117,6 +122,7 @@ class AISTMA_Activation_Wizard {
 				'description' => 'Tell stories about food, recipes, and cultural cuisines.',
 				'category'    => 'Food',
 				'example'     => 'A culinary journey through Mediterranean cuisine...',
+				'photos'      => 3,
 			),
 			array(
 				'id'          => 'personal-growth',
@@ -124,6 +130,7 @@ class AISTMA_Activation_Wizard {
 				'description' => 'Inspire readers with personal development stories.',
 				'category'    => 'Self-Help',
 				'example'     => '5 transformative habits that changed my life...',
+				'photos'      => 1,
 			),
 			array(
 				'id'          => 'entertainment',
@@ -131,6 +138,7 @@ class AISTMA_Activation_Wizard {
 				'description' => 'Create entertaining stories and pop culture commentary.',
 				'category'    => 'Entertainment',
 				'example'     => 'Hidden gems in the streaming world...',
+				'photos'      => 2,
 			),
 			array(
 				'id'          => 'science-discovery',
@@ -138,6 +146,7 @@ class AISTMA_Activation_Wizard {
 				'description' => 'Explain fascinating scientific discoveries and breakthroughs.',
 				'category'    => 'Science',
 				'example'     => 'The latest discoveries in quantum physics...',
+				'photos'      => 1,
 			),
 			array(
 				'id'          => 'education-learning',
@@ -145,6 +154,7 @@ class AISTMA_Activation_Wizard {
 				'description' => 'Share educational content and learning tips.',
 				'category'    => 'Education',
 				'example'     => 'The best ways to master a new skill...',
+				'photos'      => 1,
 			),
 		);
 
