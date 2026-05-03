@@ -148,7 +148,7 @@ class AISTMA_Story_Generator {
 	 */
 	public function generate_ai_story( $prompt_id, $prompt, $default_settings, $api_key, $aistma_master_instructions ) {
 		$merged_settings        = array_merge( $default_settings, $prompt );
-		
+
 		// Check credits before proceeding with generation
 		$current_user_id = get_current_user_id();
 		if ( $current_user_id > 0 && class_exists( __NAMESPACE__ . '\\AISTMA_Credits_Manager' ) ) {
@@ -158,7 +158,7 @@ class AISTMA_Story_Generator {
 				throw new \RuntimeException( esc_html( $error ) );
 			}
 		}
-		
+
 		$recent_posts = $this->aistma_get_recent_posts( 20, $prompt['category'] );
 
 		// Append recent posts titles if provided and not empty.
@@ -171,7 +171,7 @@ class AISTMA_Story_Generator {
 			}
 		}
 
-		
+
 		// Assign final system content.
 		$merged_settings['system_content'] .= $aistma_master_instructions ;
 
@@ -180,17 +180,16 @@ class AISTMA_Story_Generator {
 
 		// Check if we have a valid subscription
 		$subscription_info = $this->get_subscription_info();
-		
+
 		if ( $subscription_info['valid'] ) {
 			// Use Master Server API
-			
-			$this->generate_story_via_master_api( $prompt_id, $prompt, $merged_settings,  $the_prompt, $subscription_info );
+			return $this->generate_story_via_master_api( $prompt_id, $prompt, $merged_settings,  $the_prompt, $subscription_info );
 		} else {
 			// Fallback to direct OpenAI API call
 			if ( $prompt['photos'] > 0 ) {
 				$the_prompt .= "\n" . __( 'Include at least ', 'ai-story-maker' ) . $prompt['photos'] . __( ' placeholders for images in the article. insert a placeholder in the following format {img_unsplash:keyword1,keyword2,keyword3} using the most relevant keywords for fetching related images from Unsplash', 'ai-story-maker' );
 			}
-			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings,  $api_key, $the_prompt );
+			return $this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings,  $api_key, $the_prompt );
 		}
 	}
 
@@ -362,12 +361,11 @@ class AISTMA_Story_Generator {
 			$error_msg = isset( $data['error'] ) ? $data['error'] : 'Unknown error from Master API';
 			$this->aistma_log_manager->log( 'error', 'Master API error: ' . $error_msg . ', falling back to direct OpenAI call' );
 			// Fallback to direct OpenAI call
-			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings,  $this->api_key, $the_prompt );
-			return;
+			return $this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings,  $this->api_key, $the_prompt );
 		}
 
 		// Success! Process the response from Master API
-		$this->process_master_api_response( $data, $prompt_id, $prompt, $merged_settings );
+		return $this->process_master_api_response( $data, $prompt_id, $prompt, $merged_settings );
 	}
 
 	/**
@@ -460,7 +458,7 @@ class AISTMA_Story_Generator {
 		}
 
 		// Process the OpenAI response
-		$this->process_openai_response( $response_body, $parsed_content, $prompt_id, $prompt, $merged_settings );
+		return $this->process_openai_response( $response_body, $parsed_content, $prompt_id, $prompt, $merged_settings );
 	}
 
 	/**
@@ -632,6 +630,7 @@ class AISTMA_Story_Generator {
 		}
 
 		$this->aistma_log_manager->log( 'info', 'Story generated successfully via Master API. Post ID: ' . $post_id );
+		return $post_id;
 	}
 
 	/**
@@ -741,6 +740,7 @@ class AISTMA_Story_Generator {
 		}
 
 		$this->aistma_log_manager->log( 'info', 'Story generated successfully via OpenAI API. Post ID: ' . $post_id . ', Tokens used: ' . $total_tokens );
+		return $post_id;
 	}
 
 	/**
