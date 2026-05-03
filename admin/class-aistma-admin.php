@@ -1473,7 +1473,7 @@ class AISTMA_Admin {
 			if ( ! AISTMA_Credits_Manager::has_credits( $user_id, 1 ) ) {
 				wp_send_json_error( array(
 					'message' => __( 'You have no credits remaining. Please upgrade your plan or purchase credits to generate stories.', 'ai-story-maker' ),
-					'redirect_url' => admin_url( 'admin.php?page=aistma-settings&tab=account' )
+					'redirect_url' => admin_url( 'admin.php?page=aistma-settings&tab=ai_writer' )
 				) );
 			}
 
@@ -1503,7 +1503,7 @@ class AISTMA_Admin {
 				if ( ! $api_key ) {
 					wp_send_json_error( array(
 						'message' => __( 'You have no credits remaining. Please upgrade your plan or purchase credits to continue.', 'ai-story-maker' ),
-						'redirect_url' => admin_url( 'admin.php?page=aistma-settings&tab=account' )
+						'redirect_url' => admin_url( 'admin.php?page=aistma-settings&tab=ai_writer' )
 					) );
 				}
 			}
