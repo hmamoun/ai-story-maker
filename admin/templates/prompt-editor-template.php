@@ -77,6 +77,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<tr>
 					<td colspan="6" style="text-align: right; padding: 20px;">
 						<button id="add-prompt" class="button button-primary"><?php esc_html_e( 'Add a new prompt', 'ai-story-maker' ); ?></button>
+					<button id="browse-prompt-gallery" type="button" class="button button-secondary" style="margin-left: 10px;"><?php esc_html_e( 'Pick from the prompt gallery', 'ai-story-maker' ); ?></button>
+						<button id="browse-prompt-gallery" type="button" class="button button-secondary" style="margin-left: 10px;"><?php esc_html_e( 'Pick from the prompt gallery', 'ai-story-maker' ); ?></button>
 					</td>
 				</tr>
 			</tbody>
@@ -92,5 +94,21 @@ if ( ! defined( 'ABSPATH' ) ) {
     
 <?php // Generation controls moved to a reusable template included globally. ?>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+	const browseGalleryBtn = document.getElementById('browse-prompt-gallery');
+	if (browseGalleryBtn) {
+		browseGalleryBtn.addEventListener('click', function(e) {
+			e.preventDefault();
+			// Open the activation wizard modal
+			const wizardModal = document.getElementById('aistma-wizard-modal');
+			if (wizardModal) {
+				wizardModal.style.display = 'block';
+				wizardModal.style.opacity = '1';
+			}
+		});
+	}
+});
+</script>
 
 </div>
