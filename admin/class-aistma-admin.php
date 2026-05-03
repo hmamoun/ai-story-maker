@@ -1636,7 +1636,7 @@ class AISTMA_Admin {
 			$user_id = get_current_user_id();
 			$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
 
-			if ( ! $post_id || get_post_author( $post_id ) !== $user_id ) {
+			if ( ! $post_id || intval( get_post_field( 'post_author', $post_id ) ) !== $user_id ) {
 				wp_send_json_error( array( 'message' => __( 'Invalid post.', 'ai-story-maker' ) ) );
 			}
 
