@@ -94,20 +94,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 <?php // Generation controls moved to a reusable template included globally. ?>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-	const browseGalleryBtn = document.getElementById('browse-prompt-gallery');
-	if (browseGalleryBtn) {
-		browseGalleryBtn.addEventListener('click', function(e) {
-			e.preventDefault();
-			// Open the activation wizard modal
-			const wizardModal = document.getElementById('aistma-wizard-modal');
-			if (wizardModal) {
-				wizardModal.style.display = 'block';
-				wizardModal.style.opacity = '1';
-			}
-		});
-	}
-});
+(function($) {
+	'use strict';
+	$(document).ready(function() {
+		const $browseGalleryBtn = $('#browse-prompt-gallery');
+		if ($browseGalleryBtn.length) {
+			$browseGalleryBtn.on('click', function(e) {
+				e.preventDefault();
+				const $wizardModal = $('#aistma-wizard-modal');
+				if ($wizardModal.length) {
+					$wizardModal.fadeIn(200);
+				}
+			});
+		}
+	});
+})(jQuery);
 </script>
 
 </div>
