@@ -1640,12 +1640,8 @@ class AISTMA_Admin {
 				wp_send_json_error( array( 'message' => __( 'Invalid post.', 'ai-story-maker' ) ) );
 			}
 
-			// Deduct credit
-			$new_balance = AISTMA_Credits_Manager::deduct_credits( $user_id, 1, 'Story generated from activation wizard' );
-
-			if ( false === $new_balance ) {
-				wp_send_json_error( array( 'message' => __( 'Could not deduct credits.', 'ai-story-maker' ) ) );
-			}
+			// Note: Credits are already deducted during story generation via the gateway endpoint
+			// No need to deduct again here
 
 			// Publish the post
 			wp_update_post( array(
