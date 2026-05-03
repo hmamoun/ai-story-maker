@@ -1526,7 +1526,10 @@ class AISTMA_Admin {
 			try {
 				$post_id = $story_generator->generate_ai_story( $prompt_id, $prompt_for_generation, $default_settings, $api_key, $aistma_master_instructions );
 
+				$this->aistma_log_manager->log( 'debug', sprintf( 'Wizard generation returned post_id: %s (type: %s)', var_export( $post_id, true ), gettype( $post_id ) ) );
+
 				if ( is_wp_error( $post_id ) || ! $post_id ) {
+					$this->aistma_log_manager->log( 'error', sprintf( 'Invalid post_id returned from generate_ai_story: %s', var_export( $post_id, true ) ) );
 					wp_send_json_error( array( 'message' => __( 'Failed to generate story.', 'ai-story-maker' ) ) );
 				}
 
