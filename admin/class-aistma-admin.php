@@ -1471,12 +1471,10 @@ class AISTMA_Admin {
 
 			// Check credits
 			if ( ! AISTMA_Credits_Manager::has_credits( $user_id, 1 ) ) {
-				$account_url = admin_url( 'admin.php?page=aistma-settings&tab=account' );
-				$error_msg = sprintf(
-					__( 'You have no credits remaining. Please upgrade your plan or purchase credits to generate stories. <a href="%s">Go to Account Settings</a>', 'ai-story-maker' ),
-					esc_url( $account_url )
-				);
-				wp_send_json_error( array( 'message' => $error_msg ) );
+				wp_send_json_error( array(
+					'message' => __( 'You have no credits remaining. Please upgrade your plan or purchase credits to generate stories.', 'ai-story-maker' ),
+					'redirect_url' => admin_url( 'admin.php?page=aistma-settings&tab=account' )
+				) );
 			}
 
 			// Get the selected prompt from wizard defaults
@@ -1503,12 +1501,10 @@ class AISTMA_Admin {
 			if ( ! $has_valid_subscription ) {
 				$api_key = get_option( 'aistma_openai_api_key' );
 				if ( ! $api_key ) {
-					$account_url = admin_url( 'admin.php?page=aistma-settings&tab=account' );
-					$error_msg = sprintf(
-						__( 'You have no credits remaining. Please upgrade your plan or purchase credits to continue. <a href="%s">Go to Account Settings</a>', 'ai-story-maker' ),
-						esc_url( $account_url )
-					);
-					wp_send_json_error( array( 'message' => $error_msg ) );
+					wp_send_json_error( array(
+						'message' => __( 'You have no credits remaining. Please upgrade your plan or purchase credits to continue.', 'ai-story-maker' ),
+						'redirect_url' => admin_url( 'admin.php?page=aistma-settings&tab=account' )
+					) );
 				}
 			}
 

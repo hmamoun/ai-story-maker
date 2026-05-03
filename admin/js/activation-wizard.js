@@ -152,7 +152,7 @@
 						self.close();
 						AistmaPreview.show(self.generatedPost);
 					} else {
-						self.showError(response.data.message);
+						self.showError(response.data.message, response.data.redirect_url);
 					}
 				},
 				error: function () {
@@ -165,10 +165,15 @@
 		},
 
 		/**
-		 * Show error message
+		 * Show error message and optionally redirect
 		 */
-		showError: function (message) {
+		showError: function (message, redirectUrl) {
 			alert(message || aistmaWizardL10n.unknownError);
+
+			// Redirect if a URL is provided
+			if (redirectUrl) {
+				window.location.href = redirectUrl;
+			}
 		},
 
 		/**
