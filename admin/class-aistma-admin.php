@@ -1471,7 +1471,12 @@ class AISTMA_Admin {
 
 			// Check credits
 			if ( ! AISTMA_Credits_Manager::has_credits( $user_id, 1 ) ) {
-				wp_send_json_error( array( 'message' => __( 'You do not have enough credits to generate a story.', 'ai-story-maker' ) ) );
+				$account_url = admin_url( 'admin.php?page=aistma-settings&tab=account' );
+				$error_msg = sprintf(
+					__( 'You have no credits remaining. Please upgrade your plan or purchase credits to generate stories. <a href="%s">Go to Account Settings</a>', 'ai-story-maker' ),
+					esc_url( $account_url )
+				);
+				wp_send_json_error( array( 'message' => $error_msg ) );
 			}
 
 			// Get the selected prompt from wizard defaults
@@ -1492,13 +1497,18 @@ class AISTMA_Admin {
 			$story_generator = new AISTMA_Story_Generator();
 			$subscription_info = $story_generator->get_subscription_info();
 			$has_valid_subscription = $subscription_info['valid'];
-			
+
 			// Get API key only if no valid subscription
 			$api_key = null;
 			if ( ! $has_valid_subscription ) {
 				$api_key = get_option( 'aistma_openai_api_key' );
 				if ( ! $api_key ) {
-					wp_send_json_error( array( 'message' => __( 'Story generation is not configured properly. Please check API settings.', 'ai-story-maker' ) ) );
+					$account_url = admin_url( 'admin.php?page=aistma-settings&tab=account' );
+					$error_msg = sprintf(
+						__( 'You have no credits remaining. Please upgrade your plan or purchase credits to continue. <a href="%s">Go to Account Settings</a>', 'ai-story-maker' ),
+						esc_url( $account_url )
+					);
+					wp_send_json_error( array( 'message' => $error_msg ) );
 				}
 			}
 
