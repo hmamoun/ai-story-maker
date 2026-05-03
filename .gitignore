@@ -1,0 +1,26 @@
+# Environment variables - NEVER commit these files
+.env
+.env.local
+.env.*.local
+.env.bak
+.env.backup
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Node modules (if used)
+node_modules/
+package-lock.json
+
+# Build artifacts
+dist/
+build/
+
+# OS files
+Thumbs.db
+.DS_Store
