@@ -749,7 +749,7 @@ class AISTMA_Story_Generator {
 	 * @param array $recent_posts Array of recent posts to exclude from generation.
 	 * @return string Master instructions for AI story generation.
 	 */
-	private function aistma_get_master_instructions() {
+	public function aistma_get_master_instructions() {
 		// Fetch dynamic system content from Exedotcom API Gateway.
 		$aistma_master_instructions = get_transient( 'aistma_exaig_cached_master_instructions' );
 		if ( false === $aistma_master_instructions  || true) {
