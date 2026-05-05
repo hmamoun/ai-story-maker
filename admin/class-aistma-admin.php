@@ -1469,12 +1469,15 @@ class AISTMA_Admin {
 				wp_send_json_error( array( 'message' => __( 'No prompt selected.', 'ai-story-maker' ) ) );
 			}
 
-			// Check credits
+			// Check credits, but allow fallback if user has their own OpenAI API key
 			if ( ! AISTMA_Credits_Manager::has_credits( $user_id, 1 ) ) {
-				wp_send_json_error( array(
-					'message' => __( 'You have no credits remaining. Please upgrade your plan or purchase credits to generate stories.', 'ai-story-maker' ),
-					'redirect_url' => admin_url( 'admin.php?page=aistma-settings&tab=ai_writer' )
-				) );
+				$openai_api_key = get_option( 'aistma_openai_api_key' );
+				if ( empty( $openai_api_key ) ) {
+					wp_send_json_error( array(
+						'message' => __( 'You have no credits remaining. Please upgrade your plan or purchase credits to generate stories.', 'ai-story-maker' ),
+						'redirect_url' => admin_url( 'admin.php?page=aistma-settings&tab=ai_writer' )
+					) );
+				}
 			}
 
 			// Get the selected prompt from wizard defaults
