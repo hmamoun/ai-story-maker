@@ -363,7 +363,7 @@ class AISTMA_Story_Generator {
 			// Only fall back to direct OpenAI if user has their own API key
 			// If they have subscription or credits, they shouldn't be using direct OpenAI
 			if ( ! $this->api_key ) {
-				$error = __( 'Master API is temporarily unavailable. Please try again later.', 'ai-story-maker' );
+				$error = __( 'Story generation temporarily unavailable. Please try again later.', 'ai-story-maker' );
 				$this->aistma_log_manager->log( 'error', $error );
 				throw new \RuntimeException( esc_html( $error ) );
 			}
@@ -376,7 +376,7 @@ class AISTMA_Story_Generator {
 			$this->aistma_log_manager->log( 'error', 'Invalid JSON response from Master API, falling back to direct OpenAI call' );
 			// Only fall back to direct OpenAI if user has their own API key
 			if ( ! $this->api_key ) {
-				$error = __( 'Master API returned invalid data. Please try again later.', 'ai-story-maker' );
+				$error = __( 'Story generation service error. Please try again later.', 'ai-story-maker' );
 				$this->aistma_log_manager->log( 'error', $error );
 				throw new \RuntimeException( esc_html( $error ) );
 			}
@@ -390,7 +390,7 @@ class AISTMA_Story_Generator {
 			$this->aistma_log_manager->log( 'error', 'Master API error: ' . $error_msg . ', falling back to direct OpenAI call' );
 			// Only fall back to direct OpenAI if user has their own API key
 			if ( ! $this->api_key ) {
-				$error = __( 'Master API error: ' . $error_msg . '. Please try again later.', 'ai-story-maker' );
+				$error = __( 'Unable to generate story. Please try again later.', 'ai-story-maker' );
 				$this->aistma_log_manager->log( 'error', $error );
 				throw new \RuntimeException( esc_html( $error ) );
 			}
