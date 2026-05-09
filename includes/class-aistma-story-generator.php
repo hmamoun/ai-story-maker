@@ -87,24 +87,28 @@ class AISTMA_Story_Generator {
 
 		// Check subscription status and API key availability before generating stories
 		try {
-			$subscription_status = $instance->aistma_get_subscription_status();
+			$subscription_status    = $instance->aistma_get_subscription_status();
 			$has_valid_subscription = $subscription_status['valid'];
-			
-			// Check if we have a valid subscription
+			$current_user_id        = get_current_user_id();
+			$has_credits            = $current_user_id > 0
+				&& class_exists( __NAMESPACE__ . '\\AISTMA_Credits_Manager' )
+				&& AISTMA_Credits_Manager::has_credits( $current_user_id, 1 );
+
 			if ( $has_valid_subscription ) {
 				$instance->aistma_log_manager::log( 'info', 'Subscription validated for domain: ' . ( $subscription_status['domain'] ?? 'unknown' ) . ' - Package: ' . ( $subscription_status['package_name'] ?? 'unknown' ) );
+			} elseif ( $has_credits ) {
+				$instance->aistma_log_manager::log( 'info', 'No subscription but user has credits — will use master API.' );
 			} else {
-				// No valid subscription, check if we have a valid OpenAI API key as fallback
+				// No subscription and no credits: require an OpenAI API key
 				$openai_api_key = get_option( 'aistma_openai_api_key' );
 				if ( empty( $openai_api_key ) ) {
-					$error_message = isset( $subscription_status['error'] ) 
-						? 'Subscription check failed: ' . $subscription_status['error'] . '. Also, no OpenAI API key found.'
-						: 'No valid subscription found and no OpenAI API key configured.';
-					
+					$error_message = isset( $subscription_status['error'] )
+						? 'Subscription check failed: ' . $subscription_status['error'] . '. Also, no credits or OpenAI API key found.'
+						: 'No subscription, no credits, and no OpenAI API key configured.';
 					$instance->aistma_log_manager::log( 'error', $error_message );
 					return array( 'success' => false, 'message' => $error_message );
 				} else {
-					$instance->aistma_log_manager::log( 'info', 'No valid subscription found, but OpenAI API key is available. Will use direct OpenAI API calls.' );
+					$instance->aistma_log_manager::log( 'info', 'No subscription or credits found, but OpenAI API key is available. Will use direct OpenAI API calls.' );
 				}
 			}
 		} catch ( \RuntimeException $e ) {
@@ -178,18 +182,21 @@ class AISTMA_Story_Generator {
 		$the_prompt = $prompt['text'];
 
 
-		// Check if we have a valid subscription
+		// Credits route through the master API the same way a subscription does.
 		$subscription_info = $this->get_subscription_info();
+		$current_user_id   = get_current_user_id();
+		$has_credits       = $current_user_id > 0
+			&& class_exists( __NAMESPACE__ . '\\AISTMA_Credits_Manager' )
+			&& AISTMA_Credits_Manager::has_credits( $current_user_id, 1 );
 
-		if ( $subscription_info['valid'] ) {
-			// Use Master Server API
-			return $this->generate_story_via_master_api( $prompt_id, $prompt, $merged_settings,  $the_prompt, $subscription_info );
+		if ( $subscription_info['valid'] || $has_credits ) {
+			return $this->generate_story_via_master_api( $prompt_id, $prompt, $merged_settings, $the_prompt, $subscription_info );
 		} else {
 			// Fallback to direct OpenAI API call
 			if ( $prompt['photos'] > 0 ) {
 				$the_prompt .= "\n" . __( 'Include at least ', 'ai-story-maker' ) . $prompt['photos'] . __( ' placeholders for images in the article. insert a placeholder in the following format {img_unsplash:keyword1,keyword2,keyword3} using the most relevant keywords for fetching related images from Unsplash', 'ai-story-maker' );
 			}
-			return $this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings,  $api_key, $the_prompt );
+			return $this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $api_key, $the_prompt );
 		}
 	}
 
