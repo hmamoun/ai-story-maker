@@ -360,14 +360,27 @@ class AISTMA_Story_Generator {
 
 		if ( $response_code !== 200 ) {
 			$this->aistma_log_manager->log( 'error', 'Master API returned HTTP ' . $response_code . ', falling back to direct OpenAI call' );
-			// Fallback to direct OpenAI call
+			// Only fall back to direct OpenAI if user has their own API key
+			// If they have subscription or credits, they shouldn't be using direct OpenAI
+			if ( ! $this->api_key ) {
+				$error = __( 'Master API is temporarily unavailable. Please try again later.', 'ai-story-maker' );
+				$this->aistma_log_manager->log( 'error', $error );
+				throw new \RuntimeException( esc_html( $error ) );
+			}
+			// Fallback to direct OpenAI call (only if user has personal API key)
 			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $this->api_key, $the_prompt );
 			return;
 		}
 
 		if ( json_last_error() !== JSON_ERROR_NONE ) {
 			$this->aistma_log_manager->log( 'error', 'Invalid JSON response from Master API, falling back to direct OpenAI call' );
-			// Fallback to direct OpenAI call
+			// Only fall back to direct OpenAI if user has their own API key
+			if ( ! $this->api_key ) {
+				$error = __( 'Master API returned invalid data. Please try again later.', 'ai-story-maker' );
+				$this->aistma_log_manager->log( 'error', $error );
+				throw new \RuntimeException( esc_html( $error ) );
+			}
+			// Fallback to direct OpenAI call (only if user has personal API key)
 			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings,  $this->api_key, $the_prompt );
 			return;
 		}
@@ -375,7 +388,13 @@ class AISTMA_Story_Generator {
 		if ( ! isset( $data['success'] ) || ! $data['success'] ) {
 			$error_msg = isset( $data['error'] ) ? $data['error'] : 'Unknown error from Master API';
 			$this->aistma_log_manager->log( 'error', 'Master API error: ' . $error_msg . ', falling back to direct OpenAI call' );
-			// Fallback to direct OpenAI call
+			// Only fall back to direct OpenAI if user has their own API key
+			if ( ! $this->api_key ) {
+				$error = __( 'Master API error: ' . $error_msg . '. Please try again later.', 'ai-story-maker' );
+				$this->aistma_log_manager->log( 'error', $error );
+				throw new \RuntimeException( esc_html( $error ) );
+			}
+			// Fallback to direct OpenAI call (only if user has personal API key)
 			return $this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings,  $this->api_key, $the_prompt );
 		}
 
