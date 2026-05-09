@@ -602,24 +602,23 @@ class AISTMA_Story_Generator {
 			update_post_meta( $post_id, 'ai_story_maker_generated_via', 'master_api' );
 			
 			// Add enhancement tracking meta data
-			$package_name = isset( $data['package_name'] ) ? sanitize_text_field( $data['package_name'] ) : '';
+			$package_name      = isset( $data['package_name'] ) ? sanitize_text_field( $data['package_name'] ) : '';
+			$enhancement_limit = 1; // default
+			$package_id        = false;
 			if ( ! empty( $package_name ) ) {
-				// Get package ID from name (this assumes packages are stored with sequential IDs)
 				$package_id = $this->get_package_id_by_name( $package_name );
 				if ( $package_id !== false ) {
 					$enhancement_limit = $this->get_package_enhancement_limit( $package_id );
 					update_post_meta( $post_id, 'ai_story_maker_package_id', $package_id );
-					update_post_meta( $post_id, 'ai_story_maker_enhancements_limit', $enhancement_limit );
-					update_post_meta( $post_id, 'ai_story_maker_enhancements_history', wp_json_encode( [] ) );
-					
-					// Debug logging
 					$this->aistma_log_manager->log( 'info', 'Enhancement meta added to post ' . $post_id . ': package_name=' . $package_name . ', package_id=' . $package_id . ', limit=' . $enhancement_limit );
 				} else {
-					$this->aistma_log_manager->log( 'warning', 'Could not find package ID for package name: ' . $package_name );
+					$this->aistma_log_manager->log( 'warning', 'Could not find package ID for package name: ' . $package_name . '. Defaulting enhancement limit to 1.' );
 				}
 			} else {
-				$this->aistma_log_manager->log( 'warning', 'No package_name found in Master API response for post ' . $post_id );
+				$this->aistma_log_manager->log( 'warning', 'No package_name found in Master API response for post ' . $post_id . '. Defaulting enhancement limit to 1.' );
 			}
+			update_post_meta( $post_id, 'ai_story_maker_enhancements_limit', $enhancement_limit );
+			update_post_meta( $post_id, 'ai_story_maker_enhancements_history', wp_json_encode( [] ) );
 			
 			// $this->aistma_log_manager->log( 'success', 'AI-generated news article created via Master API: ' . get_permalink( $post_id ), $request_id );
 		}
@@ -723,18 +722,18 @@ class AISTMA_Story_Generator {
 			update_post_meta( $post_id, 'ai_story_maker_generated_via', 'openai_api' );
 			
 			// Add enhancement tracking meta data for OpenAI API generated posts
-			// For OpenAI API posts, we'll use a default package or get from subscription
 			$subscription_info = $this->get_subscription_info();
-			$package_name = $subscription_info['package_name'] ?? '';
+			$package_name      = $subscription_info['package_name'] ?? '';
+			$enhancement_limit = 1; // default
 			if ( ! empty( $package_name ) ) {
 				$package_id = $this->get_package_id_by_name( $package_name );
 				if ( $package_id !== false ) {
 					$enhancement_limit = $this->get_package_enhancement_limit( $package_id );
 					update_post_meta( $post_id, 'ai_story_maker_package_id', $package_id );
-					update_post_meta( $post_id, 'ai_story_maker_enhancements_limit', $enhancement_limit );
-					update_post_meta( $post_id, 'ai_story_maker_enhancements_history', wp_json_encode( [] ) );
 				}
 			}
+			update_post_meta( $post_id, 'ai_story_maker_enhancements_limit', $enhancement_limit );
+			update_post_meta( $post_id, 'ai_story_maker_enhancements_history', wp_json_encode( [] ) );
 			
 			$this->aistma_log_manager->log( 'success', 'AI-generated news article created via OpenAI API: ' . get_permalink( $post_id ), $request_id );
 		}
@@ -1432,8 +1431,8 @@ class AISTMA_Story_Generator {
 			return $limit;
 		}
 
-		$this->aistma_log_manager->log( 'warning', 'No enhancement limit found for package ID: ' . $package_id . ', defaulting to unlimited' );
-		return 0; // Default to unlimited
+		$this->aistma_log_manager->log( 'warning', 'No enhancement limit found for package ID: ' . $package_id . ', defaulting to 1' );
+		return 1;
 	}
 
 	/**
