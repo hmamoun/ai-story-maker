@@ -214,20 +214,28 @@ class AISTMA_Story_Generator {
 		// Check subscription status first
 		$subscription_info = $this->get_subscription_info();
 		$has_valid_subscription = $subscription_info['valid'];
-		
-		// Only check OpenAI API key if no valid subscription 
-		if ( ! $has_valid_subscription ) {
+		$current_user_id = get_current_user_id();
+		$has_credits = $current_user_id > 0
+			&& class_exists( __NAMESPACE__ . '\\AISTMA_Credits_Manager' )
+			&& AISTMA_Credits_Manager::has_credits( $current_user_id, 1 );
+
+		// Check OpenAI API key only if no subscription AND no credits
+		if ( ! $has_valid_subscription && ! $has_credits ) {
 			$this->api_key = get_option( 'aistma_openai_api_key' );
-					if ( ! $this->api_key ) {
-			$error = __( 'OpenAI API Key is missing. Required for direct OpenAI calls when no subscription is active.', 'ai-story-maker' );
-			$this->aistma_log_manager->log( 'error', $error );
-			$results['errors'][] = $error;
-			throw new \RuntimeException( esc_html( $error ) );
+			if ( ! $this->api_key ) {
+				$error = __( 'No credits, subscribe to get more.', 'ai-story-maker' );
+				$this->aistma_log_manager->log( 'error', $error );
+				$results['errors'][] = $error;
+				throw new \RuntimeException( esc_html( $error ) );
 			}
 		} else {
-			// For subscription users, we'll use master API, so OpenAI key is not required
+			// For subscription or credit users, we'll use master API, so OpenAI key is not required
 			$this->api_key = null;
-			$this->aistma_log_manager->log( 'info', 'Valid subscription detected, will use Master API for story generation' );
+			if ( $has_valid_subscription ) {
+				$this->aistma_log_manager->log( 'info', 'Valid subscription detected, will use Master API for story generation' );
+			} else {
+				$this->aistma_log_manager->log( 'info', 'User has available credits, will use Master API for story generation' );
+			}
 		}
 
 		$raw_settings = get_option( 'aistma_prompts', '' );
@@ -394,7 +402,7 @@ class AISTMA_Story_Generator {
 		}
 		
 		if ( ! $api_key ) {
-			$error = __( 'OpenAI API Key is missing. Required for direct OpenAI calls without subscription', 'ai-story-maker' );
+			$error = __( 'No credits and no OpenAI API key configured. Please subscribe or add your own API key.', 'ai-story-maker' );
 			$this->aistma_log_manager->log( 'error', $error );
 			throw new \RuntimeException( esc_html( $error ) );
 		}
