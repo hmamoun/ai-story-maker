@@ -1,0 +1,372 @@
+/**
+ * Rating Request Modal Styles
+ *
+ * @package AI_Story_Maker
+ * @since   2.3.0
+ */
+
+/* ============================================================================
+   Rating Modal Overlay
+   ============================================================================ */
+
+.aistma-rating-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: rgba(0, 0, 0, 0.5);
+	z-index: 9998;
+	animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+/* ============================================================================
+   Rating Modal Container
+   ============================================================================ */
+
+.aistma-rating-modal {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 9999;
+}
+
+.aistma-rating-content {
+	position: relative;
+	background: #fff;
+	border-radius: 8px;
+	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+	width: 500px;
+	max-width: 90%;
+	animation: slideUp 0.3s ease-in-out;
+	z-index: 9999;
+}
+
+@keyframes slideUp {
+	from {
+		transform: translateY(30px);
+		opacity: 0;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
+/* ============================================================================
+   Header
+   ============================================================================ */
+
+.aistma-rating-header {
+	padding: 30px;
+	border-bottom: 1px solid #e5e5e5;
+	position: relative;
+}
+
+.aistma-rating-header h2 {
+	margin: 0;
+	font-size: 24px;
+	color: #1d2327;
+	line-height: 1.4;
+	font-weight: 600;
+}
+
+.aistma-rating-close {
+	position: absolute;
+	top: 15px;
+	right: 15px;
+	background: none;
+	border: none;
+	font-size: 24px;
+	cursor: pointer;
+	color: #646970;
+	padding: 0;
+	width: 32px;
+	height: 32px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: color 0.2s ease;
+	line-height: 1;
+}
+
+.aistma-rating-close:hover {
+	color: #1d2327;
+}
+
+.aistma-rating-close .dashicon-no::before {
+	content: '✕';
+	font-size: 24px;
+}
+
+/* ============================================================================
+   Body
+   ============================================================================ */
+
+.aistma-rating-body {
+	padding: 30px;
+	text-align: center;
+}
+
+.aistma-rating-message {
+	margin: 0 0 30px 0;
+	font-size: 16px;
+	color: #646970;
+	line-height: 1.6;
+}
+
+/* ============================================================================
+   Star Rating Selector
+   ============================================================================ */
+
+.aistma-rating-stars-container {
+	margin: 0 0 25px 0;
+	display: flex;
+	justify-content: center;
+}
+
+.aistma-rating-stars {
+	display: flex;
+	gap: 10px;
+	align-items: center;
+	justify-content: center;
+}
+
+.aistma-star {
+	background: none;
+	border: none;
+	font-size: 48px;
+	cursor: pointer;
+	color: #d4d4d4;
+	padding: 0;
+	margin: 0;
+	transition: all 0.2s ease;
+	line-height: 1;
+	width: 48px;
+	height: 48px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	position: relative;
+}
+
+.aistma-star:hover,
+.aistma-star.hover {
+	color: #ffd700;
+	transform: scale(1.2);
+	text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+}
+
+.aistma-star.active {
+	color: #ffd700;
+	text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+}
+
+/* Animate on click */
+.aistma-star.clicked {
+	animation: pulse 0.4s ease-out;
+}
+
+@keyframes pulse {
+	0% {
+		transform: scale(1);
+	}
+	50% {
+		transform: scale(1.3);
+	}
+	100% {
+		transform: scale(1.2);
+	}
+}
+
+.aistma-rating-current {
+	margin: 15px 0 0 0;
+	font-size: 14px;
+	color: #999;
+}
+
+.aistma-rating-current .aistma-rating-value {
+	font-weight: 600;
+	color: #ffd700;
+}
+
+/* ============================================================================
+   Footer
+   ============================================================================ */
+
+.aistma-rating-footer {
+	padding: 0 30px 30px 30px;
+	border-top: 1px solid #e5e5e5;
+	display: flex;
+	flex-direction: column;
+	gap: 15px;
+}
+
+.aistma-rating-submit {
+	width: 100%;
+	padding: 12px 20px !important;
+	font-size: 15px;
+	text-align: center;
+	border-radius: 4px;
+	transition: all 0.2s ease;
+}
+
+.aistma-rating-submit:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(0, 115, 170, 0.2);
+}
+
+.aistma-rating-secondary-actions {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 15px;
+}
+
+.aistma-rating-remind-later {
+	flex: 1;
+	padding: 10px 15px !important;
+	font-size: 14px;
+	color: #646970;
+	text-align: center;
+	border-radius: 4px;
+	transition: all 0.2s ease;
+}
+
+.aistma-rating-remind-later:hover {
+	color: #1d2327;
+	background-color: #f5f5f5;
+}
+
+.aistma-rating-checkbox {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	cursor: pointer;
+	font-size: 13px;
+	color: #999;
+	margin: 0;
+	white-space: nowrap;
+	transition: color 0.2s ease;
+}
+
+.aistma-rating-checkbox:hover {
+	color: #646970;
+}
+
+.aistma-rating-checkbox input[type="checkbox"] {
+	cursor: pointer;
+	margin: 0;
+	padding: 0;
+	width: 16px;
+	height: 16px;
+}
+
+/* ============================================================================
+   Loading State
+   ============================================================================ */
+
+.aistma-rating-loading {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: rgba(255, 255, 255, 0.7);
+	border-radius: 8px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 10000;
+}
+
+.aistma-rating-loading .spinner {
+	border: 4px solid #f3f3f3;
+	border-top: 4px solid #0073aa;
+	border-radius: 50%;
+	width: 40px;
+	height: 40px;
+	animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
+}
+
+/* ============================================================================
+   Responsive Design (Mobile)
+   ============================================================================ */
+
+@media (max-width: 600px) {
+	.aistma-rating-content {
+		width: 95%;
+		margin: 20px;
+	}
+
+	.aistma-rating-header,
+	.aistma-rating-body,
+	.aistma-rating-footer {
+		padding: 20px;
+	}
+
+	.aistma-rating-header h2 {
+		font-size: 20px;
+	}
+
+	.aistma-rating-body {
+		padding-top: 20px;
+	}
+
+	.aistma-star {
+		font-size: 40px;
+		width: 40px;
+		height: 40px;
+	}
+
+	.aistma-star:hover,
+	.aistma-star.hover {
+		transform: scale(1.15);
+	}
+
+	.aistma-star.active {
+		font-size: 40px;
+	}
+
+	.aistma-rating-secondary-actions {
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.aistma-rating-remind-later {
+		width: 100%;
+	}
+
+	.aistma-rating-checkbox {
+		width: 100%;
+		justify-content: center;
+	}
+
+	.aistma-rating-submit {
+		padding: 14px 20px !important;
+		font-size: 14px;
+	}
+}

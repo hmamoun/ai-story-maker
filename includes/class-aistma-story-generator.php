@@ -87,24 +87,28 @@ class AISTMA_Story_Generator {
 
 		// Check subscription status and API key availability before generating stories
 		try {
-			$subscription_status = $instance->aistma_get_subscription_status();
+			$subscription_status    = $instance->aistma_get_subscription_status();
 			$has_valid_subscription = $subscription_status['valid'];
-			
-			// Check if we have a valid subscription
+			$current_user_id        = get_current_user_id();
+			$has_credits            = $current_user_id > 0
+				&& class_exists( __NAMESPACE__ . '\\AISTMA_Credits_Manager' )
+				&& AISTMA_Credits_Manager::has_credits( $current_user_id, 1 );
+
 			if ( $has_valid_subscription ) {
 				$instance->aistma_log_manager::log( 'info', 'Subscription validated for domain: ' . ( $subscription_status['domain'] ?? 'unknown' ) . ' - Package: ' . ( $subscription_status['package_name'] ?? 'unknown' ) );
+			} elseif ( $has_credits ) {
+				$instance->aistma_log_manager::log( 'info', 'No subscription but user has credits — will use master API.' );
 			} else {
-				// No valid subscription, check if we have a valid OpenAI API key as fallback
+				// No subscription and no credits: require an OpenAI API key
 				$openai_api_key = get_option( 'aistma_openai_api_key' );
 				if ( empty( $openai_api_key ) ) {
-					$error_message = isset( $subscription_status['error'] ) 
-						? 'Subscription check failed: ' . $subscription_status['error'] . '. Also, no OpenAI API key found.'
-						: 'No valid subscription found and no OpenAI API key configured.';
-					
+					$error_message = isset( $subscription_status['error'] )
+						? 'Subscription check failed: ' . $subscription_status['error'] . '. Also, no credits or OpenAI API key found.'
+						: 'No subscription, no credits, and no OpenAI API key configured.';
 					$instance->aistma_log_manager::log( 'error', $error_message );
 					return array( 'success' => false, 'message' => $error_message );
 				} else {
-					$instance->aistma_log_manager::log( 'info', 'No valid subscription found, but OpenAI API key is available. Will use direct OpenAI API calls.' );
+					$instance->aistma_log_manager::log( 'info', 'No subscription or credits found, but OpenAI API key is available. Will use direct OpenAI API calls.' );
 				}
 			}
 		} catch ( \RuntimeException $e ) {
@@ -125,13 +129,12 @@ class AISTMA_Story_Generator {
 		} finally {
 			// Always delete the lock, even if an error occurs.
 			delete_transient( $lock_key );
-		}
-		// Always schedule the next run after execution.
-		$n = absint( get_option( 'aistma_generate_story_cron', 2 ) );
-		if ( 0 !== $n ) {
-			$next_schedule = time() + $n * DAY_IN_SECONDS;
-			wp_schedule_single_event( $next_schedule, 'aistma_generate_story_event' );
-			//$instance->aistma_log_manager->log( 'info', 'Rescheduled story generation at: ' . $instance->format_date_for_display( $next_schedule ) );
+			// Always schedule the next run after execution.
+			$n = absint( get_option( 'aistma_generate_story_cron', 2 ) );
+			if ( 0 !== $n ) {
+				$next_schedule = time() + $n * DAY_IN_SECONDS;
+				wp_schedule_single_event( $next_schedule, 'aistma_generate_story_event' );
+			}
 		}
 	}
 
@@ -148,7 +151,17 @@ class AISTMA_Story_Generator {
 	 */
 	public function generate_ai_story( $prompt_id, $prompt, $default_settings, $api_key, $aistma_master_instructions ) {
 		$merged_settings        = array_merge( $default_settings, $prompt );
-	
+
+		// Check credits before proceeding with generation
+		$current_user_id = get_current_user_id();
+		if ( $current_user_id > 0 && class_exists( __NAMESPACE__ . '\\AISTMA_Credits_Manager' ) ) {
+			if ( ! AISTMA_Credits_Manager::has_credits( $current_user_id, 1 ) ) {
+				$error = __( 'You do not have enough credits to generate a story. Please purchase more credits.', 'ai-story-maker' );
+				$this->aistma_log_manager->log( 'warning', $error . ' (User: ' . $current_user_id . ')' );
+				throw new \RuntimeException( esc_html( $error ) );
+			}
+		}
+
 		$recent_posts = $this->aistma_get_recent_posts( 20, $prompt['category'] );
 
 		// Append recent posts titles if provided and not empty.
@@ -161,26 +174,28 @@ class AISTMA_Story_Generator {
 			}
 		}
 
-		
+
 		// Assign final system content.
 		$merged_settings['system_content'] .= $aistma_master_instructions ;
 
 		$the_prompt = $prompt['text'];
 
 
-		// Check if we have a valid subscription
+		// Credits route through the master API the same way a subscription does.
 		$subscription_info = $this->get_subscription_info();
-		
-		if ( $subscription_info['valid'] ) {
-			// Use Master Server API
-			
-			$this->generate_story_via_master_api( $prompt_id, $prompt, $merged_settings,  $the_prompt, $subscription_info );
+		$current_user_id   = get_current_user_id();
+		$has_credits       = $current_user_id > 0
+			&& class_exists( __NAMESPACE__ . '\\AISTMA_Credits_Manager' )
+			&& AISTMA_Credits_Manager::has_credits( $current_user_id, 1 );
+
+		if ( $subscription_info['valid'] || $has_credits ) {
+			return $this->generate_story_via_master_api( $prompt_id, $prompt, $merged_settings, $the_prompt, $subscription_info );
 		} else {
 			// Fallback to direct OpenAI API call
 			if ( $prompt['photos'] > 0 ) {
 				$the_prompt .= "\n" . __( 'Include at least ', 'ai-story-maker' ) . $prompt['photos'] . __( ' placeholders for images in the article. insert a placeholder in the following format {img_unsplash:keyword1,keyword2,keyword3} using the most relevant keywords for fetching related images from Unsplash', 'ai-story-maker' );
 			}
-			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings,  $api_key, $the_prompt );
+			return $this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $api_key, $the_prompt );
 		}
 	}
 
@@ -198,20 +213,28 @@ class AISTMA_Story_Generator {
 		// Check subscription status first
 		$subscription_info = $this->get_subscription_info();
 		$has_valid_subscription = $subscription_info['valid'];
-		
-		// Only check OpenAI API key if no valid subscription 
-		if ( ! $has_valid_subscription ) {
+		$current_user_id = get_current_user_id();
+		$has_credits = $current_user_id > 0
+			&& class_exists( __NAMESPACE__ . '\\AISTMA_Credits_Manager' )
+			&& AISTMA_Credits_Manager::has_credits( $current_user_id, 1 );
+
+		// Check OpenAI API key only if no subscription AND no credits
+		if ( ! $has_valid_subscription && ! $has_credits ) {
 			$this->api_key = get_option( 'aistma_openai_api_key' );
-					if ( ! $this->api_key ) {
-			$error = __( 'OpenAI API Key is missing. Required for direct OpenAI calls when no subscription is active.', 'ai-story-maker' );
-			$this->aistma_log_manager->log( 'error', $error );
-			$results['errors'][] = $error;
-			throw new \RuntimeException( esc_html( $error ) );
+			if ( ! $this->api_key ) {
+				$error = __( 'No credits, subscribe to get more.', 'ai-story-maker' );
+				$this->aistma_log_manager->log( 'error', $error );
+				$results['errors'][] = $error;
+				throw new \RuntimeException( esc_html( $error ) );
 			}
 		} else {
-			// For subscription users, we'll use master API, so OpenAI key is not required
+			// For subscription or credit users, we'll use master API, so OpenAI key is not required
 			$this->api_key = null;
-			$this->aistma_log_manager->log( 'info', 'Valid subscription detected, will use Master API for story generation' );
+			if ( $has_valid_subscription ) {
+				$this->aistma_log_manager->log( 'info', 'Valid subscription detected, will use Master API for story generation' );
+			} else {
+				$this->aistma_log_manager->log( 'info', 'User has available credits, will use Master API for story generation' );
+			}
 		}
 
 		$raw_settings = get_option( 'aistma_prompts', '' );
@@ -336,14 +359,27 @@ class AISTMA_Story_Generator {
 
 		if ( $response_code !== 200 ) {
 			$this->aistma_log_manager->log( 'error', 'Master API returned HTTP ' . $response_code . ', falling back to direct OpenAI call' );
-			// Fallback to direct OpenAI call
+			// Only fall back to direct OpenAI if user has their own API key
+			// If they have subscription or credits, they shouldn't be using direct OpenAI
+			if ( ! $this->api_key ) {
+				$error = __( 'Story generation temporarily unavailable. Please try again later.', 'ai-story-maker' );
+				$this->aistma_log_manager->log( 'error', $error );
+				throw new \RuntimeException( esc_html( $error ) );
+			}
+			// Fallback to direct OpenAI call (only if user has personal API key)
 			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $this->api_key, $the_prompt );
 			return;
 		}
 
 		if ( json_last_error() !== JSON_ERROR_NONE ) {
 			$this->aistma_log_manager->log( 'error', 'Invalid JSON response from Master API, falling back to direct OpenAI call' );
-			// Fallback to direct OpenAI call
+			// Only fall back to direct OpenAI if user has their own API key
+			if ( ! $this->api_key ) {
+				$error = __( 'Story generation service error. Please try again later.', 'ai-story-maker' );
+				$this->aistma_log_manager->log( 'error', $error );
+				throw new \RuntimeException( esc_html( $error ) );
+			}
+			// Fallback to direct OpenAI call (only if user has personal API key)
 			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings,  $this->api_key, $the_prompt );
 			return;
 		}
@@ -351,13 +387,18 @@ class AISTMA_Story_Generator {
 		if ( ! isset( $data['success'] ) || ! $data['success'] ) {
 			$error_msg = isset( $data['error'] ) ? $data['error'] : 'Unknown error from Master API';
 			$this->aistma_log_manager->log( 'error', 'Master API error: ' . $error_msg . ', falling back to direct OpenAI call' );
-			// Fallback to direct OpenAI call
-			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings,  $this->api_key, $the_prompt );
-			return;
+			// Only fall back to direct OpenAI if user has their own API key
+			if ( ! $this->api_key ) {
+				$error = __( 'Unable to generate story. Please try again later.', 'ai-story-maker' );
+				$this->aistma_log_manager->log( 'error', $error );
+				throw new \RuntimeException( esc_html( $error ) );
+			}
+			// Fallback to direct OpenAI call (only if user has personal API key)
+			return $this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings,  $this->api_key, $the_prompt );
 		}
 
 		// Success! Process the response from Master API
-		$this->process_master_api_response( $data, $prompt_id, $prompt, $merged_settings );
+		return $this->process_master_api_response( $data, $prompt_id, $prompt, $merged_settings );
 	}
 
 	/**
@@ -379,7 +420,7 @@ class AISTMA_Story_Generator {
 		}
 		
 		if ( ! $api_key ) {
-			$error = __( 'OpenAI API Key is missing. Required for direct OpenAI calls without subscription', 'ai-story-maker' );
+			$error = __( 'No credits and no OpenAI API key configured. Please subscribe or add your own API key.', 'ai-story-maker' );
 			$this->aistma_log_manager->log( 'error', $error );
 			throw new \RuntimeException( esc_html( $error ) );
 		}
@@ -419,16 +460,14 @@ class AISTMA_Story_Generator {
 			/* translators: %d: HTTP status code returned by the OpenAI API */
 			$error_msg = sprintf( __( 'OpenAI API returned HTTP %d', 'ai-story-maker' ), $status_code );
 			$this->aistma_log_manager->log( 'error', $error_msg );
-			delete_transient( 'aistma_generating_lock' );
-			wp_send_json_error( array( 'errors' => array( $error_msg ) ) );
+			throw new \RuntimeException( esc_html( $error_msg ) );
 		}
 
 		// Check if response is valid.
 		if ( is_wp_error( $response ) ) {
 			$error = $response->get_error_message();
 			$this->aistma_log_manager->log( 'error', $error );
-			delete_transient( 'aistma_generating_lock' );
-			wp_send_json_error( array( 'errors' => array( $error ) ) );
+			throw new \RuntimeException( esc_html( $error ) );
 		}
 
 		// Check if response is empty.
@@ -436,8 +475,7 @@ class AISTMA_Story_Generator {
 		if ( ! isset( $response_body['choices'][0]['message']['content'] ) ) {
 			$error = __( 'Invalid response from OpenAI API.', 'ai-story-maker' );
 			$this->aistma_log_manager->log( 'error', $error );
-			delete_transient( 'aistma_generating_lock' );
-			wp_send_json_error( array( 'errors' => array( $error ) ) );
+			throw new \RuntimeException( esc_html( $error ) );
 		}
 
 		$parsed_content = json_decode( $response_body['choices'][0]['message']['content'], true );
@@ -445,12 +483,11 @@ class AISTMA_Story_Generator {
 		if ( ! isset( $parsed_content['title'], $parsed_content['content'] ) ) {
 			$error = __( 'Invalid content structure, try to simplify your prompts', 'ai-story-maker' );
 			$this->aistma_log_manager->log( 'error', $error );
-			delete_transient( 'aistma_generating_lock' );
-			wp_send_json_error( array( 'errors' => array( $error ) ) );
+			throw new \RuntimeException( esc_html( $error ) );
 		}
 
 		// Process the OpenAI response
-		$this->process_openai_response( $response_body, $parsed_content, $prompt_id, $prompt, $merged_settings );
+		return $this->process_openai_response( $response_body, $parsed_content, $prompt_id, $prompt, $merged_settings );
 	}
 
 	/**
@@ -531,6 +568,22 @@ class AISTMA_Story_Generator {
 			throw new \RuntimeException( esc_html( $error ) );
 		}
 
+		// Deduct credit after successful post creation
+		if ( $post_id ) {
+			$current_user_id = get_current_user_id();
+			if ( $current_user_id > 0 && class_exists( __NAMESPACE__ . '\\AISTMA_Credits_Manager' ) ) {
+				$new_balance = AISTMA_Credits_Manager::deduct_credits( $current_user_id, 1, 'Story generation for post ' . $post_id );
+				if ( false !== $new_balance ) {
+					$this->aistma_log_manager->log( 'info', 'Credit deducted for user ' . $current_user_id . '. New balance: ' . $new_balance );
+					
+					// Log event to gateway
+					if ( class_exists( __NAMESPACE__ . '\\AISTMA_Gateway_Logger' ) ) {
+						AISTMA_Gateway_Logger::log_story_generated( $current_user_id, $post_id, $prompt_id, 1 );
+					}
+				}
+			}
+		}
+
 		// Set featured image from first image in content (Master API already processes images)
 		if ( $post_id ) {
 			$this->set_featured_image_from_content( $post_id, $content );
@@ -578,24 +631,23 @@ class AISTMA_Story_Generator {
 			update_post_meta( $post_id, 'ai_story_maker_generated_via', 'master_api' );
 			
 			// Add enhancement tracking meta data
-			$package_name = isset( $data['package_name'] ) ? sanitize_text_field( $data['package_name'] ) : '';
+			$package_name      = isset( $data['package_name'] ) ? sanitize_text_field( $data['package_name'] ) : '';
+			$enhancement_limit = 1; // default
+			$package_id        = false;
 			if ( ! empty( $package_name ) ) {
-				// Get package ID from name (this assumes packages are stored with sequential IDs)
 				$package_id = $this->get_package_id_by_name( $package_name );
 				if ( $package_id !== false ) {
 					$enhancement_limit = $this->get_package_enhancement_limit( $package_id );
 					update_post_meta( $post_id, 'ai_story_maker_package_id', $package_id );
-					update_post_meta( $post_id, 'ai_story_maker_enhancements_limit', $enhancement_limit );
-					update_post_meta( $post_id, 'ai_story_maker_enhancements_history', wp_json_encode( [] ) );
-					
-					// Debug logging
 					$this->aistma_log_manager->log( 'info', 'Enhancement meta added to post ' . $post_id . ': package_name=' . $package_name . ', package_id=' . $package_id . ', limit=' . $enhancement_limit );
 				} else {
-					$this->aistma_log_manager->log( 'warning', 'Could not find package ID for package name: ' . $package_name );
+					$this->aistma_log_manager->log( 'warning', 'Could not find package ID for package name: ' . $package_name . '. Defaulting enhancement limit to 1.' );
 				}
 			} else {
-				$this->aistma_log_manager->log( 'warning', 'No package_name found in Master API response for post ' . $post_id );
+				$this->aistma_log_manager->log( 'warning', 'No package_name found in Master API response for post ' . $post_id . '. Defaulting enhancement limit to 1.' );
 			}
+			update_post_meta( $post_id, 'ai_story_maker_enhancements_limit', $enhancement_limit );
+			update_post_meta( $post_id, 'ai_story_maker_enhancements_history', wp_json_encode( [] ) );
 			
 			// $this->aistma_log_manager->log( 'success', 'AI-generated news article created via Master API: ' . get_permalink( $post_id ), $request_id );
 		}
@@ -606,6 +658,7 @@ class AISTMA_Story_Generator {
 		}
 
 		$this->aistma_log_manager->log( 'info', 'Story generated successfully via Master API. Post ID: ' . $post_id );
+		return $post_id;
 	}
 
 	/**
@@ -698,23 +751,24 @@ class AISTMA_Story_Generator {
 			update_post_meta( $post_id, 'ai_story_maker_generated_via', 'openai_api' );
 			
 			// Add enhancement tracking meta data for OpenAI API generated posts
-			// For OpenAI API posts, we'll use a default package or get from subscription
 			$subscription_info = $this->get_subscription_info();
-			$package_name = $subscription_info['package_name'] ?? '';
+			$package_name      = $subscription_info['package_name'] ?? '';
+			$enhancement_limit = 1; // default
 			if ( ! empty( $package_name ) ) {
 				$package_id = $this->get_package_id_by_name( $package_name );
 				if ( $package_id !== false ) {
 					$enhancement_limit = $this->get_package_enhancement_limit( $package_id );
 					update_post_meta( $post_id, 'ai_story_maker_package_id', $package_id );
-					update_post_meta( $post_id, 'ai_story_maker_enhancements_limit', $enhancement_limit );
-					update_post_meta( $post_id, 'ai_story_maker_enhancements_history', wp_json_encode( [] ) );
 				}
 			}
+			update_post_meta( $post_id, 'ai_story_maker_enhancements_limit', $enhancement_limit );
+			update_post_meta( $post_id, 'ai_story_maker_enhancements_history', wp_json_encode( [] ) );
 			
 			$this->aistma_log_manager->log( 'success', 'AI-generated news article created via OpenAI API: ' . get_permalink( $post_id ), $request_id );
 		}
 
 		$this->aistma_log_manager->log( 'info', 'Story generated successfully via OpenAI API. Post ID: ' . $post_id . ', Tokens used: ' . $total_tokens );
+		return $post_id;
 	}
 
 	/**
@@ -723,10 +777,10 @@ class AISTMA_Story_Generator {
 	 * @param array $recent_posts Array of recent posts to exclude from generation.
 	 * @return string Master instructions for AI story generation.
 	 */
-	private function aistma_get_master_instructions() {
+	public function aistma_get_master_instructions() {
 		// Fetch dynamic system content from Exedotcom API Gateway.
 		$aistma_master_instructions = get_transient( 'aistma_exaig_cached_master_instructions' );
-		if ( false === $aistma_master_instructions  || true) {
+		if ( false === $aistma_master_instructions ) {
 			// No cache, fetch from the API.
 			try {
 				// Get plugin version
@@ -1406,8 +1460,80 @@ class AISTMA_Story_Generator {
 			return $limit;
 		}
 
-		$this->aistma_log_manager->log( 'warning', 'No enhancement limit found for package ID: ' . $package_id . ', defaulting to unlimited' );
-		return 0; // Default to unlimited
+		$this->aistma_log_manager->log( 'warning', 'No enhancement limit found for package ID: ' . $package_id . ', defaulting to 1' );
+		return 1;
+	}
+
+	/**
+	 * Generate a story for a specific user with a given prompt.
+	 *
+	 * @param int $user_id   The user ID to generate the story for.
+	 * @param int $prompt_id The prompt ID to use for generation.
+	 * @return int|false The post ID if successful, false otherwise.
+	 */
+	public static function generate_ai_story_for_user( $user_id, $prompt_id ) {
+		try {
+			$instance = new self();
+			$user_id = absint( $user_id );
+			$prompt_id = absint( $prompt_id );
+
+			if ( ! $user_id || ! $prompt_id ) {
+				return false;
+			}
+
+			// Get prompt
+			$prompt_post = get_post( $prompt_id );
+			if ( ! $prompt_post || 'aistma_prompt' !== $prompt_post->post_type ) {
+				return false;
+			}
+
+			// Get prompt meta
+			$prompt_text = get_post_meta( $prompt_id, '_aistma_prompt_text', true );
+			if ( ! $prompt_text ) {
+				return false;
+			}
+
+			// Generate the story
+			// Temporarily set current user to the target user for the generation
+			$original_user = get_current_user_id();
+			wp_set_current_user( $user_id );
+
+			try {
+				$instance->generate_ai_story(
+					$prompt_id,
+					array(
+						'text'       => $prompt_text,
+						'category'   => get_post_meta( $prompt_id, '_aistma_category', true ),
+						'post_type'  => 'post',
+					),
+					$instance->default_settings,
+					$instance->api_key,
+					''
+				);
+
+				// Get the last created post (most recent by the target user)
+				$posts = get_posts( array(
+					'author' => $user_id,
+					'post_type' => 'post',
+					'numberposts' => 1,
+					'meta_query' => array(
+						array(
+							'key' => '_aistma_prompt_id',
+							'value' => $prompt_id,
+						),
+					),
+				) );
+
+				$post_id = $posts ? $posts[0]->ID : false;
+
+				return $post_id;
+			} finally {
+				// Restore original user
+				wp_set_current_user( $original_user );
+			}
+		} catch ( \Throwable $e ) {
+			return false;
+		}
 	}
 
 
