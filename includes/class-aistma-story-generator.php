@@ -1246,13 +1246,23 @@ class AISTMA_Story_Generator {
 			);
 			return $this->subscription_status;
 		}
-		// if valid but status is "active_no_credits" then set the status to false and set the message to "No credits remaining"
+		// Handle active subscription with no credits remaining.
+		// $data comes from the gateway API response (verify-subscription endpoint)
+		// and contains: valid, status, domain, package_id, package_name, price, created_at, next_billing_date, user_email, credits_remaining
+		// IMPORTANT: valid=true no longer means "has credits" — it means "has active subscription"
+		// Callers must check credits_remaining separately. The template displays "No credits remaining" via the status line logic.
 		if ( isset( $data['valid'] ) && $data['valid'] && isset( $data['status'] ) && $data['status'] === 'active_no_credits' ) {
 			$this->aistma_log_manager->log( 'info', 'Subscription valid but no credits remaining for domain: ' . $domain );
 			$this->subscription_status = array(
-				'valid' => false,
-				'message' => 'No credits remaining',
-				'domain' => $domain,
+				'valid' => true, // Subscription is active but has zero credits
+				'domain' => $data['domain'] ?? $domain,
+				'credits_remaining' => 0, // Explicitly set to 0 (from gateway status)
+				'package_id' => $data['package_id'] ?? '',
+				'package_name' => $data['package_name'] ?? '', // Still populated so "Current plan" tag displays
+				'price' => floatval( $data['price'] ?? 0 ),
+				'created_at' => $data['created_at'] ?? '',
+				'next_billing_date' => $data['next_billing_date'] ?? '',
+				'user_email' => $data['user_email'] ?? '',
 			);
 			return $this->subscription_status;
 		}
