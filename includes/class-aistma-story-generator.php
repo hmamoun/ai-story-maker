@@ -320,7 +320,11 @@ class AISTMA_Story_Generator {
 		}
 
 		$api_url = trailingslashit( $master_url ) . 'wp-json/exaig/v1/generate-story';
-		
+
+		// Get current user email to send to gateway for email registration
+		$current_user = wp_get_current_user();
+		$user_email = ! empty( $current_user->user_email ) ? $current_user->user_email : get_option( 'admin_email' );
+
 		// Prepare request data
 		$request_data = array(
 			'domain' => $subscription_info['domain'],
@@ -335,6 +339,7 @@ class AISTMA_Story_Generator {
 			'recent_posts' => $recent_posts,
 			'category' => $prompt['category'] ?? '',
 			'photos' => $prompt['photos'] ?? 0,
+			'email' => $user_email,
 		);
 
 		$response = wp_remote_post( $api_url, array(
