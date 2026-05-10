@@ -25,11 +25,10 @@
 		init: function () {
 			this.cacheDom();
 			this.bindEvents();
-			this.initializeStartupCredits();
 		},
 
 		/**
-		 * Initialize startup credits if user doesn't have any
+		 * Initialize startup credits if user doesn't have any (called only when wizard is shown)
 		 */
 		initializeStartupCredits: function () {
 			const self = this;
@@ -247,6 +246,11 @@
 		show: function () {
 			// Mark as shown today BEFORE displaying (prevents showing again today)
 			this.markShownToday();
+			// Initialize startup credits only once when wizard is shown (not on every page load)
+			if (!sessionStorage.getItem('aistma_startup_credits_initialized')) {
+				this.initializeStartupCredits();
+				sessionStorage.setItem('aistma_startup_credits_initialized', '1');
+			}
 			this.$modal.fadeIn(200);
 		},
 	};
