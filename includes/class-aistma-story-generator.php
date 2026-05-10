@@ -129,13 +129,12 @@ class AISTMA_Story_Generator {
 		} finally {
 			// Always delete the lock, even if an error occurs.
 			delete_transient( $lock_key );
-		}
-		// Always schedule the next run after execution.
-		$n = absint( get_option( 'aistma_generate_story_cron', 2 ) );
-		if ( 0 !== $n ) {
-			$next_schedule = time() + $n * DAY_IN_SECONDS;
-			wp_schedule_single_event( $next_schedule, 'aistma_generate_story_event' );
-			//$instance->aistma_log_manager->log( 'info', 'Rescheduled story generation at: ' . $instance->format_date_for_display( $next_schedule ) );
+			// Always schedule the next run after execution.
+			$n = absint( get_option( 'aistma_generate_story_cron', 2 ) );
+			if ( 0 !== $n ) {
+				$next_schedule = time() + $n * DAY_IN_SECONDS;
+				wp_schedule_single_event( $next_schedule, 'aistma_generate_story_event' );
+			}
 		}
 	}
 
@@ -461,16 +460,14 @@ class AISTMA_Story_Generator {
 			/* translators: %d: HTTP status code returned by the OpenAI API */
 			$error_msg = sprintf( __( 'OpenAI API returned HTTP %d', 'ai-story-maker' ), $status_code );
 			$this->aistma_log_manager->log( 'error', $error_msg );
-			delete_transient( 'aistma_generating_lock' );
-			wp_send_json_error( array( 'errors' => array( $error_msg ) ) );
+			throw new \RuntimeException( esc_html( $error_msg ) );
 		}
 
 		// Check if response is valid.
 		if ( is_wp_error( $response ) ) {
 			$error = $response->get_error_message();
 			$this->aistma_log_manager->log( 'error', $error );
-			delete_transient( 'aistma_generating_lock' );
-			wp_send_json_error( array( 'errors' => array( $error ) ) );
+			throw new \RuntimeException( esc_html( $error ) );
 		}
 
 		// Check if response is empty.
@@ -478,8 +475,7 @@ class AISTMA_Story_Generator {
 		if ( ! isset( $response_body['choices'][0]['message']['content'] ) ) {
 			$error = __( 'Invalid response from OpenAI API.', 'ai-story-maker' );
 			$this->aistma_log_manager->log( 'error', $error );
-			delete_transient( 'aistma_generating_lock' );
-			wp_send_json_error( array( 'errors' => array( $error ) ) );
+			throw new \RuntimeException( esc_html( $error ) );
 		}
 
 		$parsed_content = json_decode( $response_body['choices'][0]['message']['content'], true );
@@ -487,8 +483,7 @@ class AISTMA_Story_Generator {
 		if ( ! isset( $parsed_content['title'], $parsed_content['content'] ) ) {
 			$error = __( 'Invalid content structure, try to simplify your prompts', 'ai-story-maker' );
 			$this->aistma_log_manager->log( 'error', $error );
-			delete_transient( 'aistma_generating_lock' );
-			wp_send_json_error( array( 'errors' => array( $error ) ) );
+			throw new \RuntimeException( esc_html( $error ) );
 		}
 
 		// Process the OpenAI response
@@ -785,7 +780,7 @@ class AISTMA_Story_Generator {
 	public function aistma_get_master_instructions() {
 		// Fetch dynamic system content from Exedotcom API Gateway.
 		$aistma_master_instructions = get_transient( 'aistma_exaig_cached_master_instructions' );
-		if ( false === $aistma_master_instructions  || true) {
+		if ( false === $aistma_master_instructions ) {
 			// No cache, fetch from the API.
 			try {
 				// Get plugin version

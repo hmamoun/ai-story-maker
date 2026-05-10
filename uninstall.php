@@ -68,8 +68,10 @@ $user_meta_keys = array(
 	'aistma_wizard_last_shown_time', // Last wizard shown timestamp (24-hour throttling)
 	'aistma_user_credits',           // User credit balance
 	'aistma_credit_history',         // Credit transaction history
-	'aistma_rating_shown',           // Rating modal shown flag
+	'aistma_rating_last_shown',      // Rating modal last shown timestamp
 	'aistma_rating_never_show',      // Never show rating again flag
+	'aistma_generation_count',       // Generation count for rating trigger
+	'aistma_default_prompts',        // Default prompts from wizard
 	'aistma_weekly_enabled',         // Weekly generation enabled flag
 	'aistma_weekly_prompt_id',       // Weekly prompt ID
 	'aistma_weekly_last_generated',  // Last weekly generation timestamp

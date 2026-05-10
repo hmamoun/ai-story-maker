@@ -1964,7 +1964,7 @@ class AISTMA_Admin {
 			return;
 		}
 
-		$domain = $_SERVER['HTTP_HOST'] ?? wp_parse_url( home_url(), PHP_URL_HOST );
+		$domain = sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? wp_parse_url( home_url(), PHP_URL_HOST ) ) );
 
 		$gateway_url = defined( 'AISTMA_MASTER_API' ) ? AISTMA_MASTER_API : 'https://www.storymakerplugin.com';
 		$endpoint = trailingslashit( $gateway_url ) . 'wp-json/exaig/v1/ensure-startup-credits';
