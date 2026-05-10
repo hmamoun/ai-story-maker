@@ -72,10 +72,31 @@ Ideal for bloggers, marketers, coaches, educators, and content creators.
 - Full setup and user guide at storymakerplugin.com
 - Developer docs and API terms available
 
+== External Services ==
+
+This plugin makes requests to external services for core functionality:
+
+**OpenAI API** (https://openai.com/)
+- Transmits: Story prompts, request metadata
+- Used for: AI-powered story generation
+- Terms: https://openai.com/policies/terms-of-use
+
+**Unsplash API** (https://unsplash.com/)
+- Transmits: Image search queries
+- Used for: Fetching royalty-free images for stories
+- Terms: https://unsplash.com/terms
+
+**Exedotcom Gateway** (https://www.exedotcom.ca/)
+- Transmits: Domain, admin email, plugin version
+- Used for: Subscription verification, credits management, license validation
+- Endpoints: `/verify-subscription`, `/ensure-startup-credits`
+- Data sent to ensure-startup-credits: Domain, admin email (for initial credit setup)
+- Terms: https://www.exedotcom.ca/api-terms
+
 == License & Privacy ==
 - Licensed under GPLv2 or later
-- Uses OpenAI, Unsplash, and Exedotcom API services for functionality
-- Collects domain/email for license validation only (no personal user data shared)
+- No personal user data is collected or stored beyond domain/email for subscription validation
+- Each external service has its own privacy policy (see External Services section)
 
 == Screenshots ==
 
