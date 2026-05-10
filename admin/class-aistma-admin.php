@@ -1937,8 +1937,9 @@ class AISTMA_Admin {
 				AISTMA_Credits_Manager::add_credits( $user_id, $startup_credits, 'Wizard view - startup grant' );
 				$this->aistma_log_manager->log( 'info', sprintf( 'User %d granted %d startup credits on wizard view.', $user_id, $startup_credits ) );
 
-				// Create startup credits account in gateway with admin email
-				$this->create_startup_credits_account( get_option( 'admin_email' ) );
+				// Create startup credits account in gateway with current user's email
+				$current_user = wp_get_current_user();
+				$this->create_startup_credits_account( $current_user->user_email );
 			}
 
 			wp_send_json_success( array(
@@ -1953,14 +1954,14 @@ class AISTMA_Admin {
 	}
 
 	/**
-	 * Create startup credits account in gateway with admin email.
+	 * Create startup credits account in gateway with user email.
 	 *
-	 * @param string $admin_email The admin email address.
+	 * @param string $user_email The user email address.
 	 * @return void
 	 */
-	private function create_startup_credits_account( $admin_email ) {
-		if ( empty( $admin_email ) ) {
-			$this->aistma_log_manager->log( 'warning', 'Admin email not available for startup credits account creation.' );
+	private function create_startup_credits_account( $user_email ) {
+		if ( empty( $user_email ) ) {
+			$this->aistma_log_manager->log( 'warning', 'User email not available for startup credits account creation.' );
 			return;
 		}
 
@@ -1971,7 +1972,7 @@ class AISTMA_Admin {
 
 		$body = array(
 			'domain' => $domain,
-			'admin_email' => sanitize_email( $admin_email ),
+			'admin_email' => sanitize_email( $user_email ),
 			'startup_credits' => absint( get_option( 'aistma_startup_credit_amount', 5 ) ),
 		);
 
@@ -1982,16 +1983,19 @@ class AISTMA_Admin {
 			'timeout' => 10,
 		);
 
+		$this->aistma_log_manager->log( 'info', 'Requesting startup credits from gateway: ' . $endpoint . ' for domain: ' . $domain . ' with email: ' . $user_email );
+
 		$response = wp_remote_post( $endpoint, $args );
 
 		if ( is_wp_error( $response ) ) {
 			$this->aistma_log_manager->log( 'error', 'Failed to create startup credits account in gateway: ' . $response->get_error_message() );
 		} else {
 			$response_code = wp_remote_retrieve_response_code( $response );
+			$response_body = wp_remote_retrieve_body( $response );
 			if ( 200 === $response_code || 201 === $response_code ) {
-				$this->aistma_log_manager->log( 'info', 'Startup credits account created in gateway with admin email: ' . $admin_email );
+				$this->aistma_log_manager->log( 'info', 'Startup credits account created in gateway with user email: ' . $user_email );
 			} else {
-				$this->aistma_log_manager->log( 'warning', 'Gateway returned status ' . $response_code . ' for startup credits account creation.' );
+				$this->aistma_log_manager->log( 'warning', 'Gateway returned status ' . $response_code . ' for startup credits account creation. Response: ' . $response_body );
 			}
 		}
 	}
