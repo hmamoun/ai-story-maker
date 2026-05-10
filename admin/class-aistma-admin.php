@@ -115,9 +115,27 @@ class AISTMA_Admin {
 	/**
 	 * Enqueue admin scripts and styles.
 	 *
+	 * @param string $hook_suffix The current admin page.
 	 * @return void
 	 */
-	public function aistma_admin_enqueue_scripts() {
+	public function aistma_admin_enqueue_scripts( $hook_suffix ) {
+		// Get current screen to check if we're on a post-related page
+		$screen = get_current_screen();
+		$load_wizard = false;
+		$load_rating = false;
+
+		// Load wizard and rating modal on posts page and plugin pages
+		if ( 'edit.php' === $hook_suffix || 'post.php' === $hook_suffix || 'post-new.php' === $hook_suffix ) {
+			$load_wizard = true;
+			$load_rating = true;
+		}
+
+		// Load wizard on plugin settings pages
+		if ( strpos( $hook_suffix, 'aistma' ) !== false ) {
+			$load_wizard = true;
+		}
+
+		// Enqueue admin script for all admin pages (needed for social media nonce)
 		wp_enqueue_script(
 			'aistma-admin-js',
 			AISTMA_URL . 'admin/js/admin.js',
@@ -139,58 +157,62 @@ class AISTMA_Admin {
 			filemtime( AISTMA_PATH . 'admin/css/admin.css' )
 		);
 
-		// Enqueue wizard scripts and styles
-		wp_enqueue_script(
-			'aistma-wizard-js',
-			AISTMA_URL . 'admin/js/activation-wizard.js',
-			array( 'jquery' ),
-			filemtime( AISTMA_PATH . 'admin/js/activation-wizard.js' ),
-			true
-		);
+		// Only load wizard scripts on relevant pages
+		if ( $load_wizard ) {
+			wp_enqueue_script(
+				'aistma-wizard-js',
+				AISTMA_URL . 'admin/js/activation-wizard.js',
+				array( 'jquery' ),
+				filemtime( AISTMA_PATH . 'admin/js/activation-wizard.js' ),
+				true
+			);
 
-		// Localize wizard script with nonces and settings
-		wp_localize_script( 'aistma-wizard-js', 'aistmaWizardL10n', array(
-			'showWizard' => AISTMA_Activation_Wizard::maybe_show_wizard() ? '1' : '0',
-			'generateNonce' => wp_create_nonce( 'aistma_wizard_generate_nonce' ),
-			'saveNonce' => wp_create_nonce( 'aistma_wizard_save_nonce' ),
-			'dismissNonce' => wp_create_nonce( 'aistma_wizard_dismiss_nonce' ),
-			'weeklyNonce' => wp_create_nonce( 'aistma_confirm_weekly_nonce' ),
-			'startupCreditsNonce' => wp_create_nonce( 'aistma_ensure_startup_credits_nonce' ),
-			'escapeNonce' => wp_create_nonce( 'aistma_log_wizard_escape_nonce' ),
-			'showTodayNonce' => wp_create_nonce( 'aistma_mark_wizard_shown_today_nonce' ),
-			'selectPrompt' => __( 'Please select a prompt first.', 'ai-story-maker' ),
-			'generateError' => __( 'An error occurred while generating the story. Please try again.', 'ai-story-maker' ),
-			'saveError' => __( 'An error occurred while saving. Please try again.', 'ai-story-maker' ),
-			'saveSuccess' => __( 'Story saved successfully!', 'ai-story-maker' ),
-			'unknownError' => __( 'An unknown error occurred.', 'ai-story-maker' ),
-			'editPostUrl' => admin_url( 'post.php?action=edit' ),
-			'postsPageUrl' => admin_url( 'edit.php' ),
-			'redirectAfterSave' => true,
-		) );
+			// Localize wizard script with nonces and settings
+			wp_localize_script( 'aistma-wizard-js', 'aistmaWizardL10n', array(
+				'showWizard' => AISTMA_Activation_Wizard::maybe_show_wizard() ? '1' : '0',
+				'generateNonce' => wp_create_nonce( 'aistma_wizard_generate_nonce' ),
+				'saveNonce' => wp_create_nonce( 'aistma_wizard_save_nonce' ),
+				'dismissNonce' => wp_create_nonce( 'aistma_wizard_dismiss_nonce' ),
+				'weeklyNonce' => wp_create_nonce( 'aistma_confirm_weekly_nonce' ),
+				'startupCreditsNonce' => wp_create_nonce( 'aistma_ensure_startup_credits_nonce' ),
+				'escapeNonce' => wp_create_nonce( 'aistma_log_wizard_escape_nonce' ),
+				'showTodayNonce' => wp_create_nonce( 'aistma_mark_wizard_shown_today_nonce' ),
+				'selectPrompt' => __( 'Please select a prompt first.', 'ai-story-maker' ),
+				'generateError' => __( 'An error occurred while generating the story. Please try again.', 'ai-story-maker' ),
+				'saveError' => __( 'An error occurred while saving. Please try again.', 'ai-story-maker' ),
+				'saveSuccess' => __( 'Story saved successfully!', 'ai-story-maker' ),
+				'unknownError' => __( 'An unknown error occurred.', 'ai-story-maker' ),
+				'editPostUrl' => admin_url( 'post.php?action=edit' ),
+				'postsPageUrl' => admin_url( 'edit.php' ),
+				'redirectAfterSave' => true,
+			) );
 
-		// Enqueue wizard CSS
-		wp_enqueue_style(
-			'aistma-wizard-css',
-			AISTMA_URL . 'admin/css/activation-wizard.css',
-			array(),
-			filemtime( AISTMA_PATH . 'admin/css/activation-wizard.css' )
-		);
+			// Enqueue wizard CSS
+			wp_enqueue_style(
+				'aistma-wizard-css',
+				AISTMA_URL . 'admin/css/activation-wizard.css',
+				array(),
+				filemtime( AISTMA_PATH . 'admin/css/activation-wizard.css' )
+			);
+		}
 
-		// Enqueue rating modal CSS and JS
-		wp_enqueue_style(
-			'aistma-rating-css',
-			AISTMA_URL . 'admin/css/rating-modal.css',
-			array(),
-			filemtime( AISTMA_PATH . 'admin/css/rating-modal.css' )
-		);
+		// Only load rating modal on posts page
+		if ( $load_rating ) {
+			wp_enqueue_style(
+				'aistma-rating-css',
+				AISTMA_URL . 'admin/css/rating-modal.css',
+				array(),
+				filemtime( AISTMA_PATH . 'admin/css/rating-modal.css' )
+			);
 
-		wp_enqueue_script(
-			'aistma-rating-js',
-			AISTMA_URL . 'admin/js/rating-modal.js',
-			array( 'jquery' ),
-			filemtime( AISTMA_PATH . 'admin/js/rating-modal.js' ),
-			true
-		);
+			wp_enqueue_script(
+				'aistma-rating-js',
+				AISTMA_URL . 'admin/js/rating-modal.js',
+				array( 'jquery' ),
+				filemtime( AISTMA_PATH . 'admin/js/rating-modal.js' ),
+				true
+			);
+		}
 
 		// Localize rating script with nonces
 		wp_localize_script( 'aistma-rating-js', 'aistmaRatingL10n', array(
