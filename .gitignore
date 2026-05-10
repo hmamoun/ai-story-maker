@@ -1,16 +1,26 @@
-# Ignore system and WordPress files
-*.log
-*.DS_Store
-*.bak
-*.swp
-node_modules/
-vendor/
-.idea/
+# Environment variables - NEVER commit these files
+.env
+.env.local
+.env.*.local
+.env.bak
+.env.backup
+
+# IDE
 .vscode/
-wp-config.php
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
 
-composer.lock
-composer.json
+# Node modules (if used)
+node_modules/
+package-lock.json
 
-# Ignore SVN metadata inside svn folder
-svn/ai-story-maker/.svn/
+# Build artifacts
+dist/
+build/
+
+# OS files
+Thumbs.db
+.DS_Store
