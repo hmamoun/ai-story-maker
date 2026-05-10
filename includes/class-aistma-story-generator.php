@@ -732,10 +732,26 @@ class AISTMA_Story_Generator {
 			throw new \RuntimeException( esc_html( $error ) );
 		}
 
+		// Deduct credit after successful post creation
+		if ( $post_id ) {
+			$current_user_id = get_current_user_id();
+			if ( $current_user_id > 0 && class_exists( __NAMESPACE__ . '\\AISTMA_Credits_Manager' ) ) {
+				$new_balance = AISTMA_Credits_Manager::deduct_credits( $current_user_id, 1, 'Story generation for post ' . $post_id );
+				if ( false !== $new_balance ) {
+					$this->aistma_log_manager->log( 'info', 'Credit deducted for user ' . $current_user_id . '. New balance: ' . $new_balance );
+
+					// Log event to gateway
+					if ( class_exists( __NAMESPACE__ . '\\AISTMA_Gateway_Logger' ) ) {
+						AISTMA_Gateway_Logger::log_story_generated( $current_user_id, $post_id, $prompt_id, 1 );
+					}
+				}
+			}
+		}
+
 		// Process image placeholders and set featured image
 		if ( $post_id ) {
 			$content = $this->replace_image_placeholders( $content, $post_id );
-			
+
 			// Update the post with processed content
 		wp_update_post( array(
 			'ID' => $post_id,
