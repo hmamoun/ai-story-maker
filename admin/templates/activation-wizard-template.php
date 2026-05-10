@@ -31,6 +31,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="aistma-wizard-header">
 			<h2><?php esc_html_e( 'Welcome to AI Story Maker', 'ai-story-maker' ); ?></h2>
 			<p><?php esc_html_e( 'Choose a prompt below to generate your first AI story.', 'ai-story-maker' ); ?></p>
+			<p style="font-size: 13px; color: #646970; margin-top: 10px;">
+				<?php esc_html_e( 'You\'ll receive 5 free credits to get started.', 'ai-story-maker' ); ?>
+			</p>
 		</div>
 
 		<!-- Prompts Grid -->

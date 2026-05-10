@@ -87,24 +87,28 @@ class AISTMA_Story_Generator {
 
 		// Check subscription status and API key availability before generating stories
 		try {
-			$subscription_status = $instance->aistma_get_subscription_status();
+			$subscription_status    = $instance->aistma_get_subscription_status();
 			$has_valid_subscription = $subscription_status['valid'];
-			
-			// Check if we have a valid subscription
+			$current_user_id        = get_current_user_id();
+			$has_credits            = $current_user_id > 0
+				&& class_exists( __NAMESPACE__ . '\\AISTMA_Credits_Manager' )
+				&& AISTMA_Credits_Manager::has_credits( $current_user_id, 1 );
+
 			if ( $has_valid_subscription ) {
 				$instance->aistma_log_manager::log( 'info', 'Subscription validated for domain: ' . ( $subscription_status['domain'] ?? 'unknown' ) . ' - Package: ' . ( $subscription_status['package_name'] ?? 'unknown' ) );
+			} elseif ( $has_credits ) {
+				$instance->aistma_log_manager::log( 'info', 'No subscription but user has credits — will use master API.' );
 			} else {
-				// No valid subscription, check if we have a valid OpenAI API key as fallback
+				// No subscription and no credits: require an OpenAI API key
 				$openai_api_key = get_option( 'aistma_openai_api_key' );
 				if ( empty( $openai_api_key ) ) {
-					$error_message = isset( $subscription_status['error'] ) 
-						? 'Subscription check failed: ' . $subscription_status['error'] . '. Also, no OpenAI API key found.'
-						: 'No valid subscription found and no OpenAI API key configured.';
-					
+					$error_message = isset( $subscription_status['error'] )
+						? 'Subscription check failed: ' . $subscription_status['error'] . '. Also, no credits or OpenAI API key found.'
+						: 'No subscription, no credits, and no OpenAI API key configured.';
 					$instance->aistma_log_manager::log( 'error', $error_message );
 					return array( 'success' => false, 'message' => $error_message );
 				} else {
-					$instance->aistma_log_manager::log( 'info', 'No valid subscription found, but OpenAI API key is available. Will use direct OpenAI API calls.' );
+					$instance->aistma_log_manager::log( 'info', 'No subscription or credits found, but OpenAI API key is available. Will use direct OpenAI API calls.' );
 				}
 			}
 		} catch ( \RuntimeException $e ) {
@@ -178,18 +182,21 @@ class AISTMA_Story_Generator {
 		$the_prompt = $prompt['text'];
 
 
-		// Check if we have a valid subscription
+		// Credits route through the master API the same way a subscription does.
 		$subscription_info = $this->get_subscription_info();
+		$current_user_id   = get_current_user_id();
+		$has_credits       = $current_user_id > 0
+			&& class_exists( __NAMESPACE__ . '\\AISTMA_Credits_Manager' )
+			&& AISTMA_Credits_Manager::has_credits( $current_user_id, 1 );
 
-		if ( $subscription_info['valid'] ) {
-			// Use Master Server API
-			return $this->generate_story_via_master_api( $prompt_id, $prompt, $merged_settings,  $the_prompt, $subscription_info );
+		if ( $subscription_info['valid'] || $has_credits ) {
+			return $this->generate_story_via_master_api( $prompt_id, $prompt, $merged_settings, $the_prompt, $subscription_info );
 		} else {
 			// Fallback to direct OpenAI API call
 			if ( $prompt['photos'] > 0 ) {
 				$the_prompt .= "\n" . __( 'Include at least ', 'ai-story-maker' ) . $prompt['photos'] . __( ' placeholders for images in the article. insert a placeholder in the following format {img_unsplash:keyword1,keyword2,keyword3} using the most relevant keywords for fetching related images from Unsplash', 'ai-story-maker' );
 			}
-			return $this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings,  $api_key, $the_prompt );
+			return $this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $api_key, $the_prompt );
 		}
 	}
 
@@ -207,20 +214,28 @@ class AISTMA_Story_Generator {
 		// Check subscription status first
 		$subscription_info = $this->get_subscription_info();
 		$has_valid_subscription = $subscription_info['valid'];
-		
-		// Only check OpenAI API key if no valid subscription 
-		if ( ! $has_valid_subscription ) {
+		$current_user_id = get_current_user_id();
+		$has_credits = $current_user_id > 0
+			&& class_exists( __NAMESPACE__ . '\\AISTMA_Credits_Manager' )
+			&& AISTMA_Credits_Manager::has_credits( $current_user_id, 1 );
+
+		// Check OpenAI API key only if no subscription AND no credits
+		if ( ! $has_valid_subscription && ! $has_credits ) {
 			$this->api_key = get_option( 'aistma_openai_api_key' );
-					if ( ! $this->api_key ) {
-			$error = __( 'OpenAI API Key is missing. Required for direct OpenAI calls when no subscription is active.', 'ai-story-maker' );
-			$this->aistma_log_manager->log( 'error', $error );
-			$results['errors'][] = $error;
-			throw new \RuntimeException( esc_html( $error ) );
+			if ( ! $this->api_key ) {
+				$error = __( 'No credits, subscribe to get more.', 'ai-story-maker' );
+				$this->aistma_log_manager->log( 'error', $error );
+				$results['errors'][] = $error;
+				throw new \RuntimeException( esc_html( $error ) );
 			}
 		} else {
-			// For subscription users, we'll use master API, so OpenAI key is not required
+			// For subscription or credit users, we'll use master API, so OpenAI key is not required
 			$this->api_key = null;
-			$this->aistma_log_manager->log( 'info', 'Valid subscription detected, will use Master API for story generation' );
+			if ( $has_valid_subscription ) {
+				$this->aistma_log_manager->log( 'info', 'Valid subscription detected, will use Master API for story generation' );
+			} else {
+				$this->aistma_log_manager->log( 'info', 'User has available credits, will use Master API for story generation' );
+			}
 		}
 
 		$raw_settings = get_option( 'aistma_prompts', '' );
@@ -345,14 +360,27 @@ class AISTMA_Story_Generator {
 
 		if ( $response_code !== 200 ) {
 			$this->aistma_log_manager->log( 'error', 'Master API returned HTTP ' . $response_code . ', falling back to direct OpenAI call' );
-			// Fallback to direct OpenAI call
+			// Only fall back to direct OpenAI if user has their own API key
+			// If they have subscription or credits, they shouldn't be using direct OpenAI
+			if ( ! $this->api_key ) {
+				$error = __( 'Story generation temporarily unavailable. Please try again later.', 'ai-story-maker' );
+				$this->aistma_log_manager->log( 'error', $error );
+				throw new \RuntimeException( esc_html( $error ) );
+			}
+			// Fallback to direct OpenAI call (only if user has personal API key)
 			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $this->api_key, $the_prompt );
 			return;
 		}
 
 		if ( json_last_error() !== JSON_ERROR_NONE ) {
 			$this->aistma_log_manager->log( 'error', 'Invalid JSON response from Master API, falling back to direct OpenAI call' );
-			// Fallback to direct OpenAI call
+			// Only fall back to direct OpenAI if user has their own API key
+			if ( ! $this->api_key ) {
+				$error = __( 'Story generation service error. Please try again later.', 'ai-story-maker' );
+				$this->aistma_log_manager->log( 'error', $error );
+				throw new \RuntimeException( esc_html( $error ) );
+			}
+			// Fallback to direct OpenAI call (only if user has personal API key)
 			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings,  $this->api_key, $the_prompt );
 			return;
 		}
@@ -360,7 +388,13 @@ class AISTMA_Story_Generator {
 		if ( ! isset( $data['success'] ) || ! $data['success'] ) {
 			$error_msg = isset( $data['error'] ) ? $data['error'] : 'Unknown error from Master API';
 			$this->aistma_log_manager->log( 'error', 'Master API error: ' . $error_msg . ', falling back to direct OpenAI call' );
-			// Fallback to direct OpenAI call
+			// Only fall back to direct OpenAI if user has their own API key
+			if ( ! $this->api_key ) {
+				$error = __( 'Unable to generate story. Please try again later.', 'ai-story-maker' );
+				$this->aistma_log_manager->log( 'error', $error );
+				throw new \RuntimeException( esc_html( $error ) );
+			}
+			// Fallback to direct OpenAI call (only if user has personal API key)
 			return $this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings,  $this->api_key, $the_prompt );
 		}
 
@@ -387,7 +421,7 @@ class AISTMA_Story_Generator {
 		}
 		
 		if ( ! $api_key ) {
-			$error = __( 'OpenAI API Key is missing. Required for direct OpenAI calls without subscription', 'ai-story-maker' );
+			$error = __( 'No credits and no OpenAI API key configured. Please subscribe or add your own API key.', 'ai-story-maker' );
 			$this->aistma_log_manager->log( 'error', $error );
 			throw new \RuntimeException( esc_html( $error ) );
 		}
@@ -602,24 +636,23 @@ class AISTMA_Story_Generator {
 			update_post_meta( $post_id, 'ai_story_maker_generated_via', 'master_api' );
 			
 			// Add enhancement tracking meta data
-			$package_name = isset( $data['package_name'] ) ? sanitize_text_field( $data['package_name'] ) : '';
+			$package_name      = isset( $data['package_name'] ) ? sanitize_text_field( $data['package_name'] ) : '';
+			$enhancement_limit = 1; // default
+			$package_id        = false;
 			if ( ! empty( $package_name ) ) {
-				// Get package ID from name (this assumes packages are stored with sequential IDs)
 				$package_id = $this->get_package_id_by_name( $package_name );
 				if ( $package_id !== false ) {
 					$enhancement_limit = $this->get_package_enhancement_limit( $package_id );
 					update_post_meta( $post_id, 'ai_story_maker_package_id', $package_id );
-					update_post_meta( $post_id, 'ai_story_maker_enhancements_limit', $enhancement_limit );
-					update_post_meta( $post_id, 'ai_story_maker_enhancements_history', wp_json_encode( [] ) );
-					
-					// Debug logging
 					$this->aistma_log_manager->log( 'info', 'Enhancement meta added to post ' . $post_id . ': package_name=' . $package_name . ', package_id=' . $package_id . ', limit=' . $enhancement_limit );
 				} else {
-					$this->aistma_log_manager->log( 'warning', 'Could not find package ID for package name: ' . $package_name );
+					$this->aistma_log_manager->log( 'warning', 'Could not find package ID for package name: ' . $package_name . '. Defaulting enhancement limit to 1.' );
 				}
 			} else {
-				$this->aistma_log_manager->log( 'warning', 'No package_name found in Master API response for post ' . $post_id );
+				$this->aistma_log_manager->log( 'warning', 'No package_name found in Master API response for post ' . $post_id . '. Defaulting enhancement limit to 1.' );
 			}
+			update_post_meta( $post_id, 'ai_story_maker_enhancements_limit', $enhancement_limit );
+			update_post_meta( $post_id, 'ai_story_maker_enhancements_history', wp_json_encode( [] ) );
 			
 			// $this->aistma_log_manager->log( 'success', 'AI-generated news article created via Master API: ' . get_permalink( $post_id ), $request_id );
 		}
@@ -723,18 +756,18 @@ class AISTMA_Story_Generator {
 			update_post_meta( $post_id, 'ai_story_maker_generated_via', 'openai_api' );
 			
 			// Add enhancement tracking meta data for OpenAI API generated posts
-			// For OpenAI API posts, we'll use a default package or get from subscription
 			$subscription_info = $this->get_subscription_info();
-			$package_name = $subscription_info['package_name'] ?? '';
+			$package_name      = $subscription_info['package_name'] ?? '';
+			$enhancement_limit = 1; // default
 			if ( ! empty( $package_name ) ) {
 				$package_id = $this->get_package_id_by_name( $package_name );
 				if ( $package_id !== false ) {
 					$enhancement_limit = $this->get_package_enhancement_limit( $package_id );
 					update_post_meta( $post_id, 'ai_story_maker_package_id', $package_id );
-					update_post_meta( $post_id, 'ai_story_maker_enhancements_limit', $enhancement_limit );
-					update_post_meta( $post_id, 'ai_story_maker_enhancements_history', wp_json_encode( [] ) );
 				}
 			}
+			update_post_meta( $post_id, 'ai_story_maker_enhancements_limit', $enhancement_limit );
+			update_post_meta( $post_id, 'ai_story_maker_enhancements_history', wp_json_encode( [] ) );
 			
 			$this->aistma_log_manager->log( 'success', 'AI-generated news article created via OpenAI API: ' . get_permalink( $post_id ), $request_id );
 		}
@@ -1432,8 +1465,8 @@ class AISTMA_Story_Generator {
 			return $limit;
 		}
 
-		$this->aistma_log_manager->log( 'warning', 'No enhancement limit found for package ID: ' . $package_id . ', defaulting to unlimited' );
-		return 0; // Default to unlimited
+		$this->aistma_log_manager->log( 'warning', 'No enhancement limit found for package ID: ' . $package_id . ', defaulting to 1' );
+		return 1;
 	}
 
 	/**
