@@ -1937,9 +1937,10 @@ class AISTMA_Admin {
 				AISTMA_Credits_Manager::add_credits( $user_id, $startup_credits, 'Wizard view - startup grant' );
 				$this->aistma_log_manager->log( 'info', sprintf( 'User %d granted %d startup credits on wizard view.', $user_id, $startup_credits ) );
 
-				// Create startup credits account in gateway with current user's email
+				// Create startup credits account in gateway with current user's email (fallback to admin email)
 				$current_user = wp_get_current_user();
-				$this->create_startup_credits_account( $current_user->user_email );
+				$user_email = ! empty( $current_user->user_email ) ? $current_user->user_email : get_option( 'admin_email' );
+				$this->create_startup_credits_account( $user_email );
 			}
 
 			wp_send_json_success( array(
