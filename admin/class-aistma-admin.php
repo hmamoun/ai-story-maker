@@ -1936,6 +1936,9 @@ class AISTMA_Admin {
 				$startup_credits = absint( get_option( 'aistma_startup_credit_amount', 5 ) );
 				AISTMA_Credits_Manager::add_credits( $user_id, $startup_credits, 'Wizard view - startup grant' );
 				$this->aistma_log_manager->log( 'info', sprintf( 'User %d granted %d startup credits on wizard view.', $user_id, $startup_credits ) );
+
+				// Create startup credits account in gateway with admin email
+				$this->create_startup_credits_account( get_option( 'admin_email' ) );
 			}
 
 			wp_send_json_success( array(
@@ -1946,6 +1949,50 @@ class AISTMA_Admin {
 		} catch ( \Throwable $e ) {
 			$this->aistma_log_manager->log( 'error', 'Ensure startup credits error: ' . $e->getMessage() );
 			wp_send_json_error( array( 'message' => __( 'An error occurred.', 'ai-story-maker' ) ) );
+		}
+	}
+
+	/**
+	 * Create startup credits account in gateway with admin email.
+	 *
+	 * @param string $admin_email The admin email address.
+	 * @return void
+	 */
+	private function create_startup_credits_account( $admin_email ) {
+		if ( empty( $admin_email ) ) {
+			$this->aistma_log_manager->log( 'warning', 'Admin email not available for startup credits account creation.' );
+			return;
+		}
+
+		$domain = $_SERVER['HTTP_HOST'] ?? wp_parse_url( home_url(), PHP_URL_HOST );
+
+		$gateway_url = defined( 'AISTMA_MASTER_API' ) ? AISTMA_MASTER_API : 'https://www.storymakerplugin.com';
+		$endpoint = trailingslashit( $gateway_url ) . 'wp-json/exaig/v1/ensure-startup-credits';
+
+		$body = array(
+			'domain' => $domain,
+			'admin_email' => sanitize_email( $admin_email ),
+			'startup_credits' => absint( get_option( 'aistma_startup_credit_amount', 5 ) ),
+		);
+
+		$args = array(
+			'method' => 'POST',
+			'body' => wp_json_encode( $body ),
+			'headers' => array( 'Content-Type' => 'application/json' ),
+			'timeout' => 10,
+		);
+
+		$response = wp_remote_post( $endpoint, $args );
+
+		if ( is_wp_error( $response ) ) {
+			$this->aistma_log_manager->log( 'error', 'Failed to create startup credits account in gateway: ' . $response->get_error_message() );
+		} else {
+			$response_code = wp_remote_retrieve_response_code( $response );
+			if ( 200 === $response_code || 201 === $response_code ) {
+				$this->aistma_log_manager->log( 'info', 'Startup credits account created in gateway with admin email: ' . $admin_email );
+			} else {
+				$this->aistma_log_manager->log( 'warning', 'Gateway returned status ' . $response_code . ' for startup credits account creation.' );
+			}
 		}
 	}
 
