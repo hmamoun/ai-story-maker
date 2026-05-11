@@ -579,7 +579,7 @@ class AISTMA_Story_Generator {
 		// Determine post status based on auto_publish setting
 		$auto_publish_value = isset( $prompt['auto_publish'] ) ? $prompt['auto_publish'] : false;
 		$post_status = ( 1 === $auto_publish_value || true === $auto_publish_value ) ? 'publish' : 'draft';
-		
+
 		// Debug logging for auto_publish
 		$this->aistma_log_manager->log( 'debug', 'Master API - Auto publish value: ' . ( $auto_publish_value ? 'true' : 'false' ) . ' (type: ' . gettype( $auto_publish_value ) . '), Post status: ' . $post_status );
 
@@ -599,6 +599,14 @@ class AISTMA_Story_Generator {
 			$error = __( 'Error creating post: ', 'ai-story-maker' ) . $post_id->get_error_message();
 			$this->aistma_log_manager->log( 'error', $error );
 			throw new \RuntimeException( esc_html( $error ) );
+		}
+
+		// Store the prompt ID for later lookup in generate_ai_story_for_user()
+		// Note: prompt_id can be numeric (post ID) or string (wizard prompt ID)
+		if ( $post_id && $prompt_id ) {
+			// Store as-is: numeric IDs stay numeric, string IDs stay string
+			$stored_prompt_id = is_numeric( $prompt_id ) ? absint( $prompt_id ) : sanitize_key( $prompt_id );
+			add_post_meta( $post_id, '_aistma_prompt_id', $stored_prompt_id, true );
 		}
 
 		// Deduct credit after successful post creation
@@ -763,6 +771,14 @@ class AISTMA_Story_Generator {
 			$error = __( 'Error creating post: ', 'ai-story-maker' ) . $post_id->get_error_message();
 			$this->aistma_log_manager->log( 'error', $error );
 			throw new \RuntimeException( esc_html( $error ) );
+		}
+
+		// Store the prompt ID for later lookup in generate_ai_story_for_user()
+		// Note: prompt_id can be numeric (post ID) or string (wizard prompt ID)
+		if ( $post_id && $prompt_id ) {
+			// Store as-is: numeric IDs stay numeric, string IDs stay string
+			$stored_prompt_id = is_numeric( $prompt_id ) ? absint( $prompt_id ) : sanitize_key( $prompt_id );
+			add_post_meta( $post_id, '_aistma_prompt_id', $stored_prompt_id, true );
 		}
 
 		// Deduct credit after successful post creation (use passed $user_id to support background generation)
