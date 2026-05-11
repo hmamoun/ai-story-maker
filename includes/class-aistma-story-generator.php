@@ -568,8 +568,11 @@ class AISTMA_Story_Generator {
 		}
 
 		// Store the prompt ID for later lookup in generate_ai_story_for_user()
+		// Note: prompt_id can be numeric (post ID) or string (wizard prompt ID)
 		if ( $post_id && $prompt_id ) {
-			add_post_meta( $post_id, '_aistma_prompt_id', absint( $prompt_id ), true );
+			// Store as-is: numeric IDs stay numeric, string IDs stay string
+			$stored_prompt_id = is_numeric( $prompt_id ) ? absint( $prompt_id ) : sanitize_key( $prompt_id );
+			add_post_meta( $post_id, '_aistma_prompt_id', $stored_prompt_id, true );
 		}
 
 		// Deduct credit after successful post creation
@@ -737,8 +740,11 @@ class AISTMA_Story_Generator {
 		}
 
 		// Store the prompt ID for later lookup in generate_ai_story_for_user()
+		// Note: prompt_id can be numeric (post ID) or string (wizard prompt ID)
 		if ( $post_id && $prompt_id ) {
-			add_post_meta( $post_id, '_aistma_prompt_id', absint( $prompt_id ), true );
+			// Store as-is: numeric IDs stay numeric, string IDs stay string
+			$stored_prompt_id = is_numeric( $prompt_id ) ? absint( $prompt_id ) : sanitize_key( $prompt_id );
+			add_post_meta( $post_id, '_aistma_prompt_id', $stored_prompt_id, true );
 		}
 
 		// Deduct credit after successful post creation (use passed $user_id to support background generation)
