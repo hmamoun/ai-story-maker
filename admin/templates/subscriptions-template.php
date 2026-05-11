@@ -30,6 +30,11 @@ if ( isset( $_SERVER['REQUEST_METHOD'] ) && 'POST' === $_SERVER['REQUEST_METHOD'
         $posted_email = sanitize_email( $posted_email_raw );
         if ( ! empty( $posted_email ) && is_email( $posted_email ) ) {
             update_option( 'aistma_subscription_email', $posted_email );
+            // Store the original subscription email if not already set (used for subscription cancellation)
+            $original_email = get_option( 'aistma_original_subscription_email' );
+            if ( empty( $original_email ) ) {
+                update_option( 'aistma_original_subscription_email', $posted_email );
+            }
             $current_user_email = $posted_email; // reflect immediately
             $email_update_message = __( 'Subscription email updated.', 'ai-story-maker' );
         } else {
@@ -44,6 +49,13 @@ if ( isset( $_SERVER['REQUEST_METHOD'] ) && 'POST' === $_SERVER['REQUEST_METHOD'
 $saved_subscription_email = get_option( 'aistma_subscription_email' );
 if ( ! empty( $saved_subscription_email ) ) {
     $current_user_email = $saved_subscription_email;
+}
+// If original subscription email exists (for subscription cancellation), use that for subscription requests
+$original_subscription_email = get_option( 'aistma_original_subscription_email' );
+if ( ! empty( $original_subscription_email ) ) {
+    $subscription_email_for_requests = $original_subscription_email;
+} else {
+    $subscription_email_for_requests = $current_user_email;
 }
 
 ?>
@@ -222,11 +234,12 @@ if ( ! empty( $saved_subscription_email ) ) {
                 continue;
             }
         // Build the subscription URL with package ID, domain, port, and email
+        // Use the original subscription email if it exists (for subscription continuity and cancellation)
         $package_registration_url = add_query_arg(
             array(
                 'domain' => rawurlencode($current_domain),
                 'port' => $current_port ? rawurlencode($current_port) : '',
-                'email' => rawurlencode(string: $current_user_email),
+                'email' => rawurlencode(string: $subscription_email_for_requests),
                 'package_name' => isset($package['name']) ? $package['name'] : '',
             ),
             $package_registration_url
@@ -343,17 +356,22 @@ if ( ! empty( $saved_subscription_email ) ) {
 
 <script>
 // Keep package links' email param in sync with the input
+// Note: If original subscription email exists, use that for subscription requests
 document.addEventListener('DOMContentLoaded', function() {
     const emailInput = document.getElementById('aistma_subscription_email');
     if (!emailInput) return;
 
+    // Store the original subscription email to use for all requests (prevents cancellation issues when email changes)
+    const originalSubscriptionEmail = '<?php echo esc_js( $subscription_email_for_requests ); ?>';
+
     function aistma_update_package_links_email() {
-        const email = emailInput.value || '';
+        // Always use the original subscription email for requests (if it exists) to maintain subscription continuity
+        const emailToUse = originalSubscriptionEmail || emailInput.value || '';
         document.querySelectorAll('.aistma-package-clickable').forEach(function(a) {
             try {
                 const u = new URL(a.href);
-                if (email) {
-                    u.searchParams.set('email', email);
+                if (emailToUse) {
+                    u.searchParams.set('email', emailToUse);
                 } else {
                     u.searchParams.delete('email');
                 }
