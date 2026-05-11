@@ -1502,22 +1502,59 @@ class AISTMA_Story_Generator {
 		try {
 			$instance = new self();
 			$user_id = absint( $user_id );
-			$prompt_id = absint( $prompt_id );
 
 			if ( ! $user_id || ! $prompt_id ) {
 				return false;
 			}
 
-			// Get prompt
-			$prompt_post = get_post( $prompt_id );
-			if ( ! $prompt_post || 'aistma_prompt' !== $prompt_post->post_type ) {
-				return false;
-			}
+			// Support both numeric post IDs and string wizard prompt IDs
+			$is_numeric_id = is_numeric( $prompt_id );
+			$prompt_data = null;
 
-			// Get prompt meta
-			$prompt_text = get_post_meta( $prompt_id, '_aistma_prompt_text', true );
-			if ( ! $prompt_text ) {
-				return false;
+			if ( $is_numeric_id ) {
+				// Load from WordPress post
+				$prompt_id = absint( $prompt_id );
+				if ( ! $prompt_id ) {
+					return false;
+				}
+
+				$prompt_post = get_post( $prompt_id );
+				if ( ! $prompt_post || 'aistma_prompt' !== $prompt_post->post_type ) {
+					return false;
+				}
+
+				// Get prompt meta
+				$prompt_text = get_post_meta( $prompt_id, '_aistma_prompt_text', true );
+				if ( ! $prompt_text ) {
+					return false;
+				}
+
+				$prompt_data = array(
+					'text'     => $prompt_text,
+					'category' => get_post_meta( $prompt_id, '_aistma_category', true ),
+				);
+			} else {
+				// Load from wizard prompts in settings
+				$raw_json = get_option( 'aistma_prompts', '{}' );
+				$settings = json_decode( $raw_json, true );
+				$prompts = isset( $settings['prompts'] ) ? $settings['prompts'] : array();
+
+				foreach ( $prompts as $p ) {
+					if ( isset( $p['prompt_id'] ) && $p['prompt_id'] === $prompt_id ) {
+						$prompt_data = array(
+							'text'     => isset( $p['text'] ) ? $p['text'] : '',
+							'category' => isset( $p['category'] ) ? $p['category'] : '',
+						);
+						break;
+					}
+				}
+
+				if ( ! $prompt_data || empty( $prompt_data['text'] ) ) {
+					return false;
+				}
+
+				// Sanitize the string ID
+				$prompt_id = sanitize_key( $prompt_id );
 			}
 
 			// Generate the story
@@ -1529,8 +1566,8 @@ class AISTMA_Story_Generator {
 				$instance->generate_ai_story(
 					$prompt_id,
 					array(
-						'text'       => $prompt_text,
-						'category'   => get_post_meta( $prompt_id, '_aistma_category', true ),
+						'text'       => $prompt_data['text'],
+						'category'   => $prompt_data['category'],
 						'post_type'  => 'post',
 					),
 					$instance->default_settings,
