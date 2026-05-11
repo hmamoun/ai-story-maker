@@ -180,6 +180,14 @@ class AISTMA_Story_Generator {
 
 		$the_prompt = $prompt['text'];
 
+		// Add keywords to prompt if provided
+		if ( ! empty( $prompt['keywords'] ) ) {
+			$keywords = sanitize_text_field( $prompt['keywords'] );
+			$the_prompt .= "\n\n" . sprintf(
+				__( 'Important: Make sure to naturally include these keywords throughout the article: %s', 'ai-story-maker' ),
+				$keywords
+			);
+		}
 
 		// Credits route through the master API the same way a subscription does.
 		$subscription_info = $this->get_subscription_info();

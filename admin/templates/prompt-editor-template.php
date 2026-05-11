@@ -33,6 +33,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<th width="10%">
 						<a href="<?php echo esc_url( admin_url( 'edit-tags.php?taxonomy=category' ) ); ?>" target="_blank"><?php esc_html_e( 'Category', 'ai-story-maker' ); ?></a>
 					</th>
+					<th width="12%">
+						<?php esc_html_e( 'Keywords', 'ai-story-maker' ); ?>
+					</th>
 					<th width="5%">
 						<?php esc_html_e( 'Images', 'ai-story-maker' ); ?>
 					</th>
@@ -55,6 +58,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 								<?php endforeach; ?>
 							</select>
 						</td>
+						<td contenteditable="true" class="editable" data-field="keywords" title="<?php esc_attr_e( 'Comma-separated keywords to include in the article', 'ai-story-maker' ); ?>"><?php echo esc_html( $prompt['keywords'] ?? '' ); ?></td>
 						<td contenteditable="true" data-field="photos">
 							<select>
 								<option value="0" <?php selected( $prompt['photos'] ?? '', '0' ); ?>>0</option>
