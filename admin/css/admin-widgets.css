@@ -1,0 +1,150 @@
+/**
+ * Admin Widgets Styles
+ * Styles for dashboard widgets including story calendar heatmap and activity widgets
+ *
+ * @package AI_Story_Maker
+ * @since 2.3.0
+ */
+
+/* Story Calendar Widget */
+.aistma-story-calendar-widget {
+	--heatmap-square-size: 10px;
+	font-size: 13px;
+}
+
+.aistma-story-calendar-widget .heatmap-container {
+	display: flex;
+	flex-direction: column;
+	gap: 15px;
+	margin-top: 15px;
+}
+
+.aistma-story-calendar-widget .heatmap-row {
+	display: flex;
+	gap: 4px;
+	align-items: center;
+}
+
+.aistma-story-calendar-widget .heatmap-square {
+	width: var(--heatmap-square-size);
+	height: var(--heatmap-square-size);
+	border: 1px solid #e0e0e0;
+	cursor: pointer;
+	border-radius: 2px;
+	transition: all 0.2s ease;
+}
+
+.aistma-story-calendar-widget .heatmap-square:hover {
+	border-color: #0073aa;
+	transform: scale(1.2);
+}
+
+.aistma-story-calendar-widget .heatmap-square.generated {
+	background-color: #2e7d32;
+}
+
+.aistma-story-calendar-widget .heatmap-square.partial {
+	background-color: #f57c00;
+}
+
+.aistma-story-calendar-widget .heatmap-label {
+	font-size: 11px;
+	color: #666;
+	min-width: 35px;
+	text-align: right;
+}
+
+.aistma-story-calendar-widget .heatmap-tooltip {
+	position: absolute;
+	background-color: #333;
+	color: #fff;
+	padding: 8px 12px;
+	border-radius: 4px;
+	font-size: 12px;
+	white-space: nowrap;
+	z-index: 1000;
+	display: none;
+	pointer-events: none;
+}
+
+.aistma-story-calendar-widget .heatmap-square:hover .heatmap-tooltip {
+	display: block;
+}
+
+/* Posts Activity Widget */
+.aistma-posts-activity-widget {
+	font-size: 13px;
+}
+
+.aistma-posts-activity-widget table {
+	width: 100%;
+	margin-top: 10px;
+}
+
+.aistma-posts-activity-widget th,
+.aistma-posts-activity-widget td {
+	padding: 8px;
+	text-align: left;
+	border-bottom: 1px solid #e0e0e0;
+}
+
+.aistma-posts-activity-widget th {
+	background-color: #f9f9f9;
+	font-weight: 600;
+}
+
+.aistma-posts-activity-widget tr:hover {
+	background-color: #f5f5f5;
+}
+
+/* Data Cards Widget */
+.aistma-data-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+	gap: 15px;
+	margin-top: 15px;
+}
+
+.aistma-data-card {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: white;
+	padding: 20px;
+	border-radius: 8px;
+	text-align: center;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.aistma-data-card:hover {
+	transform: translateY(-4px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.aistma-data-card-value {
+	font-size: 28px;
+	font-weight: bold;
+	margin: 10px 0;
+}
+
+.aistma-data-card-label {
+	font-size: 12px;
+	opacity: 0.9;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.aistma-data-card.stories {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.aistma-data-card.views {
+	background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.aistma-data-card.tokens {
+	background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.aistma-data-card.ai-generated {
+	background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
