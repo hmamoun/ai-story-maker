@@ -166,7 +166,8 @@ function aistma_process_weekly_generations() {
 				
 				// Log event
 				if ( class_exists( 'exedotcom\\aistorymaker\\AISTMA_Gateway_Logger' ) ) {
-					exedotcom\aistorymaker\AISTMA_Gateway_Logger::log_event( 'aistma_weekly_generated', array(
+					exedotcom\aistorymaker\AISTMA_Gateway_Logger::log_event( array(
+						'event_type' => 'aistma_weekly_generated',
 						'user_id' => $user_id,
 						'post_id' => $post_id,
 						'prompt_id' => $prompt_id,
