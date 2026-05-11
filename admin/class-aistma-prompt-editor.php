@@ -135,6 +135,11 @@ class AISTMA_Prompt_Editor {
 						$data['prompts'][ $index ]['category'] = sanitize_text_field( $prompt['category'] );
 					}
 
+					// Sanitize keywords field
+					if ( isset( $prompt['keywords'] ) ) {
+						$data['prompts'][ $index ]['keywords'] = sanitize_text_field( $prompt['keywords'] );
+					}
+
 					// Sanitize numeric fields
 					if ( isset( $prompt['photos'] ) ) {
 						$data['prompts'][ $index ]['photos'] = absint( $prompt['photos'] );
