@@ -163,6 +163,9 @@ class AISTMA_Prompt_Editor {
 	/**
 	 * Sanitize text content for JSON storage.
 	 *
+	 * Removes all HTML tags while preserving special characters (quotes, apostrophes, etc.)
+	 * that are important for natural language prompts sent to APIs.
+	 *
 	 * @param string $text The text to sanitize.
 	 * @return string Sanitized text.
 	 */
@@ -171,8 +174,8 @@ class AISTMA_Prompt_Editor {
 			return '';
 		}
 
-		// First sanitize the text content
-		$text = sanitize_textarea_field( $text );
+		// Strip all HTML tags to prevent injection, while preserving text content and special characters
+		$text = wp_strip_all_tags( $text );
 
 		// Normalize whitespace but preserve line breaks for better readability
 		$text = preg_replace( '/[ \t]+/', ' ', $text ); // Normalize spaces and tabs
@@ -181,7 +184,7 @@ class AISTMA_Prompt_Editor {
 
 		// Don't escape JSON characters here - let wp_json_encode handle it properly
 		// This prevents double-escaping and maintains proper JSON structure
-		
+
 		return $text;
 	}
 
@@ -198,11 +201,13 @@ class AISTMA_Prompt_Editor {
 		if ( isset( $_SERVER['REQUEST_METHOD'] ) && 'POST' === $_SERVER['REQUEST_METHOD'] && isset( $_POST['save_prompts_v2'] ) ) {
 			check_admin_referer( 'save_story_prompts', 'story_prompts_nonce' );
 
-			$raw_prompts_input = isset( $_POST['prompts'] ) ? sanitize_textarea_field( wp_unslash( $_POST['prompts'] ) ) : '';
+			// Don't sanitize the JSON string itself - just decode it
+			// Sanitization of individual values happens later in sanitize_prompts_data()
+			$raw_prompts_input = isset( $_POST['prompts'] ) ? wp_unslash( $_POST['prompts'] ) : '';
 			$updated_prompts   = $raw_prompts_input ? json_decode( $raw_prompts_input, true ) : array();
 
-			// Get system_content from form if provided
-			$system_content = isset( $_POST['system_content'] ) ? sanitize_textarea_field( wp_unslash( $_POST['system_content'] ) ) : '';
+			// Get system_content from form if provided (sanitize via sanitize_prompts_data)
+			$system_content = isset( $_POST['system_content'] ) ? wp_unslash( $_POST['system_content'] ) : '';
 
 			// Check for JSON decode errors
 			if ( json_last_error() !== JSON_ERROR_NONE ) {

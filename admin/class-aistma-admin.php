@@ -1921,7 +1921,6 @@ class AISTMA_Admin {
 				AISTMA_Gateway_Logger::log_event( array(
 					'event_type' => 'aistma_wizard_closed_without_generating',
 					'user_id' => $user_id,
-					'timestamp' => current_time( 'mysql' ),
 				) );
 			}
 
