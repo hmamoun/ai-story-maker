@@ -685,6 +685,7 @@ class AISTMA_Story_Generator {
 		$request_id   = isset( $response_body['id'] ) ? sanitize_text_field( $response_body['id'] ) : uniqid( 'ai_news_' );
 		$title        = isset( $parsed_content['title'] ) ? sanitize_text_field( $parsed_content['title'] ) : __( 'Untitled Article', 'ai-story-maker' );
 		$content      = isset( $parsed_content['content'] ) ? wp_kses_post( $parsed_content['content'] ) : __( 'Content not available.', 'ai-story-maker' );
+		$tags         = isset( $parsed_content['tags'] ) && is_array( $parsed_content['tags'] ) ? $parsed_content['tags'] : array();
 		$category_name = isset( $prompt['category'] ) ? sanitize_text_field( $prompt['category'] ) : __( 'News', 'ai-story-maker' );
 
 		// Get or create category ID
