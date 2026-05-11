@@ -305,7 +305,6 @@
             render: AIContentEditorPanel,
             icon: 'edit',
         });
-        console.log('AI Content Editor: Plugin registered successfully');
     } catch (error) {
         console.error('AI Content Editor: Failed to register plugin:', error);
     }
