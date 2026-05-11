@@ -50,7 +50,7 @@ class AISTMA_Activation_Wizard {
 		$last_shown = get_user_meta( $user_id, self::WIZARD_LAST_SHOWN_KEY, true );
 		if ( ! empty( $last_shown ) ) {
 			$last_shown_time = strtotime( $last_shown );
-			$current_time = current_time( 'timestamp' );
+			$current_time = time();
 			$hours_elapsed = ( $current_time - $last_shown_time ) / 3600;
 
 			// If less than 24 hours have passed, don't show

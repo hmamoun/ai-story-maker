@@ -67,7 +67,7 @@ class AISTMA_Rating_Request {
 	 */
 	public static function mark_rating_shown( $user_id ) {
 		$user_id = absint( $user_id );
-		update_user_meta( $user_id, self::META_KEY_RATING_SHOWN, current_time( 'timestamp' ) );
+		update_user_meta( $user_id, self::META_KEY_RATING_SHOWN, time() );
 	}
 
 	/**
@@ -104,7 +104,7 @@ class AISTMA_Rating_Request {
 
 		// Check cooldown (7 days)
 		$last_shown_timestamp = absint( $last_shown );
-		$days_since = floor( ( current_time( 'timestamp' ) - $last_shown_timestamp ) / DAY_IN_SECONDS );
+		$days_since = floor( ( time() - $last_shown_timestamp ) / DAY_IN_SECONDS );
 
 		return $days_since >= self::REMINDER_COOLDOWN_DAYS;
 	}
