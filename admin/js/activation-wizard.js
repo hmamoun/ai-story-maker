@@ -556,6 +556,26 @@
 		 * Close the preview modal
 		 */
 		close: function () {
+			const self = this;
+
+			// Delete the draft post if it exists
+			if (this.postData && this.postData.post_id) {
+				$.ajax({
+					url: ajaxurl,
+					type: 'POST',
+					dataType: 'json',
+					data: {
+						action: 'aistma_wizard_cancel',
+						nonce: aistmaWizardL10n.cancelNonce || '',
+						post_id: this.postData.post_id,
+					},
+					error: function () {
+						// Log error but don't block the modal close
+						console.error('Failed to delete draft post.');
+					},
+				});
+			}
+
 			this.$modal.fadeOut(200);
 		},
 	};
