@@ -1376,7 +1376,7 @@ class AISTMA_Admin {
 				$openai_api_key = get_option( 'aistma_openai_api_key' );
 				if ( empty( $openai_api_key ) ) {
 					wp_send_json_error( array(
-						'message' => __( 'You have no credits remaining. Please upgrade your plan or purchase credits to generate stories.', 'ai-story-maker' ),
+						'message' => __( 'no credit left, pick a subscription plan from the next screen', 'ai-story-maker' ),
 						'redirect_url' => admin_url( 'admin.php?page=aistma-settings&tab=ai_writer' )
 					) );
 				}
