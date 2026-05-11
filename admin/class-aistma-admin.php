@@ -99,6 +99,7 @@ class AISTMA_Admin {
 		add_action( 'admin_head-edit.php', array( $this, 'aistma_add_posts_page_button' ) );
 		add_action( 'wp_ajax_aistma_wizard_generate', array( $this, 'aistma_wizard_generate' ) );
 		add_action( 'wp_ajax_aistma_wizard_save', array( $this, 'aistma_wizard_save' ) );
+		add_action( 'wp_ajax_aistma_wizard_cancel', array( $this, 'aistma_wizard_cancel' ) );
 		add_action( 'wp_ajax_aistma_wizard_dismiss', array( $this, 'aistma_wizard_dismiss' ) );
 		add_action( 'wp_ajax_aistma_confirm_weekly', array( $this, 'aistma_confirm_weekly' ) );
 		add_action( 'wp_ajax_aistma_submit_rating', array( $this, 'aistma_submit_rating' ) );
@@ -171,6 +172,7 @@ class AISTMA_Admin {
 				'showWizard' => AISTMA_Activation_Wizard::maybe_show_wizard() ? '1' : '0',
 				'generateNonce' => wp_create_nonce( 'aistma_wizard_generate_nonce' ),
 				'saveNonce' => wp_create_nonce( 'aistma_wizard_save_nonce' ),
+				'cancelNonce' => wp_create_nonce( 'aistma_wizard_cancel_nonce' ),
 				'dismissNonce' => wp_create_nonce( 'aistma_wizard_dismiss_nonce' ),
 				'weeklyNonce' => wp_create_nonce( 'aistma_confirm_weekly_nonce' ),
 				'startupCreditsNonce' => wp_create_nonce( 'aistma_ensure_startup_credits_nonce' ),
@@ -1587,6 +1589,53 @@ class AISTMA_Admin {
 		} catch ( \Throwable $e ) {
 			$this->aistma_log_manager->log( 'error', 'Wizard save error: ' . $e->getMessage() );
 			wp_send_json_error( array( 'message' => __( 'An error occurred while saving.', 'ai-story-maker' ) ) );
+		}
+	}
+
+	/**
+	 * AJAX handler for canceling the wizard (deletes draft post).
+	 *
+	 * @return void
+	 */
+	public function aistma_wizard_cancel() {
+		// Check nonce
+		if ( ! check_ajax_referer( 'aistma_wizard_cancel_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'ai-story-maker' ) ) );
+		}
+
+		// Check capabilities
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'ai-story-maker' ) ) );
+		}
+
+		try {
+			$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
+
+			if ( ! $post_id ) {
+				wp_send_json_error( array( 'message' => __( 'Invalid post ID.', 'ai-story-maker' ) ) );
+			}
+
+			// Verify the post belongs to the current user
+			$post = get_post( $post_id );
+			if ( ! $post || $post->post_author != get_current_user_id() ) {
+				wp_send_json_error( array( 'message' => __( 'You do not have permission to delete this post.', 'ai-story-maker' ) ) );
+			}
+
+			// Only delete draft posts (safety check)
+			if ( 'draft' !== $post->post_status ) {
+				wp_send_json_error( array( 'message' => __( 'Only draft posts can be deleted via the wizard.', 'ai-story-maker' ) ) );
+			}
+
+			// Delete the draft post
+			wp_delete_post( $post_id, true );
+
+			$this->aistma_log_manager->log( 'info', 'Draft post ' . $post_id . ' deleted by user ' . get_current_user_id() );
+
+			wp_send_json_success( array( 'message' => __( 'Draft post deleted.', 'ai-story-maker' ) ) );
+
+		} catch ( \Throwable $e ) {
+			$this->aistma_log_manager->log( 'error', 'Wizard cancel error: ' . $e->getMessage() );
+			wp_send_json_error( array( 'message' => __( 'An error occurred while deleting the draft.', 'ai-story-maker' ) ) );
 		}
 	}
 
