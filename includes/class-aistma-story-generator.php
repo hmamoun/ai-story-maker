@@ -839,7 +839,7 @@ class AISTMA_Story_Generator {
 					$this->aistma_log_manager->log( 'error', 'Error fetching dynamic instructions: ' . $api_response->get_error_message() );
 					$aistma_master_instructions = '';
 				}
-			} catch ( Exception $e ) {
+			} catch ( \Exception $e ) {
 				// Silent fail; fallback will be handled below.
 				$this->aistma_log_manager->log( 'error', 'Error fetching master instructions: ' . $e->getMessage() );
 				$aistma_master_instructions = '';
