@@ -101,10 +101,7 @@ add_action( 'plugins_loaded', function() {
     // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- OAuth callback parameter check, actual security verification in Settings Page class
     if ( is_admin() || ( defined( 'DOING_AJAX' ) && DOING_AJAX ) || isset( $_GET['aistma_facebook_oauth'] ) ) {
         new \exedotcom\aistorymaker\AISTMA_Settings_Page();
-        // Initialize Transactions page
-        if ( is_admin() ) {
-            new \exedotcom\aistorymaker\AISTMA_Transactions_Page();
-        }
+        new \exedotcom\aistorymaker\AISTMA_Transactions_Page();
     }
 });
 

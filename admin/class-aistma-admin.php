@@ -253,8 +253,7 @@ class AISTMA_Admin {
 	 * @return void
 	 */
 	public function aistma_render_transactions_page() {
-		$transactions_page = new AISTMA_Transactions_Page();
-		$transactions_page->render();
+		AISTMA_Transactions_Page::render_page();
 	}
 
 	/**

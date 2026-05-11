@@ -42,7 +42,7 @@ class AISTMA_Transactions_Page {
 	 *
 	 * @return void
 	 */
-	public function render() {
+	public static function render_page() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'ai-story-maker' ) );
 		}
@@ -231,7 +231,7 @@ class AISTMA_Transactions_Page {
 			wp_send_json_error( [ 'message' => __( 'Invalid user ID', 'ai-story-maker' ) ] );
 		}
 
-		AISTMA_Credits_Manager::clear_credit_history( $user_id );
+		AISTMA_Credits_Manager::clear_history( $user_id );
 		$this->aistma_log_manager->log( 'info', 'Transaction history cleared for user ' . $user_id );
 
 		wp_send_json_success( [ 'message' => __( 'History cleared', 'ai-story-maker' ) ] );
