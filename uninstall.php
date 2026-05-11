@@ -24,6 +24,8 @@ $options = array(
 	'aistma_unsplash_api_secret',
 	'aistma_generate_story_cron',
 	'aistma_show_exedotcom_attribution',
+	'aistma_author_name',
+	'aistma_author_url',
 	'aistma_widget_activity_days',
 	'aistma_widget_recent_posts_limit',
 	'aistma_widget_hide_empty_columns',
