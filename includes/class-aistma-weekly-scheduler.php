@@ -57,32 +57,66 @@ class AISTMA_Weekly_Scheduler {
 	 * Get the saved prompt ID for weekly generation.
 	 *
 	 * @param int $user_id The user ID.
-	 * @return int|false The prompt ID, or false if not set.
+	 * @return int|string|false The prompt ID (numeric or string), or false if not set.
 	 */
 	public static function get_weekly_prompt( $user_id ) {
 		$prompt_id = get_user_meta( $user_id, self::META_KEY_WEEKLY_PROMPT_ID, true );
-		return $prompt_id ? absint( $prompt_id ) : false;
+		if ( ! $prompt_id ) {
+			return false;
+		}
+
+		// Return numeric IDs as integers, string IDs as-is
+		return is_numeric( $prompt_id ) ? absint( $prompt_id ) : sanitize_key( $prompt_id );
 	}
 
 	/**
 	 * Enable weekly auto-generation and save the prompt.
 	 *
-	 * @param int $user_id   The user ID.
-	 * @param int $prompt_id The prompt post ID to use for weekly generation.
+	 * @param int    $user_id   The user ID.
+	 * @param mixed  $prompt_id The prompt ID (numeric post ID or string wizard prompt ID).
 	 * @return bool True on success.
 	 */
 	public static function enable_weekly( $user_id, $prompt_id ) {
-		$user_id   = absint( $user_id );
-		$prompt_id = absint( $prompt_id );
+		$user_id = absint( $user_id );
 
 		if ( ! $user_id || ! $prompt_id ) {
 			return false;
 		}
 
-		// Verify the prompt exists
-		$prompt_post = get_post( $prompt_id );
-		if ( ! $prompt_post || 'aistma_prompt' !== $prompt_post->post_type ) {
-			return false;
+		// Support both numeric post IDs and string wizard prompt IDs
+		$is_numeric_id = is_numeric( $prompt_id );
+
+		if ( $is_numeric_id ) {
+			// Numeric ID: verify it's a valid aistma_prompt post
+			$prompt_id = absint( $prompt_id );
+			if ( ! $prompt_id ) {
+				return false;
+			}
+
+			$prompt_post = get_post( $prompt_id );
+			if ( ! $prompt_post || 'aistma_prompt' !== $prompt_post->post_type ) {
+				return false;
+			}
+		} else {
+			// String ID: verify it's a valid wizard prompt in settings
+			$raw_json = get_option( 'aistma_prompts', '{}' );
+			$settings = json_decode( $raw_json, true );
+			$prompts = isset( $settings['prompts'] ) ? $settings['prompts'] : array();
+
+			$prompt_found = false;
+			foreach ( $prompts as $p ) {
+				if ( isset( $p['prompt_id'] ) && $p['prompt_id'] === $prompt_id ) {
+					$prompt_found = true;
+					break;
+				}
+			}
+
+			if ( ! $prompt_found ) {
+				return false;
+			}
+
+			// Sanitize the string ID
+			$prompt_id = sanitize_key( $prompt_id );
 		}
 
 		// Save the prompt ID
