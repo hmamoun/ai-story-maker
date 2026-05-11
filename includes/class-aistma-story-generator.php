@@ -178,8 +178,14 @@ class AISTMA_Story_Generator {
 		// Assign final system content.
 		$merged_settings['system_content'] .= $aistma_master_instructions ;
 
-		$the_prompt = $prompt['text'];
+		// Extract dynamic category from prompt text if present (format: {category:xxxxx})
+		$prompt_parsing = $this->extract_dynamic_category( $prompt['text'] );
+		$the_prompt = $prompt_parsing['text'];
 
+		// Override category if dynamic category was provided
+		if ( ! empty( $prompt_parsing['category'] ) ) {
+			$prompt['category'] = $prompt_parsing['category'];
+		}
 
 		// Credits route through the master API the same way a subscription does.
 		$subscription_info = $this->get_subscription_info();
@@ -197,6 +203,34 @@ class AISTMA_Story_Generator {
 			}
 			return $this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $api_key, $the_prompt, $current_user_id );
 		}
+	}
+
+	/**
+	 * Extract dynamic category from prompt text in format {category:xxxxx}.
+	 *
+	 * Only the first occurrence is used when multiple tokens are present ("first wins").
+	 * Returns array with 'category' (sanitized category name or empty string) and 'text' (cleaned prompt text).
+	 *
+	 * @param  string $text The prompt text.
+	 * @return array Array with 'category' and 'text' keys.
+	 */
+	private function extract_dynamic_category( $text ) {
+		$category = '';
+		$cleaned_text = $text;
+
+		// Look for {category:xxxxx} pattern; only the first match is used.
+		if ( preg_match( '/\{category:\s*([^}]+)\}/i', $text, $matches ) ) {
+			$category = sanitize_text_field( trim( $matches[1] ) );
+			// Remove only the first occurrence to match the single-match behaviour above.
+			$cleaned_text = preg_replace( '/\{category:\s*([^}]+)\}/i', '', $text, 1 );
+			// Clean up extra whitespace
+			$cleaned_text = trim( preg_replace( '/\s+/', ' ', $cleaned_text ) );
+		}
+
+		return array(
+			'category' => $category,
+			'text'     => $cleaned_text,
+		);
 	}
 
 	/**
