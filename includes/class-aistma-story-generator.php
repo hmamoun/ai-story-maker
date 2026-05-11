@@ -1186,11 +1186,34 @@ class AISTMA_Story_Generator {
 	/**
 	 * Check subscription status for the current domain.
 	 *
-	 * Similar to the JavaScript aistma_get_subscription_status() function.
-	 * Makes an API call to the master server to verify subscription status.
+	 * Makes an API call to the gateway verify-subscription endpoint to check if the domain
+	 * has an active subscription. This determines whether to use the master API or require
+	 * the user's own OpenAI/Unsplash keys.
 	 *
 	 * @param string $domain Optional domain to check. If not provided, uses current site domain.
-	 * @return array Subscription status data or error information.
+	 *
+	 * @return array Subscription status array with the following structure:
+	 *              SUCCESS: [
+	 *                'valid' => bool,                  // true if subscription is active
+	 *                'status' => string,               // 'active', 'active_no_credits', 'expired', etc.
+	 *                'domain' => string,               // verified domain
+	 *                'package_id' => string,           // subscription plan ID
+	 *                'package_name' => string,         // plan name (e.g., 'Starter', 'Professional')
+	 *                'price' => float,                 // plan price
+	 *                'created_at' => string,           // subscription start date
+	 *                'next_billing_date' => string,    // next renewal date
+	 *                'user_email' => string,           // associated email
+	 *                'credits_remaining' => int,       // remaining credits (0 if no credits)
+	 *              ]
+	 *              ERROR: [
+	 *                'valid' => false,
+	 *                'error' => string,                // error message
+	 *                'domain' => string,
+	 *              ]
+	 *
+	 * IMPORTANT: valid=true means subscription is active, NOT that credits are available.
+	 *            Always check credits_remaining separately. The UI shows "No credits remaining"
+	 *            when credits_remaining=0 even if valid=true (active subscription).
 	 */
 	public function aistma_get_subscription_status( $domain = '' ) {
 		$master_url = aistma_get_api_url();
