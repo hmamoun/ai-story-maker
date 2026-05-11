@@ -1769,7 +1769,8 @@ class AISTMA_Admin {
 
 			// Log the event
 			if ( class_exists( __NAMESPACE__ . '\\AISTMA_Gateway_Logger' ) ) {
-				AISTMA_Gateway_Logger::log_event( 'aistma_weekly_schedule_enabled', array(
+				AISTMA_Gateway_Logger::log_event( array(
+					'event_type' => 'aistma_weekly_schedule_enabled',
 					'user_id' => $user_id,
 					'prompt_id' => $prompt_id,
 				) );
@@ -2038,7 +2039,8 @@ class AISTMA_Admin {
 
 			// Log the escape event
 			if ( class_exists( __NAMESPACE__ . '\\AISTMA_Gateway_Logger' ) ) {
-				AISTMA_Gateway_Logger::log_event( 'aistma_wizard_closed_without_generating', array(
+				AISTMA_Gateway_Logger::log_event( array(
+					'event_type' => 'aistma_wizard_closed_without_generating',
 					'user_id' => $user_id,
 					'timestamp' => current_time( 'mysql' ),
 				) );
