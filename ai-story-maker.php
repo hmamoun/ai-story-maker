@@ -26,6 +26,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 define( 'AISTMA_PATH', plugin_dir_path( __FILE__ ) );
 define( 'AISTMA_URL', plugin_dir_url( __FILE__ ) );
+define( 'AISTMA_VERSION', '2.3.0' );
 
 
 use exedotcom\aistorymaker\AISTMA_Story_Generator;

@@ -357,156 +357,35 @@ class AISTMA_Admin {
 				border-left-color: #dc3232;
 			}
 		</style>
-		<script type="text/javascript">
-		document.addEventListener('DOMContentLoaded', function() {
-			// Add the Generate Stories button next to "Add New" button
-			const addNewButton = document.querySelector('.page-title-action');
-			if (addNewButton) {
-				<?php
-				$is_generating   = get_transient( 'aistma_generating_lock' );
-				$button_disabled = $is_generating ? 'disabled' : '';
-				$button_text     = $is_generating
-					? __( 'Story generation in progress [recheck in 10 minutes]', 'ai-story-maker' )
-					: __( 'Generate AI Stories', 'ai-story-maker' );
-				?>
-				
-				// Create button HTML
-				const buttonHtml = `
-					<input type="hidden" id="aistma-posts-generate-story-nonce" value="<?php echo esc_attr( wp_create_nonce( 'generate_story_nonce' ) ); ?>">
-					<input type="hidden" id="aistma-posts-validate-accounts-nonce" value="<?php echo esc_attr( wp_create_nonce( 'generate_story_nonce' ) ); ?>">
-					<button id="aistma-posts-generate-stories-button" class="button button-primary aistma-posts-page-button" <?php echo esc_attr( $button_disabled ); ?> data-validate-accounts="true">
-						<?php echo esc_html( $button_text ); ?>
-					</button>
-					<div id="aistma-posts-notice" style="display:none;"></div>
-				`;
-				
-				// Insert button after the "Add New" button
-				addNewButton.insertAdjacentHTML('afterend', buttonHtml);
-				
-				// Add event listener for the button
-				const generateButton = document.getElementById('aistma-posts-generate-stories-button');
-				if (generateButton) {
-					generateButton.addEventListener('click', function(e) {
-						e.preventDefault();
-						
-						// Check if button has validation enabled
-						const validateAccounts = this.getAttribute('data-validate-accounts') === 'true';
-						
-						if (validateAccounts) {
-							// First validate accounts before proceeding
-							validateAccountsBeforeGenerationPosts(this);
-						} else {
-							// Proceed with generation directly
-							proceedWithGenerationPosts(this);
-						}
-					});
-				}
-
-				function validateAccountsBeforeGenerationPosts(button) {
-					const originalCaption = button.innerHTML;
-					button.disabled = true;
-					button.innerHTML = '<span class="spinner" style="visibility: visible; float: none; margin: 0 5px 0 0;"></span>Checking accounts...';
-
-					const nonce = document.getElementById('aistma-posts-validate-accounts-nonce').value;
-					
-					fetch(ajaxurl, {
-						method: "POST",
-						headers: {
-							"Content-Type": "application/x-www-form-urlencoded"
-						},
-						body: new URLSearchParams({
-							action: "aistma_validate_accounts",
-							nonce: nonce
-						})
-					})
-					.then(response => response.json())
-					.then(data => {
-						if (data.success) {
-							// Setup is valid, proceed with generation
-							proceedWithGenerationPosts(button);
-						} else {
-							// Setup not valid, redirect to appropriate tab and show notice
-							const tab = data.data.tab;
-							const notice = data.data.notice;
-							
-							// Redirect to the appropriate tab first
-							const redirectUrl = `admin.php?page=aistma-settings&tab=${tab}&notice=${notice}`;
-							window.location.href = redirectUrl;
-						}
-					})
-					.catch(error => {
-						console.error("Account validation error:", error);
-						showNotice('Error validating accounts. Please try again.', 'error');
-						button.disabled = false;
-						button.innerHTML = originalCaption;
-					});
-				}
-
-				function proceedWithGenerationPosts(button) {
-					const originalCaption = button.innerHTML;
-					button.disabled = true;
-					button.innerHTML = '<span class="spinner" style="visibility: visible; float: none; margin: 0 5px 0 0;"></span>Generating... do not leave or close the page';
-
-					const nonce = document.getElementById('aistma-posts-generate-story-nonce').value;
-					
-					fetch(ajaxurl, {
-						method: "POST",
-						headers: {
-							"Content-Type": "application/x-www-form-urlencoded"
-						},
-						body: new URLSearchParams({
-							action: "generate_ai_stories",
-							nonce: nonce
-						})
-					})
-					.then(response => {
-						if (!response.ok) {
-							return response.text().then(text => {
-								throw new Error(text)
-							});
-						}
-						return response.json();
-					})
-					.then(data => {
-						if (data.success) {
-							showNotice("Story generated successfully!", 'success');
-							// Refresh the page to show new posts
-							setTimeout(() => {
-								window.location.reload();
-							}, 2000);
-						} else {
-							const serverMsg = (data && data.data && (data.data.message || data.data.error)) || data.message || "Error generating stories. Please check the logs!";
-							showNotice(serverMsg, 'error');
-						}
-					})
-					.catch(error => {
-						console.error("Fetch error:", error);
-						const errMsg = (error && error.message) ? `Network error: ${error.message}` : 'Network error. Please try again.';
-						showNotice(errMsg, 'error');
-					})
-					.finally(() => {
-						button.disabled = false;
-						button.innerHTML = originalCaption;
-					});
-				}
-
-				function showNotice(message, type) {
-					let messageDiv = document.getElementById('aistma-posts-notice');
-					if (messageDiv) {
-						messageDiv.className = `notice notice-${type} is-dismissible`;
-						messageDiv.style.display = 'block';
-						// Normalize and simplify common fatal error wording and strip HTML tags
-						const normalized = String(message || '')
-							.replace(/<[^>]*>/g, '')
-							.replace(/fatal\s+error:?/ig, 'Error')
-							.trim();
-						messageDiv.textContent = normalized || (type === 'success' ? 'Done.' : 'Error. Please check the logs.');
-					}
-				}
-			}
-		});
-		</script>
 		<?php
+		// Enqueue the posts page button script
+		wp_enqueue_script(
+			'aistma-posts-page-button',
+			AISTMA_URL . 'admin/js/posts-page-button.js',
+			array(),
+			AISTMA_VERSION,
+			true
+		);
+
+		// Prepare data for the script
+		$is_generating   = get_transient( 'aistma_generating_lock' );
+		$button_disabled = (bool) $is_generating;
+		$button_text     = $is_generating
+			? __( 'Story generation in progress [recheck in 10 minutes]', 'ai-story-maker' )
+			: __( 'Generate AI Stories', 'ai-story-maker' );
+
+		// Localize the script with necessary data
+		wp_localize_script(
+			'aistma-posts-page-button',
+			'aistmaPostsPageData',
+			array(
+				'generateNonce' => wp_create_nonce( 'generate_story_nonce' ),
+				'validateNonce' => wp_create_nonce( 'generate_story_nonce' ),
+				'buttonDisabled' => $button_disabled,
+				'buttonText' => $button_text,
+			)
+		);
+		?>
 	}
 
 	/**
