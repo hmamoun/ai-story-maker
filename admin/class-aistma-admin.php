@@ -237,6 +237,25 @@ class AISTMA_Admin {
 			'dashicons-welcome-widgets-menus',
 			9
 		);
+
+		// Add submenu page for transactions
+		add_submenu_page(
+			'aistma-settings',
+			__( 'User Transactions', 'ai-story-maker' ),
+			__( 'Transactions', 'ai-story-maker' ),
+			'manage_options',
+			'aistma-transactions',
+			array( $this, 'aistma_render_transactions_page' )
+		);
+	}
+
+	/**
+	 * Render the transactions page.
+	 *
+	 * @return void
+	 */
+	public function aistma_render_transactions_page() {
+		AISTMA_Transactions_Page::render_page();
 	}
 
 	/**
