@@ -208,7 +208,8 @@ class AISTMA_Story_Generator {
 	/**
 	 * Extract dynamic category from prompt text in format {category:xxxxx}.
 	 *
-	 * Returns array with 'category' (extracted category or empty string) and 'text' (cleaned prompt text).
+	 * Only the first occurrence is used when multiple tokens are present ("first wins").
+	 * Returns array with 'category' (sanitized category name or empty string) and 'text' (cleaned prompt text).
 	 *
 	 * @param  string $text The prompt text.
 	 * @return array Array with 'category' and 'text' keys.
@@ -217,11 +218,11 @@ class AISTMA_Story_Generator {
 		$category = '';
 		$cleaned_text = $text;
 
-		// Look for {category:xxxxx} pattern
+		// Look for {category:xxxxx} pattern; only the first match is used.
 		if ( preg_match( '/\{category:\s*([^}]+)\}/i', $text, $matches ) ) {
-			$category = trim( $matches[1] );
-			// Remove the pattern from the text
-			$cleaned_text = preg_replace( '/\{category:\s*([^}]+)\}/i', '', $text );
+			$category = sanitize_text_field( trim( $matches[1] ) );
+			// Remove only the first occurrence to match the single-match behaviour above.
+			$cleaned_text = preg_replace( '/\{category:\s*([^}]+)\}/i', '', $text, 1 );
 			// Clean up extra whitespace
 			$cleaned_text = trim( preg_replace( '/\s+/', ' ', $cleaned_text ) );
 		}
