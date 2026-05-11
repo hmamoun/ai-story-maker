@@ -208,7 +208,7 @@ class AISTMA_Story_Generator {
 		} else {
 			// Fallback to direct OpenAI API call
 			if ( $prompt['photos'] > 0 ) {
-				$the_prompt .= "\n" . __( 'Include at least ', 'ai-story-maker' ) . $prompt['photos'] . __( ' placeholders for images in the article. insert a placeholder in the following format {img_unsplash:keyword1,keyword2,keyword3} using the most relevant keywords for fetching related images from Unsplash', 'ai-story-maker' );
+				$the_prompt .= "\n" . __( 'Include at least ', 'ai-story-maker' ) . $prompt['photos'] . __( ' placeholders for images in the article. Use the format {img_RESOURCE:keyword1,keyword2,keyword3} where RESOURCE is one of: unsplash, pexels, or pixabay. Choose the most appropriate resource and use the most relevant keywords for fetching related images.', 'ai-story-maker' );
 			}
 			return $this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $api_key, $the_prompt, $current_user_id );
 		}
@@ -991,37 +991,52 @@ class AISTMA_Story_Generator {
 	}
 
 	/**
-	 * Replace image placeholders in the article content with Unsplash images.
+	 * Replace image placeholders in the article content with images from multiple sources.
+	 *
+	 * Supports multiple image resources via placeholders like {img_unsplash:...}, {img_pexels:...}, {img_pixabay:...}
 	 *
 	 * @param  string $article_content The article content with image placeholders.
 	 * @param  int    $post_id         The post ID to set featured image for.
-	 * @return string The article content with image placeholders replaced by Unsplash images.
+	 * @return string The article content with image placeholders replaced by images from the configured sources.
 	 */
 	public function replace_image_placeholders( $article_content, $post_id = 0 ) {
 		$self = $this; // Assign $this to $self.
 		$image_urls = array();
 		$image_count = 0;
-		
+
 		$processed_content = preg_replace_callback(
-			'/\{img_unsplash:([a-zA-Z0-9,_ ]+)\}/',
+			'/\{img_([a-z]+):([a-zA-Z0-9,_ ]+)\}/',
 			function ( $matches ) use ( $self, &$image_urls, &$image_count ) {
-				$keywords = explode( ',', $matches[1] );
-				$image_data = $self->fetch_unsplash_image_data( $keywords );
-				
+				$resource_type = $matches[1];
+				$keywords = explode( ',', $matches[2] );
+				// Trim whitespace from keywords
+				$keywords = array_map( 'trim', $keywords );
+
+				$image_data = null;
+
+				// Call the appropriate fetch method based on resource type
+				if ( 'unsplash' === $resource_type ) {
+					$image_data = $self->fetch_unsplash_image_data( $keywords );
+				} elseif ( 'pexels' === $resource_type ) {
+					$image_data = $self->fetch_pexels_image_data( $keywords );
+				} elseif ( 'pixabay' === $resource_type ) {
+					$image_data = $self->fetch_pixabay_image_data( $keywords );
+				}
+
 				if ( $image_data ) {
 					$image_count++;
-					
+
 					// Store all image URLs for featured image selection
 					$image_urls[] = $image_data['url'];
-					
+
 					return $image_data['html'];
 				}
-				
+
 				return '';
 			},
 			$article_content
 		);
-		
+
 		// Try to set a featured image from the collected URLs if we have a post ID
 		if ( $post_id && ! empty( $image_urls ) ) {
 			// Try each image until we find one that's not already used
@@ -1033,7 +1048,7 @@ class AISTMA_Story_Generator {
 				}
 			}
 		}
-		
+
 		return $processed_content;
 	}
 
@@ -1092,6 +1107,110 @@ class AISTMA_Story_Generator {
 		}
 
 		return false; // Return false if no images found.
+	}
+
+	/**
+	 * Fetch image data from Pexels based on the provided keywords.
+	 *
+	 * @param  array $keywords The keywords to search for.
+	 * @return array|false Array with 'url', 'html', and 'credits' keys on success, false on failure.
+	 */
+	public function fetch_pexels_image_data( $keywords ) {
+		$api_key = get_option( 'aistma_pexels_api_key' );
+
+		if ( ! $api_key ) {
+			$this->aistma_log_manager->log( 'error', 'Pexels API key not configured' );
+			return false;
+		}
+
+		$query = implode( ' ', $keywords );
+		$url = 'https://api.pexels.com/v1/search?query=' . rawurlencode( $query ) . '&per_page=30&orientation=landscape';
+		$response = wp_remote_get( $url, array(
+			'headers' => array(
+				'Authorization' => $api_key
+			)
+		) );
+
+		if ( is_wp_error( $response ) ) {
+			$this->aistma_log_manager->log( 'error', 'Error fetching Pexels image: ' . $response->get_error_message() );
+			return false;
+		}
+
+		$body = wp_remote_retrieve_body( $response );
+		$data = json_decode( $body, true );
+
+		if ( empty( $data['photos'] ) ) {
+			$this->aistma_log_manager->log( 'error', 'No Pexels images found for keywords: ' . $query );
+			return false;
+		}
+
+		$image_index = array_rand( $data['photos'] );
+		$photo = $data['photos'][ $image_index ];
+
+		if ( ! empty( $photo['src']['small'] ) ) {
+			$image_url = $photo['src']['small'];
+			$credits = 'Photo by ' . $photo['photographer'] . ' on pexels.com';
+			// phpcs:ignore PluginCheck.CodeAnalysis.ImageFunctions.NonEnqueuedImage
+			$html = '<figure><img src="' . esc_url( $image_url ) . '" alt="' . esc_attr( implode( ' ', $keywords ) ) . '" /><figcaption>' . esc_html( $credits ) . '</figcaption></figure>';
+
+			return array(
+				'url' => $image_url,
+				'html' => $html,
+				'credits' => $credits
+			);
+		}
+
+		return false;
+	}
+
+	/**
+	 * Fetch image data from Pixabay based on the provided keywords.
+	 *
+	 * @param  array $keywords The keywords to search for.
+	 * @return array|false Array with 'url', 'html', and 'credits' keys on success, false on failure.
+	 */
+	public function fetch_pixabay_image_data( $keywords ) {
+		$api_key = get_option( 'aistma_pixabay_api_key' );
+
+		if ( ! $api_key ) {
+			$this->aistma_log_manager->log( 'error', 'Pixabay API key not configured' );
+			return false;
+		}
+
+		$query = implode( ' ', $keywords );
+		$url = 'https://pixabay.com/api/?key=' . $api_key . '&q=' . rawurlencode( $query ) . '&per_page=30&image_type=photo&orientation=horizontal';
+		$response = wp_remote_get( $url );
+
+		if ( is_wp_error( $response ) ) {
+			$this->aistma_log_manager->log( 'error', 'Error fetching Pixabay image: ' . $response->get_error_message() );
+			return false;
+		}
+
+		$body = wp_remote_retrieve_body( $response );
+		$data = json_decode( $body, true );
+
+		if ( empty( $data['hits'] ) ) {
+			$this->aistma_log_manager->log( 'error', 'No Pixabay images found for keywords: ' . $query );
+			return false;
+		}
+
+		$image_index = array_rand( $data['hits'] );
+		$image = $data['hits'][ $image_index ];
+
+		if ( ! empty( $image['webformatURL'] ) ) {
+			$image_url = $image['webformatURL'];
+			$credits = 'Image from pixabay.com';
+			// phpcs:ignore PluginCheck.CodeAnalysis.ImageFunctions.NonEnqueuedImage
+			$html = '<figure><img src="' . esc_url( $image_url ) . '" alt="' . esc_attr( implode( ' ', $keywords ) ) . '" /><figcaption>' . esc_html( $credits ) . '</figcaption></figure>';
+
+			return array(
+				'url' => $image_url,
+				'html' => $html,
+				'credits' => $credits
+			);
+		}
+
+		return false;
 	}
 
 	/**
