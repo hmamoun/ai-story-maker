@@ -195,7 +195,7 @@ class AISTMA_Story_Generator {
 			if ( $prompt['photos'] > 0 ) {
 				$the_prompt .= "\n" . __( 'Include at least ', 'ai-story-maker' ) . $prompt['photos'] . __( ' placeholders for images in the article. insert a placeholder in the following format {img_unsplash:keyword1,keyword2,keyword3} using the most relevant keywords for fetching related images from Unsplash', 'ai-story-maker' );
 			}
-			return $this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $api_key, $the_prompt );
+			return $this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $api_key, $the_prompt, $current_user_id );
 		}
 	}
 
@@ -407,13 +407,12 @@ class AISTMA_Story_Generator {
 	 * @param  string $prompt_id             The prompt ID.
 	 * @param  array  $prompt                The prompt data.
 	 * @param  array  $merged_settings       Merged settings.
-	 * @param  array  $recent_posts          Recent posts to avoid duplication.
-
 	 * @param  string $api_key               OpenAI API key.
 	 * @param  string $the_prompt            The prompt text.
+	 * @param  int    $user_id               The user ID for credit deduction.
 	 * @return void
 	 */
-	private function generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $api_key, $the_prompt ) {
+	private function generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $api_key, $the_prompt, $user_id = 0 ) {
 		// Check if the OpenAI API key is set and is valid.
 		if ( empty( $api_key ) ) {
 			$api_key = get_option( 'aistma_openai_api_key' );
@@ -487,7 +486,7 @@ class AISTMA_Story_Generator {
 		}
 
 		// Process the OpenAI response
-		return $this->process_openai_response( $response_body, $parsed_content, $prompt_id, $prompt, $merged_settings );
+		return $this->process_openai_response( $response_body, $parsed_content, $prompt_id, $prompt, $merged_settings, $user_id );
 	}
 
 	/**
@@ -671,7 +670,7 @@ class AISTMA_Story_Generator {
 	 * @param  array  $merged_settings Merged settings.
 	 * @return void
 	 */
-	private function process_openai_response( $response_body, $parsed_content, $prompt_id, $prompt, $merged_settings ) {
+	private function process_openai_response( $response_body, $parsed_content, $prompt_id, $prompt, $merged_settings, $user_id = 0 ) {
 		$total_tokens = isset( $response_body['usage']['total_tokens'] ) ? (int) $response_body['usage']['total_tokens'] : 0;
 		$request_id   = isset( $response_body['id'] ) ? sanitize_text_field( $response_body['id'] ) : uniqid( 'ai_news_' );
 		$title        = isset( $parsed_content['title'] ) ? sanitize_text_field( $parsed_content['title'] ) : __( 'Untitled Article', 'ai-story-maker' );
@@ -732,18 +731,20 @@ class AISTMA_Story_Generator {
 			throw new \RuntimeException( esc_html( $error ) );
 		}
 
-		// Deduct credit after successful post creation
-		if ( $post_id ) {
-			$current_user_id = get_current_user_id();
-			if ( $current_user_id > 0 && class_exists( __NAMESPACE__ . '\\AISTMA_Credits_Manager' ) ) {
-				$new_balance = AISTMA_Credits_Manager::deduct_credits( $current_user_id, 1, 'Story generation for post ' . $post_id );
+		// Deduct credit after successful post creation (use passed $user_id to support background generation)
+		if ( $post_id && $user_id > 0 ) {
+			if ( class_exists( __NAMESPACE__ . '\\AISTMA_Credits_Manager' ) ) {
+				$new_balance = AISTMA_Credits_Manager::deduct_credits( $user_id, 1, 'Story generation for post ' . $post_id );
 				if ( false !== $new_balance ) {
-					$this->aistma_log_manager->log( 'info', 'Credit deducted for user ' . $current_user_id . '. New balance: ' . $new_balance );
+					$this->aistma_log_manager->log( 'info', 'Credit deducted for user ' . $user_id . '. New balance: ' . $new_balance );
 
 					// Log event to gateway
 					if ( class_exists( __NAMESPACE__ . '\\AISTMA_Gateway_Logger' ) ) {
-						AISTMA_Gateway_Logger::log_story_generated( $current_user_id, $post_id, $prompt_id, 1 );
+						AISTMA_Gateway_Logger::log_story_generated( $user_id, $post_id, $prompt_id, 1 );
 					}
+				} else {
+					// Log error if deduction fails (DB error, insufficient credits, etc.)
+					$this->aistma_log_manager->log( 'error', 'Credit deduction failed for user ' . $user_id . ' on post ' . $post_id );
 				}
 			}
 		}
