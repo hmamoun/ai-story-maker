@@ -178,7 +178,14 @@ class AISTMA_Story_Generator {
 		// Assign final system content.
 		$merged_settings['system_content'] .= $aistma_master_instructions ;
 
-		$the_prompt = $prompt['text'];
+		// Extract dynamic category from prompt text if present (format: {category:xxxxx})
+		$prompt_parsing = $this->extract_dynamic_category( $prompt['text'] );
+		$the_prompt = $prompt_parsing['text'];
+
+		// Override category if dynamic category was provided
+		if ( ! empty( $prompt_parsing['category'] ) ) {
+			$prompt['category'] = $prompt_parsing['category'];
+		}
 
 		// Add keywords to prompt if provided
 		if ( ! empty( $prompt['keywords'] ) ) {
@@ -205,6 +212,34 @@ class AISTMA_Story_Generator {
 			}
 			return $this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $api_key, $the_prompt, $current_user_id );
 		}
+	}
+
+	/**
+	 * Extract dynamic category from prompt text in format {category:xxxxx}.
+	 *
+	 * Only the first occurrence is used when multiple tokens are present ("first wins").
+	 * Returns array with 'category' (sanitized category name or empty string) and 'text' (cleaned prompt text).
+	 *
+	 * @param  string $text The prompt text.
+	 * @return array Array with 'category' and 'text' keys.
+	 */
+	private function extract_dynamic_category( $text ) {
+		$category = '';
+		$cleaned_text = $text;
+
+		// Look for {category:xxxxx} pattern; only the first match is used.
+		if ( preg_match( '/\{category:\s*([^}]+)\}/i', $text, $matches ) ) {
+			$category = sanitize_text_field( trim( $matches[1] ) );
+			// Remove only the first occurrence to match the single-match behaviour above.
+			$cleaned_text = preg_replace( '/\{category:\s*([^}]+)\}/i', '', $text, 1 );
+			// Clean up extra whitespace
+			$cleaned_text = trim( preg_replace( '/\s+/', ' ', $cleaned_text ) );
+		}
+
+		return array(
+			'category' => $category,
+			'text'     => $cleaned_text,
+		);
 	}
 
 	/**
@@ -425,12 +460,22 @@ class AISTMA_Story_Generator {
 		if ( empty( $api_key ) ) {
 			$api_key = get_option( 'aistma_openai_api_key' );
 		}
-		
+
 		if ( ! $api_key ) {
 			$error = __( 'No credits and no OpenAI API key configured. Please subscribe or add your own API key.', 'ai-story-maker' );
 			$this->aistma_log_manager->log( 'error', $error );
 			throw new \RuntimeException( esc_html( $error ) );
 		}
+
+		// Enhance system content with tags guidance
+		$system_content = $merged_settings['system_content'] ?? '';
+		$system_content .= "\n\nReturn your response as a JSON object with the following structure:\n";
+		$system_content .= "{\n";
+		$system_content .= "  \"title\": \"article title\",\n";
+		$system_content .= "  \"content\": \"article content in HTML format\",\n";
+		$system_content .= "  \"tags\": [\"tag1\", \"tag2\", \"tag3\"]\n";
+		$system_content .= "}\n";
+		$system_content .= "Tags should be relevant keywords for the article. Include 3-5 tags.";
 
 		$response = wp_remote_post(
 			'https://api.openai.com/v1/chat/completions',
@@ -445,7 +490,7 @@ class AISTMA_Story_Generator {
 						'messages'        => array(
 							array(
 								'role'    => 'system',
-								'content' => $merged_settings['system_content'] ?? '' ,
+								'content' => $system_content,
 							),
 							array(
 								'role'    => 'user',
@@ -553,7 +598,7 @@ class AISTMA_Story_Generator {
 		// Determine post status based on auto_publish setting
 		$auto_publish_value = isset( $prompt['auto_publish'] ) ? $prompt['auto_publish'] : false;
 		$post_status = ( 1 === $auto_publish_value || true === $auto_publish_value ) ? 'publish' : 'draft';
-		
+
 		// Debug logging for auto_publish
 		$this->aistma_log_manager->log( 'debug', 'Master API - Auto publish value: ' . ( $auto_publish_value ? 'true' : 'false' ) . ' (type: ' . gettype( $auto_publish_value ) . '), Post status: ' . $post_status );
 
@@ -573,6 +618,14 @@ class AISTMA_Story_Generator {
 			$error = __( 'Error creating post: ', 'ai-story-maker' ) . $post_id->get_error_message();
 			$this->aistma_log_manager->log( 'error', $error );
 			throw new \RuntimeException( esc_html( $error ) );
+		}
+
+		// Store the prompt ID for later lookup in generate_ai_story_for_user()
+		// Note: prompt_id can be numeric (post ID) or string (wizard prompt ID)
+		if ( $post_id && $prompt_id ) {
+			// Store as-is: numeric IDs stay numeric, string IDs stay string
+			$stored_prompt_id = is_numeric( $prompt_id ) ? absint( $prompt_id ) : sanitize_key( $prompt_id );
+			add_post_meta( $post_id, '_aistma_prompt_id', $stored_prompt_id, true );
 		}
 
 		// Deduct credit after successful post creation
@@ -683,6 +736,7 @@ class AISTMA_Story_Generator {
 		$request_id   = isset( $response_body['id'] ) ? sanitize_text_field( $response_body['id'] ) : uniqid( 'ai_news_' );
 		$title        = isset( $parsed_content['title'] ) ? sanitize_text_field( $parsed_content['title'] ) : __( 'Untitled Article', 'ai-story-maker' );
 		$content      = isset( $parsed_content['content'] ) ? wp_kses_post( $parsed_content['content'] ) : __( 'Content not available.', 'ai-story-maker' );
+		$tags         = isset( $parsed_content['tags'] ) && is_array( $parsed_content['tags'] ) ? $parsed_content['tags'] : array();
 		$category_name = isset( $prompt['category'] ) ? sanitize_text_field( $prompt['category'] ) : __( 'News', 'ai-story-maker' );
 
 		// Get or create category ID
@@ -739,6 +793,14 @@ class AISTMA_Story_Generator {
 			throw new \RuntimeException( esc_html( $error ) );
 		}
 
+		// Store the prompt ID for later lookup in generate_ai_story_for_user()
+		// Note: prompt_id can be numeric (post ID) or string (wizard prompt ID)
+		if ( $post_id && $prompt_id ) {
+			// Store as-is: numeric IDs stay numeric, string IDs stay string
+			$stored_prompt_id = is_numeric( $prompt_id ) ? absint( $prompt_id ) : sanitize_key( $prompt_id );
+			add_post_meta( $post_id, '_aistma_prompt_id', $stored_prompt_id, true );
+		}
+
 		// Deduct credit after successful post creation (use passed $user_id to support background generation)
 		if ( $post_id && $user_id > 0 ) {
 			if ( class_exists( __NAMESPACE__ . '\\AISTMA_Credits_Manager' ) ) {
@@ -755,6 +817,34 @@ class AISTMA_Story_Generator {
 					$this->aistma_log_manager->log( 'error', 'Credit deduction failed for user ' . $user_id . ' on post ' . $post_id );
 				}
 			}
+		}
+
+		// Add tags to the post if provided
+		if ( $post_id && ! empty( $tags ) ) {
+			$this->aistma_log_manager->log( 'debug', 'Raw tags from OpenAI API: ' . wp_json_encode( $tags ) );
+
+			$sanitized_tags = array();
+			foreach ( $tags as $tag ) {
+				if ( is_string( $tag ) ) {
+					$sanitized_tag = sanitize_text_field( $tag );
+					if ( ! empty( $sanitized_tag ) ) {
+						$sanitized_tags[] = $sanitized_tag;
+					}
+				}
+			}
+
+			if ( ! empty( $sanitized_tags ) ) {
+				$result = wp_set_post_tags( $post_id, $sanitized_tags, true );
+				if ( is_wp_error( $result ) ) {
+					$this->aistma_log_manager->log( 'error', 'Failed to set tags for post ' . $post_id . ': ' . $result->get_error_message() );
+				} else {
+					$this->aistma_log_manager->log( 'info', 'Tags successfully added to post ' . $post_id . ': ' . implode( ', ', $sanitized_tags ) );
+				}
+			} else {
+				$this->aistma_log_manager->log( 'debug', 'No valid tags to add after sanitization' );
+			}
+		} else {
+			$this->aistma_log_manager->log( 'debug', 'No tags provided or post ID not available. Tags: ' . wp_json_encode( $tags ?? array() ) . ', Post ID: ' . $post_id );
 		}
 
 		// Process image placeholders and set featured image
@@ -1194,11 +1284,34 @@ class AISTMA_Story_Generator {
 	/**
 	 * Check subscription status for the current domain.
 	 *
-	 * Similar to the JavaScript aistma_get_subscription_status() function.
-	 * Makes an API call to the master server to verify subscription status.
+	 * Makes an API call to the gateway verify-subscription endpoint to check if the domain
+	 * has an active subscription. This determines whether to use the master API or require
+	 * the user's own OpenAI/Unsplash keys.
 	 *
 	 * @param string $domain Optional domain to check. If not provided, uses current site domain.
-	 * @return array Subscription status data or error information.
+	 *
+	 * @return array Subscription status array with the following structure:
+	 *              SUCCESS: [
+	 *                'valid' => bool,                  // true if subscription is active
+	 *                'status' => string,               // 'active', 'active_no_credits', 'expired', etc.
+	 *                'domain' => string,               // verified domain
+	 *                'package_id' => string,           // subscription plan ID
+	 *                'package_name' => string,         // plan name (e.g., 'Starter', 'Professional')
+	 *                'price' => float,                 // plan price
+	 *                'created_at' => string,           // subscription start date
+	 *                'next_billing_date' => string,    // next renewal date
+	 *                'user_email' => string,           // associated email
+	 *                'credits_remaining' => int,       // remaining credits (0 if no credits)
+	 *              ]
+	 *              ERROR: [
+	 *                'valid' => false,
+	 *                'error' => string,                // error message
+	 *                'domain' => string,
+	 *              ]
+	 *
+	 * IMPORTANT: valid=true means subscription is active, NOT that credits are available.
+	 *            Always check credits_remaining separately. The UI shows "No credits remaining"
+	 *            when credits_remaining=0 even if valid=true (active subscription).
 	 */
 	public function aistma_get_subscription_status( $domain = '' ) {
 		$master_url = aistma_get_api_url();

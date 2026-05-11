@@ -141,6 +141,12 @@ class AISTMA_Settings_Page {
 			case 'aistma_show_exedotcom_attribution':
 				update_option( 'aistma_show_exedotcom_attribution', $setting_value ? 1 : 0 );
 				break;
+			case 'aistma_author_name':
+				update_option( 'aistma_author_name', sanitize_text_field( $setting_value ) );
+				break;
+			case 'aistma_author_url':
+				update_option( 'aistma_author_url', esc_url_raw( $setting_value ) );
+				break;
 			default:
 				wp_send_json_error( [ 'message' => __( 'Unknown setting.', 'ai-story-maker' ) ] );
 				wp_die();
