@@ -44,7 +44,6 @@
 				},
 				success: function (response) {
 					if (response.success) {
-						console.log('Startup credits ensured for user.');
 					}
 				},
 				error: function () {
@@ -535,7 +534,6 @@
 					prompt_id: this.postData.prompt_id,
 				},
 				success: function () {
-					console.log('Weekly enabled.');
 				},
 				error: function () {
 					console.error('Failed to enable weekly.');

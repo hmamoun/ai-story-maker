@@ -23,7 +23,6 @@
      * Initialize the content editor
      */
     function initContentEditor() {
-        console.log('AI Content Editor: Initializing for', aistmaContentEditor.editorType, 'editor');
 
         if (aistmaContentEditor.editorType === 'classic') {
             initClassicEditor();
@@ -68,7 +67,6 @@
             setTimeout(handleTextSelection, 100);
         });
 
-        console.log('AI Content Editor: TinyMCE integration setup complete');
     }
 
     /**
@@ -76,7 +74,6 @@
      */
     function initBlockEditor() {
         // Block editor integration is handled by block-editor-integration.js
-        console.log('AI Content Editor: Block editor integration will be handled by dedicated script');
     }
 
     /**
@@ -293,7 +290,6 @@
      */
     function applyToBlockEditor() {
         // Block editor integration is handled by block-editor-integration.js
-        console.log('Block editor apply will be handled by dedicated script');
     }
 
     /**
@@ -398,7 +394,6 @@
     function showUsageInfo(usageInfo) {
         if (usageInfo.daily_limit > 0) {
             const message = `Usage: ${usageInfo.used_today}/${usageInfo.daily_limit} operations today`;
-            console.log('AI Content Editor:', message);
         }
     }
 
