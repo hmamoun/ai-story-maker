@@ -451,12 +451,22 @@ class AISTMA_Story_Generator {
 		if ( empty( $api_key ) ) {
 			$api_key = get_option( 'aistma_openai_api_key' );
 		}
-		
+
 		if ( ! $api_key ) {
 			$error = __( 'No credits and no OpenAI API key configured. Please subscribe or add your own API key.', 'ai-story-maker' );
 			$this->aistma_log_manager->log( 'error', $error );
 			throw new \RuntimeException( esc_html( $error ) );
 		}
+
+		// Enhance system content with tags guidance
+		$system_content = $merged_settings['system_content'] ?? '';
+		$system_content .= "\n\nReturn your response as a JSON object with the following structure:\n";
+		$system_content .= "{\n";
+		$system_content .= "  \"title\": \"article title\",\n";
+		$system_content .= "  \"content\": \"article content in HTML format\",\n";
+		$system_content .= "  \"tags\": [\"tag1\", \"tag2\", \"tag3\"]\n";
+		$system_content .= "}\n";
+		$system_content .= "Tags should be relevant keywords for the article. Include 3-5 tags.";
 
 		$response = wp_remote_post(
 			'https://api.openai.com/v1/chat/completions',
@@ -471,7 +481,7 @@ class AISTMA_Story_Generator {
 						'messages'        => array(
 							array(
 								'role'    => 'system',
-								'content' => $merged_settings['system_content'] ?? '' ,
+								'content' => $system_content,
 							),
 							array(
 								'role'    => 'user',
@@ -717,6 +727,7 @@ class AISTMA_Story_Generator {
 		$request_id   = isset( $response_body['id'] ) ? sanitize_text_field( $response_body['id'] ) : uniqid( 'ai_news_' );
 		$title        = isset( $parsed_content['title'] ) ? sanitize_text_field( $parsed_content['title'] ) : __( 'Untitled Article', 'ai-story-maker' );
 		$content      = isset( $parsed_content['content'] ) ? wp_kses_post( $parsed_content['content'] ) : __( 'Content not available.', 'ai-story-maker' );
+		$tags         = isset( $parsed_content['tags'] ) && is_array( $parsed_content['tags'] ) ? $parsed_content['tags'] : array();
 		$category_name = isset( $prompt['category'] ) ? sanitize_text_field( $prompt['category'] ) : __( 'News', 'ai-story-maker' );
 
 		// Get or create category ID
@@ -797,6 +808,34 @@ class AISTMA_Story_Generator {
 					$this->aistma_log_manager->log( 'error', 'Credit deduction failed for user ' . $user_id . ' on post ' . $post_id );
 				}
 			}
+		}
+
+		// Add tags to the post if provided
+		if ( $post_id && ! empty( $tags ) ) {
+			$this->aistma_log_manager->log( 'debug', 'Raw tags from OpenAI API: ' . wp_json_encode( $tags ) );
+
+			$sanitized_tags = array();
+			foreach ( $tags as $tag ) {
+				if ( is_string( $tag ) ) {
+					$sanitized_tag = sanitize_text_field( $tag );
+					if ( ! empty( $sanitized_tag ) ) {
+						$sanitized_tags[] = $sanitized_tag;
+					}
+				}
+			}
+
+			if ( ! empty( $sanitized_tags ) ) {
+				$result = wp_set_post_tags( $post_id, $sanitized_tags, true );
+				if ( is_wp_error( $result ) ) {
+					$this->aistma_log_manager->log( 'error', 'Failed to set tags for post ' . $post_id . ': ' . $result->get_error_message() );
+				} else {
+					$this->aistma_log_manager->log( 'info', 'Tags successfully added to post ' . $post_id . ': ' . implode( ', ', $sanitized_tags ) );
+				}
+			} else {
+				$this->aistma_log_manager->log( 'debug', 'No valid tags to add after sanitization' );
+			}
+		} else {
+			$this->aistma_log_manager->log( 'debug', 'No tags provided or post ID not available. Tags: ' . wp_json_encode( $tags ?? array() ) . ', Post ID: ' . $post_id );
 		}
 
 		// Process image placeholders and set featured image
