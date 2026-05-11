@@ -1742,6 +1742,11 @@ class AISTMA_Admin {
 				wp_send_json_error( array( 'message' => __( 'You do not have permission to delete this post.', 'ai-story-maker' ) ) );
 			}
 
+			// Only delete draft posts (safety check)
+			if ( 'draft' !== $post->post_status ) {
+				wp_send_json_error( array( 'message' => __( 'Only draft posts can be deleted via the wizard.', 'ai-story-maker' ) ) );
+			}
+
 			// Delete the draft post
 			wp_delete_post( $post_id, true );
 
