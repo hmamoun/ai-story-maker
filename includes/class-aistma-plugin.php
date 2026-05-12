@@ -136,6 +136,14 @@ class AISTMA_Plugin {
 			}
 		}
 
+		// Migration: Populate original subscription email for existing users
+		$subscription_email = get_option( 'aistma_subscription_email' );
+		$original_subscription_email = get_option( 'aistma_original_subscription_email' );
+		if ( ! empty( $subscription_email ) && empty( $original_subscription_email ) ) {
+			update_option( 'aistma_original_subscription_email', $subscription_email );
+			$log_manager->log( 'info', 'Migration: Populated original_subscription_email from existing subscription_email' );
+		}
+
 		if ( ! wp_next_scheduled( 'aistma_generate_story_event' ) ) {
 			$n = absint( get_option( 'aistma_generate_story_cron', 2 ) );
 			if ( 0 !== $n ) {

@@ -30,11 +30,8 @@ if ( isset( $_SERVER['REQUEST_METHOD'] ) && 'POST' === $_SERVER['REQUEST_METHOD'
         $posted_email = sanitize_email( $posted_email_raw );
         if ( ! empty( $posted_email ) && is_email( $posted_email ) ) {
             update_option( 'aistma_subscription_email', $posted_email );
-            // Store the original subscription email if not already set (used for subscription cancellation)
-            $original_email = get_option( 'aistma_original_subscription_email' );
-            if ( empty( $original_email ) ) {
-                update_option( 'aistma_original_subscription_email', $posted_email );
-            }
+            // Always update the original subscription email to allow users to change it
+            update_option( 'aistma_original_subscription_email', $posted_email );
             $current_user_email = $posted_email; // reflect immediately
             $email_update_message = __( 'Subscription email updated.', 'ai-story-maker' );
         } else {
@@ -338,8 +335,11 @@ if ( ! empty( $original_subscription_email ) ) {
 <form method="post" class="aistma-subscription-email-field" style="margin: 10px 0 16px;">
     <?php wp_nonce_field( 'aistma_subscription_email', 'aistma_subscription_email_nonce' ); ?>
     <label for="aistma_subscription_email" style="display:block;margin-bottom:6px;">
-        <?php esc_html_e( 'Use this email for subscription', 'ai-story-maker' ); ?>
+        <?php esc_html_e( 'Subscription Management Email', 'ai-story-maker' ); ?>
     </label>
+    <p style="margin: 0 0 10px 0; font-size: 13px; color: #666;">
+        <?php esc_html_e( 'This email is used for all subscription requests, plan changes, and account management. Update it if your subscription was registered under a different email address.', 'ai-story-maker' ); ?>
+    </p>
     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
         <input
             type="email"
