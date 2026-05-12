@@ -1329,14 +1329,6 @@ class AISTMA_Admin {
 	}
 
 	/**
-	 * AJAX handler for wizard generation.
-	 *
-	 * Generates a story from a selected prompt and returns preview data.
-	 *
-	 * @return void
-	 */
-
-	/**
 	 * Render wizard and preview modals in admin footer.
 	 *
 	 * @return void
