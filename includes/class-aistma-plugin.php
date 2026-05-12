@@ -153,6 +153,14 @@ class AISTMA_Plugin {
 				// $log_manager->log( 'info', sprintf( __( 'Set next schedule to %s', 'ai-story-maker' ), self::format_date_for_display( $next_schedule_timestamp ) ) );
 			}
 		}
+
+		// Migrate existing subscription email to original_subscription_email for v2.3.0+ compatibility
+		$existing_subscription_email = get_option( 'aistma_subscription_email' );
+		$existing_original_email = get_option( 'aistma_original_subscription_email' );
+		if ( ! empty( $existing_subscription_email ) && empty( $existing_original_email ) ) {
+			update_option( 'aistma_original_subscription_email', $existing_subscription_email );
+			$log_manager->log( 'info', 'Migrated existing subscription email to original_subscription_email for v2.3.0 compatibility.' );
+		}
 	}
 
 	/**
