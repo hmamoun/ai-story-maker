@@ -281,8 +281,6 @@ class AISTMA_Widgets_Manager {
 					const enabled = this.checked;
 					
 					// Future: Add AJAX call to save preference
-					console.log('Widget ' + widgetId + ' ' + (enabled ? 'enabled' : 'disabled'));
-					
 					// You can add AJAX functionality here later to save preferences
 				});
 			});
