@@ -107,6 +107,17 @@ This plugin makes requests to external services for core functionality:
 
 == Changelog ==
 
+= 2.3.0 =
+* **NEW: Display User Transactions** — View credit history and transaction details in admin dashboard
+* **NEW: Multiple Photo Resources** — Support for Pexels and Pixabay in addition to Unsplash
+* **NEW: Keyword Support in Prompts** — Add keywords to prompts for better SEO optimization
+* **NEW: Externalized Styles** — Migrated inline CSS/JS to external files for better performance
+* **SECURITY: Authenticated Gateway Client Flow** — Server-side authentication for gateway requests, removed browser-exposed auth
+* **FIX: Subscription Email Updates** — Users can now update their subscription email anytime for account management
+* **IMPROVED: Subscription Security** — CSRF protection with proper nonce verification
+* **IMPROVED: Type Consistency** — Fixed null/int type handling for managed subscriptions
+* **TESTED: Full Feature Coverage** — Added unit tests for auth headers and subscription detection
+
 = 2.2.1 =
 * Added privacy disclosure note in wizard header
 * Improved user transparency about startup credits
