@@ -428,6 +428,7 @@ class AISTMA_Admin {
 			)
 		);
 		?>
+	<?php
 	}
 
 	/**
