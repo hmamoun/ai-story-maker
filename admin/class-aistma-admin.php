@@ -1370,7 +1370,7 @@ class AISTMA_Admin {
 			</script>
 			<?php
 		}
-	}
+
 	public function aistma_wizard_generate() {
 		// Check nonce
 		if ( ! check_ajax_referer( 'aistma_wizard_generate_nonce', 'nonce', false ) ) {
