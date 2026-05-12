@@ -346,7 +346,13 @@ class AISTMA_Story_Generator {
 		$headers['Content-Type'] = 'application/json';
 
 		if ( empty( $headers['Authorization'] ) ) {
-			$this->aistma_log_manager->log( 'warning', 'Gateway API key missing; falling back to direct OpenAI call for protected generation endpoint.' );
+			$message = 'Gateway API key missing; falling back to direct OpenAI call for protected generation endpoint.';
+			$this->aistma_log_manager->log( 'warning', $message );
+			$allow_fallback = apply_filters( 'aistma_allow_gateway_fallback', true );
+			if ( ! $allow_fallback ) {
+				$this->aistma_log_manager->log( 'error', 'Gateway API key required but fallback disabled.' );
+				return;
+			}
 			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $this->api_key, $the_prompt );
 			return;
 		}
@@ -1210,6 +1216,7 @@ class AISTMA_Story_Generator {
 				'valid' => false,
 				'error' => 'API error: HTTP ' . $response_code,
 				'domain' => $domain,
+				'credits_remaining' => 0,
 			);
 			return $this->subscription_status;
 		}
@@ -1220,6 +1227,7 @@ class AISTMA_Story_Generator {
 				'valid' => false,
 				'error' => 'Invalid JSON response',
 				'domain' => $domain,
+				'credits_remaining' => 0,
 			);
 			return $this->subscription_status;
 		}
@@ -1230,6 +1238,7 @@ class AISTMA_Story_Generator {
 				'valid' => false,
 				'message' => 'No credits remaining',
 				'domain' => $domain,
+				'credits_remaining' => 0,
 			);
 			return $this->subscription_status;
 		}
@@ -1252,6 +1261,7 @@ class AISTMA_Story_Generator {
 				'valid' => false,
 				'message' => $data['message'] ?? 'No subscription found',
 				'domain' => $domain,
+				'credits_remaining' => 0,
 			);
 		}
 

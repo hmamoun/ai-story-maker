@@ -80,10 +80,9 @@ class AISTMA_Settings_Page {
 	 * Handles AJAX request to save a single setting.
 	 */
 	public function aistma_ajax_save_setting() {
-		// Check nonce for security
-		if ( ! isset( $_POST['aistma_security'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['aistma_security'] ) ), 'aistma_save_setting' ) ) {
+		check_ajax_referer( 'aistma_save_setting', 'aistma_security' );
+		if ( ! isset( $_POST['aistma_security'] ) ) {
 			wp_send_json_error( [ 'message' => __( 'Security check failed. Please try again.', 'ai-story-maker' ) ] );
-			$this->aistma_log_manager->log( 'error', ' Security check failed. Please try again.' );
 			wp_die();
 		}
 
