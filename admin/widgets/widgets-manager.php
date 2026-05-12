@@ -44,6 +44,7 @@ class AISTMA_Widgets_Manager {
 		
 		// Load individual widget files
 		$widgets = array(
+			'wizard-action-widget.php',
 			'data-cards-widget.php',
 			'story-calendar-widget.php',
 			'posts-activity-widget.php'
@@ -55,6 +56,14 @@ class AISTMA_Widgets_Manager {
 				require_once $widget_path;
 			}
 		}
+		
+		// Register wizard action widget
+		add_action( 'wp_dashboard_setup', function() {
+			$class = 'exedotcom\\aistorymaker\\AISTMA_Wizard_Action_Widget';
+			if ( class_exists( $class ) ) {
+				call_user_func( array( $class, 'register_widget' ) );
+			}
+		} );
 	}
 
 	/**

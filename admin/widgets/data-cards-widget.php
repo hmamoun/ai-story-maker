@@ -226,7 +226,7 @@ class AISTMA_Data_Cards_Widget {
 						</a>
 						<span class="post-date">
 							<?php if ( $post_date ) : ?>
-								<?php echo esc_html( human_time_diff( strtotime( $post_date ), current_time( 'timestamp' ) ) ); ?> 
+								<?php echo esc_html( human_time_diff( strtotime( $post_date ), time() ) ); ?> 
 								<?php esc_html_e( 'ago', 'ai-story-maker' ); ?>
 							<?php endif; ?>
 						</span>

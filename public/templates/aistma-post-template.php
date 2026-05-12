@@ -146,9 +146,14 @@ wp_enqueue_script(
 );
 ?>
 <footer class="ai-story-maker-footer">
-	<?php if ( get_option( 'aistma_show_exedotcom_attribution', 0 ) ) : ?>
+	<?php
+	$show_attribution = get_option( 'aistma_show_exedotcom_attribution', 0 );
+	$author_url = get_option( 'aistma_author_url', 'https://exedotcom.ca' );
+	$author_name = get_option( 'aistma_author_name', 'Exedotcom.ca' );
+	?>
+	<?php if ( $show_attribution ) : ?>
 	<p>
-		This story is created by AI Story Maker, a plugin by <a href="https://exedotcom.ca" title="Exedotcom" rel="nofollow" style="color: inherit;">Exedotcom.ca</a>
+		This story is created by AI Story Maker, a plugin by <a href="<?php echo esc_url( $author_url ); ?>" title="<?php echo esc_attr( $author_name ); ?>" rel="nofollow" style="color: inherit;"><?php echo esc_html( $author_name ); ?></a>
 	</p>
 	<?php endif; ?>
 </footer>

@@ -540,7 +540,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             })
             .then(data => {
-                console.log('Publishing response:', data); // Debug log
                 
                 if (data.success) {
                     // Show success message
