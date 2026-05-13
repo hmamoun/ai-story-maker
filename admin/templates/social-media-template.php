@@ -428,7 +428,6 @@ $ajax_nonce = wp_create_nonce( 'aistma_social_media_settings' );
                 // Save account
                 $('#aistma-save-account').on('click', function() {
                     const formData = $('#aistma-account-form').serializeArray();
-                    debugger;
                     const accountData = {};
                     
                     // Convert form data to object
@@ -446,8 +445,6 @@ $ajax_nonce = wp_create_nonce( 'aistma_social_media_settings' );
                     }
                     
                     // Debug logging
-                    console.log('Account data to save:', accountData);
-                    console.log('AJAX settings:', window.aistmaSocialMediaSettings);
                     
                     saveAccount(accountData);
                 });
@@ -482,7 +479,6 @@ $ajax_nonce = wp_create_nonce( 'aistma_social_media_settings' );
                             facebook_app_secret: facebookAppSecret
                         },
                         success: function(response) {
-                            console.log('OAuth URL response:', response);
                             if (response.success && response.data.oauth_url) {
                                 statusDiv.html('<div class="notice notice-info inline"><p>Redirecting to Facebook...</p></div>');
                                 // Small delay to show the message, then redirect
@@ -670,8 +666,6 @@ $ajax_nonce = wp_create_nonce( 'aistma_social_media_settings' );
                         return;
                     }
                     
-                    console.log('Making AJAX request to:', window.aistmaSocialMediaSettings.ajaxUrl);
-                    console.log('With data:', {
                         action: 'aistma_save_social_media_account',
                         nonce: window.aistmaSocialMediaSettings.nonce,
                         account_data: accountData
@@ -686,7 +680,6 @@ $ajax_nonce = wp_create_nonce( 'aistma_social_media_settings' );
                             account_data: accountData
                         },
                         success: function(response) {
-                            console.log('AJAX response:', response);
                             if (response.success) {
                                 // Show success message
                                 $('<div class="notice notice-success is-dismissible"><p>Account saved successfully!</p></div>')
@@ -739,7 +732,6 @@ $ajax_nonce = wp_create_nonce( 'aistma_social_media_settings' );
                         return;
                     }
                     
-                    console.log('Deleting account:', accountId);
                     
                     $.ajax({
                         url: window.aistmaSocialMediaSettings.ajaxUrl,
@@ -750,7 +742,6 @@ $ajax_nonce = wp_create_nonce( 'aistma_social_media_settings' );
                             account_id: accountId
                         },
                         success: function(response) {
-                            console.log('Delete response:', response);
                             if (response.success) {
                                 // Show success message
                                 $('<div class="notice notice-success is-dismissible"><p>Account deleted successfully!</p></div>')
@@ -802,7 +793,6 @@ $ajax_nonce = wp_create_nonce( 'aistma_social_media_settings' );
                     const originalText = testButton.text();
                     testButton.prop('disabled', true).text('Testing...');
                     
-                    console.log('Testing account:', accountId);
                     
                     $.ajax({
                         url: window.aistmaSocialMediaSettings.ajaxUrl,
@@ -813,7 +803,6 @@ $ajax_nonce = wp_create_nonce( 'aistma_social_media_settings' );
                             account_id: accountId
                         },
                         success: function(response) {
-                            console.log('Test response:', response);
                             if (response.success) {
                                 alert('Account connection test successful!');
                             } else {

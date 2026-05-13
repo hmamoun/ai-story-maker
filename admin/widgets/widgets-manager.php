@@ -29,6 +29,7 @@ class AISTMA_Widgets_Manager {
 		add_action( 'plugins_loaded', array( __CLASS__, 'load_widgets' ) );
 		add_action( 'admin_init', array( __CLASS__, 'register_widget_options' ) );
 		add_action( 'wp_ajax_aistma_toggle_widget', array( __CLASS__, 'handle_widget_toggle' ) );
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_widget_assets' ) );
 	}
 
 	/**
@@ -280,14 +281,39 @@ class AISTMA_Widgets_Manager {
 					const enabled = this.checked;
 					
 					// Future: Add AJAX call to save preference
-					console.log('Widget ' + widgetId + ' ' + (enabled ? 'enabled' : 'disabled'));
-					
 					// You can add AJAX functionality here later to save preferences
 				});
 			});
 		});
 		</script>
 		<?php
+	}
+
+	/**
+	 * Enqueue widget CSS and JS assets
+	 *
+	 * @param string $hook The current admin page.
+	 */
+	public static function enqueue_widget_assets( $hook ) {
+		// Only enqueue on dashboard
+		if ( 'index.php' !== $hook ) {
+			return;
+		}
+
+		wp_enqueue_style(
+			'aistma-admin-widgets-css',
+			AISTMA_URL . 'admin/css/admin-widgets.css',
+			array(),
+			filemtime( AISTMA_PATH . 'admin/css/admin-widgets.css' )
+		);
+
+		wp_enqueue_script(
+			'aistma-admin-widgets-js',
+			AISTMA_URL . 'admin/js/admin-widgets.js',
+			array( 'jquery' ),
+			filemtime( AISTMA_PATH . 'admin/js/admin-widgets.js' ),
+			true
+		);
 	}
 }
 

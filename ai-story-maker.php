@@ -93,11 +93,15 @@ add_action(
 
 
 
+// Include Transactions Page class
+require_once plugin_dir_path( __FILE__ ) . 'admin/class-aistma-transactions-page.php';
+
 // Initialize Settings Page instance early to handle AJAX and OAuth
 add_action( 'plugins_loaded', function() {
     // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- OAuth callback parameter check, actual security verification in Settings Page class
     if ( is_admin() || ( defined( 'DOING_AJAX' ) && DOING_AJAX ) || isset( $_GET['aistma_facebook_oauth'] ) ) {
         new \exedotcom\aistorymaker\AISTMA_Settings_Page();
+        new \exedotcom\aistorymaker\AISTMA_Transactions_Page();
     }
 });
 

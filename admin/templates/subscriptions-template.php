@@ -30,8 +30,10 @@ if ( isset( $_SERVER['REQUEST_METHOD'] ) && 'POST' === $_SERVER['REQUEST_METHOD'
         $posted_email = sanitize_email( $posted_email_raw );
         if ( ! empty( $posted_email ) && is_email( $posted_email ) ) {
             update_option( 'aistma_subscription_email', $posted_email );
+            // Always update the original subscription email to allow users to change it
+            update_option( 'aistma_original_subscription_email', $posted_email );
             $current_user_email = $posted_email; // reflect immediately
-            $email_update_message = __( 'Subscription email updated.', 'ai-story-maker' );
+            $email_update_message = __( 'Subscription email updated. This email will be used for all future subscription management.', 'ai-story-maker' );
         } else {
             $email_update_message = __( 'Please enter a valid email address.', 'ai-story-maker' );
         }
@@ -44,6 +46,13 @@ if ( isset( $_SERVER['REQUEST_METHOD'] ) && 'POST' === $_SERVER['REQUEST_METHOD'
 $saved_subscription_email = get_option( 'aistma_subscription_email' );
 if ( ! empty( $saved_subscription_email ) ) {
     $current_user_email = $saved_subscription_email;
+}
+// If original subscription email exists (for subscription cancellation), use that for subscription requests
+$original_subscription_email = get_option( 'aistma_original_subscription_email' );
+if ( ! empty( $original_subscription_email ) ) {
+    $subscription_email_for_requests = $original_subscription_email;
+} else {
+    $subscription_email_for_requests = $current_user_email;
 }
 
 ?>
@@ -186,7 +195,9 @@ if ( ! empty( $saved_subscription_email ) ) {
                 $time_remaining = ' (' . $time_remaining . ' remaining)';
             }
             $parts = [];
-            if ($credits_remaining === 0) {
+            if ( null === $credits_remaining ) {
+                $parts[] = __( 'Managed subscription detected', 'ai-story-maker' );
+            } elseif ($credits_remaining === 0) {
                 $parts[] = "No credits remaining";
                 if ( $next_billing && 'N/A' !== $next_billing ) {
                     $parts[] = 'Renewal: ' . $next_billing . $time_remaining;
@@ -222,11 +233,12 @@ if ( ! empty( $saved_subscription_email ) ) {
                 continue;
             }
         // Build the subscription URL with package ID, domain, port, and email
+        // Use the original subscription email if it exists (for subscription continuity and cancellation)
         $package_registration_url = add_query_arg(
             array(
                 'domain' => rawurlencode($current_domain),
                 'port' => $current_port ? rawurlencode($current_port) : '',
-                'email' => rawurlencode(string: $current_user_email),
+                'email' => rawurlencode(string: $subscription_email_for_requests),
                 'package_name' => isset($package['name']) ? $package['name'] : '',
             ),
             $package_registration_url
@@ -323,8 +335,11 @@ if ( ! empty( $saved_subscription_email ) ) {
 <form method="post" class="aistma-subscription-email-field" style="margin: 10px 0 16px;">
     <?php wp_nonce_field( 'aistma_subscription_email', 'aistma_subscription_email_nonce' ); ?>
     <label for="aistma_subscription_email" style="display:block;margin-bottom:6px;">
-        <?php esc_html_e( 'Use this email for subscription', 'ai-story-maker' ); ?>
+        <?php esc_html_e( 'Subscription Management Email', 'ai-story-maker' ); ?>
     </label>
+    <p style="margin: 0 0 10px 0; font-size: 13px; color: #666;">
+        <?php esc_html_e( 'This email is used for all subscription requests, plan changes, and account management. Update it if your subscription was registered under a different email address.', 'ai-story-maker' ); ?>
+    </p>
     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
         <input
             type="email"
@@ -336,24 +351,32 @@ if ( ! empty( $saved_subscription_email ) ) {
             aria-label="<?php esc_attr_e( 'Subscription email', 'ai-story-maker' ); ?>"
             required
         />
-        <button type="submit" class="button button-primary"><?php esc_html_e( 'use email', 'ai-story-maker' ); ?></button>
+        <button type="submit" class="button button-primary"><?php esc_html_e( 'update email', 'ai-story-maker' ); ?></button>
 
     </div>
+    <p class="description" style="margin-top: 8px; color: #666;">
+        <?php esc_html_e( 'This email is used for all subscription requests, plan changes, and account management. Update it if your subscription was registered under a different email address.', 'ai-story-maker' ); ?>
+    </p>
 </form>
 
 <script>
 // Keep package links' email param in sync with the input
+// Note: If original subscription email exists, use that for subscription requests
 document.addEventListener('DOMContentLoaded', function() {
     const emailInput = document.getElementById('aistma_subscription_email');
     if (!emailInput) return;
 
+    // Store the original subscription email to use for all requests (prevents cancellation issues when email changes)
+    const originalSubscriptionEmail = '<?php echo esc_js( $subscription_email_for_requests ); ?>';
+
     function aistma_update_package_links_email() {
-        const email = emailInput.value || '';
+        // Always use the original subscription email for requests (if it exists) to maintain subscription continuity
+        const emailToUse = originalSubscriptionEmail || emailInput.value || '';
         document.querySelectorAll('.aistma-package-clickable').forEach(function(a) {
             try {
                 const u = new URL(a.href);
-                if (email) {
-                    u.searchParams.set('email', email);
+                if (emailToUse) {
+                    u.searchParams.set('email', emailToUse);
                 } else {
                     u.searchParams.delete('email');
                 }
@@ -389,6 +412,14 @@ document.addEventListener('DOMContentLoaded', function() {
 		<label for="aistma_unsplash_api_secret"><?php esc_html_e( 'Secret:', 'ai-story-maker' ); ?></label>
 		<input type="text" id="aistma_unsplash_api_secret" data-setting="aistma_unsplash_api_secret" value="<?php echo esc_attr( get_option( 'aistma_unsplash_api_secret' ) ); ?>">
 	</div>
+
+	<label for="aistma_gateway_api_key">
+		<?php esc_html_e( 'ExeDotCom hosted service auth key:', 'ai-story-maker' ); ?>
+	</label>
+	<input type="password" id="aistma_gateway_api_key" data-setting="aistma_gateway_api_key" value="<?php echo esc_attr( get_option( 'aistma_gateway_api_key' ) ); ?>" autocomplete="off">
+	<p class="description">
+		<?php esc_html_e( 'Advanced: only required when ExeDotCom provides a managed-service auth key for protected gateway calls.', 'ai-story-maker' ); ?>
+	</p>
 </div>
 </div>
 

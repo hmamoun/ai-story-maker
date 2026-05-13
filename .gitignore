@@ -20,6 +20,30 @@ package-lock.json
 # Build artifacts
 dist/
 build/
+*.zip
+*.bak
+
+# Development/system directories
+.claude/
+.clawhub/
+.openclaw/
+.openclaw-cli-images/
+svn/
+market-hive/
+
+# Documentation/config files (local development only)
+CLAUDE.md
+BOOTSTRAP.md
+HEARTBEAT.md
+IDENTITY.md
+SOUL.md
+TOOLS.md
+USER.md
+AGENTS.md
+
+# Bot scripts
+whiskey_discord_bot.py
+whiskey_discord_monitor.py
 
 # OS files
 Thumbs.db

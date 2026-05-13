@@ -586,7 +586,6 @@ document.addEventListener('DOMContentLoaded', function() {
 			
 			if (stories > 0) {
 				// You can add additional functionality here, like showing a modal with detailed stats
-				console.log(`Week ${week}, Day ${dayIndex}: ${stories} stories`);
 			}
 		});
 	});
@@ -633,7 +632,6 @@ document.addEventListener('DOMContentLoaded', function() {
 			const percentage = this.querySelector('.tag-percentage span').textContent;
 			
 			// Create a simple tooltip or alert with tag details
-			console.log(`Tag: ${tagName}, Clicks: ${clicksNumber}, Percentage: ${percentage}`);
 			
 			// You can enhance this to show a modal or detailed view
 			// For now, we'll just highlight the item

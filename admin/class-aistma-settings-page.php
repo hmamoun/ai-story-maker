@@ -81,10 +81,9 @@ class AISTMA_Settings_Page {
 	 * Handles AJAX request to save a single setting.
 	 */
 	public function aistma_ajax_save_setting() {
-		// Check nonce for security
-		if ( ! isset( $_POST['aistma_security'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['aistma_security'] ) ), 'aistma_save_setting' ) ) {
+		check_ajax_referer( 'aistma_save_setting', 'aistma_security' );
+		if ( ! isset( $_POST['aistma_security'] ) ) {
 			wp_send_json_error( [ 'message' => __( 'Security check failed. Please try again.', 'ai-story-maker' ) ] );
-			$this->aistma_log_manager->log( 'error', ' Security check failed. Please try again.' );
 			wp_die();
 		}
 
@@ -111,6 +110,9 @@ class AISTMA_Settings_Page {
 				break;
 			case 'aistma_unsplash_api_secret':
 				update_option( 'aistma_unsplash_api_secret', sanitize_text_field( $setting_value ) );
+				break;
+			case 'aistma_gateway_api_key':
+				update_option( 'aistma_gateway_api_key', sanitize_text_field( $setting_value ) );
 				break;
 			case 'aistma_clear_log_cron':
 				if ( get_option( 'aistma_clear_log_cron' ) !== sanitize_text_field( $setting_value ) ) {
@@ -141,6 +143,12 @@ class AISTMA_Settings_Page {
 			case 'aistma_show_exedotcom_attribution':
 				update_option( 'aistma_show_exedotcom_attribution', $setting_value ? 1 : 0 );
 				break;
+			case 'aistma_author_name':
+				update_option( 'aistma_author_name', sanitize_text_field( $setting_value ) );
+				break;
+			case 'aistma_author_url':
+				update_option( 'aistma_author_url', esc_url_raw( $setting_value ) );
+				break;
 			default:
 				wp_send_json_error( [ 'message' => __( 'Unknown setting.', 'ai-story-maker' ) ] );
 				wp_die();
@@ -154,12 +162,21 @@ class AISTMA_Settings_Page {
 	public function aistma_get_available_packages(): string {
 
 		$url      = aistma_get_api_url( 'wp-json/exaig/v1/packages-summary' );
+		$headers = array(
+			'X-Caller-Url' => home_url(),
+			'X-Caller-IP'  => isset( $_SERVER['SERVER_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SERVER_ADDR'] ) ) : '',
+		);
+
+		$gateway_api_key = defined( 'AISTMA_GATEWAY_API_KEY' ) && AISTMA_GATEWAY_API_KEY
+			? sanitize_text_field( AISTMA_GATEWAY_API_KEY )
+			: sanitize_text_field( get_option( 'aistma_gateway_api_key', '' ) );
+		if ( ! empty( $gateway_api_key ) ) {
+			$headers['Authorization'] = 'Bearer ' . $gateway_api_key;
+		}
+
 		$args = array(
 			'timeout' => 10,
-			'headers' => array(
-				'X-Caller-Url' => home_url(),
-				'X-Caller-IP'  => isset( $_SERVER['SERVER_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SERVER_ADDR'] ) ) : '',
-			),
+			'headers' => $headers,
 		);
 		$response = wp_remote_get(
 			$url,

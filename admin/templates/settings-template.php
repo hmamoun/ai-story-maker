@@ -80,10 +80,24 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 				<strong><?php esc_html_e( 'Show "Created by AI Story Maker" attribution', 'ai-story-maker' ); ?></strong>
 				<div class="checkbox-description">
-					<?php esc_html_e( 'Support our work by showing a small attribution link to Exedotcom.ca. Helps us continue developing AI Story Maker.', 'ai-story-maker' ); ?>
+					<?php esc_html_e( 'Show an attribution link to your company/website. Helps users know who maintains the plugin.', 'ai-story-maker' ); ?>
 
 			</div>
 		</label>
+		<div class="setting-label" style="margin-left: 20px;">
+			<label for="aistma_author_name">
+				<h5><?php esc_html_e( 'Attribution Company Name', 'ai-story-maker' ); ?></h5>
+				<input type="text" id="aistma_author_name" data-setting="aistma_author_name" placeholder="Exedotcom.ca" value="<?php echo esc_attr( get_option( 'aistma_author_name', 'Exedotcom.ca' ) ); ?>" />
+				<p class="description"><?php esc_html_e( 'The name of the company/author shown in the attribution link (default: Exedotcom.ca)', 'ai-story-maker' ); ?></p>
+			</label>
+		</div>
+		<div class="setting-label" style="margin-left: 20px;">
+			<label for="aistma_author_url">
+				<h5><?php esc_html_e( 'Attribution URL', 'ai-story-maker' ); ?></h5>
+				<input type="url" id="aistma_author_url" data-setting="aistma_author_url" placeholder="https://exedotcom.ca" value="<?php echo esc_attr( get_option( 'aistma_author_url', 'https://exedotcom.ca' ) ); ?>" />
+				<p class="description"><?php esc_html_e( 'The URL linked in the attribution (default: https://exedotcom.ca)', 'ai-story-maker' ); ?></p>
+			</label>
+		</div>
 <hr>
 		<div class="setting-label">
 			<h4><?php esc_html_e( 'Log Retention (Days)', 'ai-story-maker' ); ?></h4>

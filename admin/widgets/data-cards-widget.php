@@ -392,7 +392,6 @@ class AISTMA_Data_Cards_Widget {
 			dataCards.forEach(card => {
 				card.addEventListener("click", function() {
 					// Future: Add click functionality for data drilling
-					console.log("Data card clicked:", this.querySelector(".data-card-label").textContent);
 				});
 			});
 		});

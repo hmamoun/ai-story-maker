@@ -187,6 +187,15 @@ class AISTMA_Story_Generator {
 			$prompt['category'] = $prompt_parsing['category'];
 		}
 
+		// Add keywords to prompt if provided
+		if ( ! empty( $prompt['keywords'] ) ) {
+			$keywords = sanitize_text_field( $prompt['keywords'] );
+			$the_prompt .= "\n\n" . sprintf(
+				__( 'Important: Make sure to naturally include these keywords throughout the article: %s', 'ai-story-maker' ),
+				$keywords
+			);
+		}
+
 		// Credits route through the master API the same way a subscription does.
 		$subscription_info = $this->get_subscription_info();
 		$current_user_id   = get_current_user_id();
@@ -199,7 +208,7 @@ class AISTMA_Story_Generator {
 		} else {
 			// Fallback to direct OpenAI API call
 			if ( $prompt['photos'] > 0 ) {
-				$the_prompt .= "\n" . __( 'Include at least ', 'ai-story-maker' ) . $prompt['photos'] . __( ' placeholders for images in the article. insert a placeholder in the following format {img_unsplash:keyword1,keyword2,keyword3} using the most relevant keywords for fetching related images from Unsplash', 'ai-story-maker' );
+				$the_prompt .= "\n" . __( 'Include at least ', 'ai-story-maker' ) . $prompt['photos'] . __( ' placeholders for images in the article. Use the format {img_RESOURCE:keyword1,keyword2,keyword3} where RESOURCE is one of: unsplash, pexels, or pixabay. Choose the most appropriate resource and use the most relevant keywords for fetching related images.', 'ai-story-maker' );
 			}
 			return $this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $api_key, $the_prompt, $current_user_id );
 		}
@@ -340,6 +349,35 @@ class AISTMA_Story_Generator {
 	 * @param  array  $subscription_info Subscription information.
 	 * @return void
 	 */
+	private function get_gateway_api_key() {
+		if ( defined( 'AISTMA_GATEWAY_API_KEY' ) && AISTMA_GATEWAY_API_KEY ) {
+			return sanitize_text_field( AISTMA_GATEWAY_API_KEY );
+		}
+
+		return sanitize_text_field( get_option( 'aistma_gateway_api_key', '' ) );
+	}
+
+	/**
+	 * Build standard gateway headers.
+	 *
+	 * @param bool $include_auth Whether to include the configured auth key.
+	 * @return array
+	 */
+	private function get_gateway_request_headers( $include_auth = true ) {
+		$headers = array(
+			'User-Agent'   => 'AI-Story-Maker/1.0',
+			'X-Caller-Url' => home_url(),
+			'X-Caller-IP'  => isset( $_SERVER['SERVER_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SERVER_ADDR'] ) ) : '',
+		);
+
+		$gateway_api_key = $this->get_gateway_api_key();
+		if ( $include_auth && ! empty( $gateway_api_key ) ) {
+			$headers['Authorization'] = 'Bearer ' . $gateway_api_key;
+		}
+
+		return $headers;
+	}
+
 	private function generate_story_via_master_api( $prompt_id, $prompt, $merged_settings, $the_prompt, $subscription_info ) {
 		// Get recent posts to avoid duplication
 		$recent_posts = $this->aistma_get_recent_posts( 20, $prompt['category'] ?? '' );
@@ -370,12 +408,24 @@ class AISTMA_Story_Generator {
 			'photos' => $prompt['photos'] ?? 0,
 		);
 
+		$headers = $this->get_gateway_request_headers();
+		$headers['Content-Type'] = 'application/json';
+
+		if ( empty( $headers['Authorization'] ) ) {
+			$message = 'Gateway API key missing; falling back to direct OpenAI call for protected generation endpoint.';
+			$this->aistma_log_manager->log( 'warning', $message );
+			$allow_fallback = apply_filters( 'aistma_allow_gateway_fallback', true );
+			if ( ! $allow_fallback ) {
+				$this->aistma_log_manager->log( 'error', 'Gateway API key required but fallback disabled.' );
+				return;
+			}
+			$this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $this->api_key, $the_prompt );
+			return;
+		}
+
 		$response = wp_remote_post( $api_url, array(
 			'timeout' => 60,
-			'headers' => array(
-				'Content-Type' => 'application/json',
-				'User-Agent' => 'AI-Story-Maker/1.0',
-			),
+			'headers' => $headers,
 			'body' => wp_json_encode( $request_data ),
 		) );
 
@@ -451,12 +501,22 @@ class AISTMA_Story_Generator {
 		if ( empty( $api_key ) ) {
 			$api_key = get_option( 'aistma_openai_api_key' );
 		}
-		
+
 		if ( ! $api_key ) {
 			$error = __( 'No credits and no OpenAI API key configured. Please subscribe or add your own API key.', 'ai-story-maker' );
 			$this->aistma_log_manager->log( 'error', $error );
 			throw new \RuntimeException( esc_html( $error ) );
 		}
+
+		// Enhance system content with tags guidance
+		$system_content = $merged_settings['system_content'] ?? '';
+		$system_content .= "\n\nReturn your response as a JSON object with the following structure:\n";
+		$system_content .= "{\n";
+		$system_content .= "  \"title\": \"article title\",\n";
+		$system_content .= "  \"content\": \"article content in HTML format\",\n";
+		$system_content .= "  \"tags\": [\"tag1\", \"tag2\", \"tag3\"]\n";
+		$system_content .= "}\n";
+		$system_content .= "Tags should be relevant keywords for the article. Include 3-5 tags.";
 
 		$response = wp_remote_post(
 			'https://api.openai.com/v1/chat/completions',
@@ -471,7 +531,7 @@ class AISTMA_Story_Generator {
 						'messages'        => array(
 							array(
 								'role'    => 'system',
-								'content' => $merged_settings['system_content'] ?? '' ,
+								'content' => $system_content,
 							),
 							array(
 								'role'    => 'user',
@@ -579,7 +639,7 @@ class AISTMA_Story_Generator {
 		// Determine post status based on auto_publish setting
 		$auto_publish_value = isset( $prompt['auto_publish'] ) ? $prompt['auto_publish'] : false;
 		$post_status = ( 1 === $auto_publish_value || true === $auto_publish_value ) ? 'publish' : 'draft';
-		
+
 		// Debug logging for auto_publish
 		$this->aistma_log_manager->log( 'debug', 'Master API - Auto publish value: ' . ( $auto_publish_value ? 'true' : 'false' ) . ' (type: ' . gettype( $auto_publish_value ) . '), Post status: ' . $post_status );
 
@@ -599,6 +659,14 @@ class AISTMA_Story_Generator {
 			$error = __( 'Error creating post: ', 'ai-story-maker' ) . $post_id->get_error_message();
 			$this->aistma_log_manager->log( 'error', $error );
 			throw new \RuntimeException( esc_html( $error ) );
+		}
+
+		// Store the prompt ID for later lookup in generate_ai_story_for_user()
+		// Note: prompt_id can be numeric (post ID) or string (wizard prompt ID)
+		if ( $post_id && $prompt_id ) {
+			// Store as-is: numeric IDs stay numeric, string IDs stay string
+			$stored_prompt_id = is_numeric( $prompt_id ) ? absint( $prompt_id ) : sanitize_key( $prompt_id );
+			add_post_meta( $post_id, '_aistma_prompt_id', $stored_prompt_id, true );
 		}
 
 		// Deduct credit after successful post creation
@@ -709,6 +777,7 @@ class AISTMA_Story_Generator {
 		$request_id   = isset( $response_body['id'] ) ? sanitize_text_field( $response_body['id'] ) : uniqid( 'ai_news_' );
 		$title        = isset( $parsed_content['title'] ) ? sanitize_text_field( $parsed_content['title'] ) : __( 'Untitled Article', 'ai-story-maker' );
 		$content      = isset( $parsed_content['content'] ) ? wp_kses_post( $parsed_content['content'] ) : __( 'Content not available.', 'ai-story-maker' );
+		$tags         = isset( $parsed_content['tags'] ) && is_array( $parsed_content['tags'] ) ? $parsed_content['tags'] : array();
 		$category_name = isset( $prompt['category'] ) ? sanitize_text_field( $prompt['category'] ) : __( 'News', 'ai-story-maker' );
 
 		// Get or create category ID
@@ -765,6 +834,14 @@ class AISTMA_Story_Generator {
 			throw new \RuntimeException( esc_html( $error ) );
 		}
 
+		// Store the prompt ID for later lookup in generate_ai_story_for_user()
+		// Note: prompt_id can be numeric (post ID) or string (wizard prompt ID)
+		if ( $post_id && $prompt_id ) {
+			// Store as-is: numeric IDs stay numeric, string IDs stay string
+			$stored_prompt_id = is_numeric( $prompt_id ) ? absint( $prompt_id ) : sanitize_key( $prompt_id );
+			add_post_meta( $post_id, '_aistma_prompt_id', $stored_prompt_id, true );
+		}
+
 		// Deduct credit after successful post creation (use passed $user_id to support background generation)
 		if ( $post_id && $user_id > 0 ) {
 			if ( class_exists( __NAMESPACE__ . '\\AISTMA_Credits_Manager' ) ) {
@@ -781,6 +858,34 @@ class AISTMA_Story_Generator {
 					$this->aistma_log_manager->log( 'error', 'Credit deduction failed for user ' . $user_id . ' on post ' . $post_id );
 				}
 			}
+		}
+
+		// Add tags to the post if provided
+		if ( $post_id && ! empty( $tags ) ) {
+			$this->aistma_log_manager->log( 'debug', 'Raw tags from OpenAI API: ' . wp_json_encode( $tags ) );
+
+			$sanitized_tags = array();
+			foreach ( $tags as $tag ) {
+				if ( is_string( $tag ) ) {
+					$sanitized_tag = sanitize_text_field( $tag );
+					if ( ! empty( $sanitized_tag ) ) {
+						$sanitized_tags[] = $sanitized_tag;
+					}
+				}
+			}
+
+			if ( ! empty( $sanitized_tags ) ) {
+				$result = wp_set_post_tags( $post_id, $sanitized_tags, true );
+				if ( is_wp_error( $result ) ) {
+					$this->aistma_log_manager->log( 'error', 'Failed to set tags for post ' . $post_id . ': ' . $result->get_error_message() );
+				} else {
+					$this->aistma_log_manager->log( 'info', 'Tags successfully added to post ' . $post_id . ': ' . implode( ', ', $sanitized_tags ) );
+				}
+			} else {
+				$this->aistma_log_manager->log( 'debug', 'No valid tags to add after sanitization' );
+			}
+		} else {
+			$this->aistma_log_manager->log( 'debug', 'No tags provided or post ID not available. Tags: ' . wp_json_encode( $tags ?? array() ) . ', Post ID: ' . $post_id );
 		}
 
 		// Process image placeholders and set featured image
@@ -927,37 +1032,52 @@ class AISTMA_Story_Generator {
 	}
 
 	/**
-	 * Replace image placeholders in the article content with Unsplash images.
+	 * Replace image placeholders in the article content with images from multiple sources.
+	 *
+	 * Supports multiple image resources via placeholders like {img_unsplash:...}, {img_pexels:...}, {img_pixabay:...}
 	 *
 	 * @param  string $article_content The article content with image placeholders.
 	 * @param  int    $post_id         The post ID to set featured image for.
-	 * @return string The article content with image placeholders replaced by Unsplash images.
+	 * @return string The article content with image placeholders replaced by images from the configured sources.
 	 */
 	public function replace_image_placeholders( $article_content, $post_id = 0 ) {
 		$self = $this; // Assign $this to $self.
 		$image_urls = array();
 		$image_count = 0;
-		
+
 		$processed_content = preg_replace_callback(
-			'/\{img_unsplash:([a-zA-Z0-9,_ ]+)\}/',
+			'/\{img_([a-z]+):([a-zA-Z0-9,_ ]+)\}/',
 			function ( $matches ) use ( $self, &$image_urls, &$image_count ) {
-				$keywords = explode( ',', $matches[1] );
-				$image_data = $self->fetch_unsplash_image_data( $keywords );
-				
+				$resource_type = $matches[1];
+				$keywords = explode( ',', $matches[2] );
+				// Trim whitespace from keywords
+				$keywords = array_map( 'trim', $keywords );
+
+				$image_data = null;
+
+				// Call the appropriate fetch method based on resource type
+				if ( 'unsplash' === $resource_type ) {
+					$image_data = $self->fetch_unsplash_image_data( $keywords );
+				} elseif ( 'pexels' === $resource_type ) {
+					$image_data = $self->fetch_pexels_image_data( $keywords );
+				} elseif ( 'pixabay' === $resource_type ) {
+					$image_data = $self->fetch_pixabay_image_data( $keywords );
+				}
+
 				if ( $image_data ) {
 					$image_count++;
-					
+
 					// Store all image URLs for featured image selection
 					$image_urls[] = $image_data['url'];
-					
+
 					return $image_data['html'];
 				}
-				
+
 				return '';
 			},
 			$article_content
 		);
-		
+
 		// Try to set a featured image from the collected URLs if we have a post ID
 		if ( $post_id && ! empty( $image_urls ) ) {
 			// Try each image until we find one that's not already used
@@ -969,7 +1089,7 @@ class AISTMA_Story_Generator {
 				}
 			}
 		}
-		
+
 		return $processed_content;
 	}
 
@@ -1028,6 +1148,110 @@ class AISTMA_Story_Generator {
 		}
 
 		return false; // Return false if no images found.
+	}
+
+	/**
+	 * Fetch image data from Pexels based on the provided keywords.
+	 *
+	 * @param  array $keywords The keywords to search for.
+	 * @return array|false Array with 'url', 'html', and 'credits' keys on success, false on failure.
+	 */
+	public function fetch_pexels_image_data( $keywords ) {
+		$api_key = get_option( 'aistma_pexels_api_key' );
+
+		if ( ! $api_key ) {
+			$this->aistma_log_manager->log( 'error', 'Pexels API key not configured' );
+			return false;
+		}
+
+		$query = implode( ' ', $keywords );
+		$url = 'https://api.pexels.com/v1/search?query=' . rawurlencode( $query ) . '&per_page=30&orientation=landscape';
+		$response = wp_remote_get( $url, array(
+			'headers' => array(
+				'Authorization' => $api_key
+			)
+		) );
+
+		if ( is_wp_error( $response ) ) {
+			$this->aistma_log_manager->log( 'error', 'Error fetching Pexels image: ' . $response->get_error_message() );
+			return false;
+		}
+
+		$body = wp_remote_retrieve_body( $response );
+		$data = json_decode( $body, true );
+
+		if ( empty( $data['photos'] ) ) {
+			$this->aistma_log_manager->log( 'error', 'No Pexels images found for keywords: ' . $query );
+			return false;
+		}
+
+		$image_index = array_rand( $data['photos'] );
+		$photo = $data['photos'][ $image_index ];
+
+		if ( ! empty( $photo['src']['small'] ) ) {
+			$image_url = $photo['src']['small'];
+			$credits = 'Photo by ' . $photo['photographer'] . ' on pexels.com';
+			// phpcs:ignore PluginCheck.CodeAnalysis.ImageFunctions.NonEnqueuedImage
+			$html = '<figure><img src="' . esc_url( $image_url ) . '" alt="' . esc_attr( implode( ' ', $keywords ) ) . '" /><figcaption>' . esc_html( $credits ) . '</figcaption></figure>';
+
+			return array(
+				'url' => $image_url,
+				'html' => $html,
+				'credits' => $credits
+			);
+		}
+
+		return false;
+	}
+
+	/**
+	 * Fetch image data from Pixabay based on the provided keywords.
+	 *
+	 * @param  array $keywords The keywords to search for.
+	 * @return array|false Array with 'url', 'html', and 'credits' keys on success, false on failure.
+	 */
+	public function fetch_pixabay_image_data( $keywords ) {
+		$api_key = get_option( 'aistma_pixabay_api_key' );
+
+		if ( ! $api_key ) {
+			$this->aistma_log_manager->log( 'error', 'Pixabay API key not configured' );
+			return false;
+		}
+
+		$query = implode( ' ', $keywords );
+		$url = 'https://pixabay.com/api/?key=' . $api_key . '&q=' . rawurlencode( $query ) . '&per_page=30&image_type=photo&orientation=horizontal';
+		$response = wp_remote_get( $url );
+
+		if ( is_wp_error( $response ) ) {
+			$this->aistma_log_manager->log( 'error', 'Error fetching Pixabay image: ' . $response->get_error_message() );
+			return false;
+		}
+
+		$body = wp_remote_retrieve_body( $response );
+		$data = json_decode( $body, true );
+
+		if ( empty( $data['hits'] ) ) {
+			$this->aistma_log_manager->log( 'error', 'No Pixabay images found for keywords: ' . $query );
+			return false;
+		}
+
+		$image_index = array_rand( $data['hits'] );
+		$image = $data['hits'][ $image_index ];
+
+		if ( ! empty( $image['webformatURL'] ) ) {
+			$image_url = $image['webformatURL'];
+			$credits = 'Image from pixabay.com';
+			// phpcs:ignore PluginCheck.CodeAnalysis.ImageFunctions.NonEnqueuedImage
+			$html = '<figure><img src="' . esc_url( $image_url ) . '" alt="' . esc_attr( implode( ' ', $keywords ) ) . '" /><figcaption>' . esc_html( $credits ) . '</figcaption></figure>';
+
+			return array(
+				'url' => $image_url,
+				'html' => $html,
+				'credits' => $credits
+			);
+		}
+
+		return false;
 	}
 
 	/**
@@ -1220,11 +1444,34 @@ class AISTMA_Story_Generator {
 	/**
 	 * Check subscription status for the current domain.
 	 *
-	 * Similar to the JavaScript aistma_get_subscription_status() function.
-	 * Makes an API call to the master server to verify subscription status.
+	 * Makes an API call to the gateway verify-subscription endpoint to check if the domain
+	 * has an active subscription. This determines whether to use the master API or require
+	 * the user's own OpenAI/Unsplash keys.
 	 *
 	 * @param string $domain Optional domain to check. If not provided, uses current site domain.
-	 * @return array Subscription status data or error information.
+	 *
+	 * @return array Subscription status array with the following structure:
+	 *              SUCCESS: [
+	 *                'valid' => bool,                  // true if subscription is active
+	 *                'status' => string,               // 'active', 'active_no_credits', 'expired', etc.
+	 *                'domain' => string,               // verified domain
+	 *                'package_id' => string,           // subscription plan ID
+	 *                'package_name' => string,         // plan name (e.g., 'Starter', 'Professional')
+	 *                'price' => float,                 // plan price
+	 *                'created_at' => string,           // subscription start date
+	 *                'next_billing_date' => string,    // next renewal date
+	 *                'user_email' => string,           // associated email
+	 *                'credits_remaining' => int,       // remaining credits (0 if no credits)
+	 *              ]
+	 *              ERROR: [
+	 *                'valid' => false,
+	 *                'error' => string,                // error message
+	 *                'domain' => string,
+	 *              ]
+	 *
+	 * IMPORTANT: valid=true means subscription is active, NOT that credits are available.
+	 *            Always check credits_remaining separately. The UI shows "No credits remaining"
+	 *            when credits_remaining=0 even if valid=true (active subscription).
 	 */
 	public function aistma_get_subscription_status( $domain = '' ) {
 		$master_url = aistma_get_api_url();
@@ -1253,11 +1500,7 @@ class AISTMA_Story_Generator {
 		
 		$response = wp_remote_get( $api_url, array(
 			'timeout' => 30,
-			'headers' => array(
-				'User-Agent' => 'AI-Story-Maker/1.0',
-				'X-Caller-Url' => home_url(),
-				'X-Caller-IP' => isset( $_SERVER['SERVER_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SERVER_ADDR'] ) ) : '',
-			),
+			'headers' => $this->get_gateway_request_headers(),
 		) );
 
 		if ( is_wp_error( $response ) ) {
@@ -1284,6 +1527,7 @@ class AISTMA_Story_Generator {
 				'valid' => false,
 				'error' => 'API error: HTTP ' . $response_code,
 				'domain' => $domain,
+				'credits_remaining' => 0,
 			);
 			return $this->subscription_status;
 		}
@@ -1294,6 +1538,7 @@ class AISTMA_Story_Generator {
 				'valid' => false,
 				'error' => 'Invalid JSON response',
 				'domain' => $domain,
+				'credits_remaining' => 0,
 			);
 			return $this->subscription_status;
 		}
@@ -1305,11 +1550,11 @@ class AISTMA_Story_Generator {
 		if ( isset( $data['valid'] ) && $data['valid'] && isset( $data['status'] ) && $data['status'] === 'active_no_credits' ) {
 			$this->aistma_log_manager->log( 'info', 'Subscription valid but no credits remaining for domain: ' . $domain );
 			$this->subscription_status = array(
-				'valid' => true, // Subscription is active but has zero credits
+				'valid' => true,
 				'domain' => $data['domain'] ?? $domain,
-				'credits_remaining' => 0, // Explicitly set to 0 (from gateway status)
+				'credits_remaining' => 0,
 				'package_id' => $data['package_id'] ?? '',
-				'package_name' => $data['package_name'] ?? '', // Still populated so "Current plan" tag displays
+				'package_name' => $data['package_name'] ?? '',
 				'price' => floatval( $data['price'] ?? 0 ),
 				'created_at' => $data['created_at'] ?? '',
 				'next_billing_date' => $data['next_billing_date'] ?? '',
@@ -1318,16 +1563,17 @@ class AISTMA_Story_Generator {
 			return $this->subscription_status;
 		}
 		if ( isset( $data['valid'] ) && $data['valid'] ) {
-			$this->aistma_log_manager->log( 'info', 'Subscription found for domain: ' . $domain . ' - Credits remaining: ' . ( $data['credits_remaining'] ?? 0 ) );
+			$this->aistma_log_manager->log( 'info', 'Subscription found for domain: ' . $domain . ' - Credits remaining: ' . ( $data['credits_remaining'] ?? 'n/a' ) );
 			$this->subscription_status = array(
 				'valid' => true,
 				'domain' => $data['domain'] ?? $domain,
-				'credits_remaining' => intval( $data['credits_remaining'] ?? 0 ),
+				'credits_remaining' => isset( $data['credits_remaining'] ) ? intval( $data['credits_remaining'] ) : null,
 				'package_id' => $data['package_id'] ?? '',
 				'package_name' => $data['package_name'] ?? '',
 				'price' => floatval( $data['price'] ?? 0 ),
 				'created_at' => $data['created_at'] ?? '',
 				'next_billing_date' => $data['next_billing_date'] ?? '',
+				'authenticated' => ! empty( $data['authenticated'] ),
 			);
 		} else {
 			$this->aistma_log_manager->log( 'info', 'No active subscription found for domain: ' . $domain . ', message: ' . ( $data['message'] ?? 'No message' ) );
@@ -1335,6 +1581,7 @@ class AISTMA_Story_Generator {
 				'valid' => false,
 				'message' => $data['message'] ?? 'No subscription found',
 				'domain' => $domain,
+				'credits_remaining' => 0,
 			);
 		}
 
