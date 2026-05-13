@@ -2,9 +2,9 @@
 Contributors: hmamoun
 Tags: ai, content creation, blog automation, article generation, wordpress ai plugin
 Requires at least: 5.8
-Tested up to: 6.9
+Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.3.0
+Stable tag: 2.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Plugin URI: https://www.storymakerplugin.com/
@@ -52,16 +52,8 @@ Ideal for bloggers, marketers, coaches, educators, and content creators.
 
 **Developer Friendly**
 - Use subscription credits or your own OpenAI/Unsplash keys
-- Automatic fallback: generate stories using master API when credits are available, no subscription required
 - Clean shortcode and widget setup
 - Multilingual ready
-
-== Installation ==
-1. Upload the plugin folder to `/wp-content/plugins/` or install via the WordPress plugin screen.
-2. Activate the plugin through the 'Plugins' screen in WordPress.
-3. Complete the welcome wizard to choose a subscription plan or connect your own API keys.
-4. Set up prompt rules and preferences.
-5. Start generating and enhancing content.
 
 == After Installation ==
 1. Choose a subscription or connect your API keys
@@ -69,54 +61,15 @@ Ideal for bloggers, marketers, coaches, educators, and content creators.
 3. Start generating and enhancing content
 
 == Support & Documentation ==
-- Full setup and user guide at storymakerplugin.com
+- Full setup and user guide at [storymakerplugin.com](https://www.storymakerplugin.com)
 - Developer docs and API terms available
-
-== External Services ==
-
-This plugin makes requests to external services for core functionality:
-
-**OpenAI API** (https://openai.com/)
-- Transmits: Story prompts, request metadata
-- Used for: AI-powered story generation
-- Terms: https://openai.com/policies/terms-of-use
-
-**Unsplash API** (https://unsplash.com/)
-- Transmits: Image search queries
-- Used for: Fetching royalty-free images for stories
-- Terms: https://unsplash.com/terms
-
-**Exedotcom Gateway** (https://www.exedotcom.ca/)
-- Transmits: Domain, admin email, plugin version
-- Used for: Subscription verification, credits management, license validation
-- Endpoints: `/verify-subscription`, `/ensure-startup-credits`
-- Data sent to ensure-startup-credits: Domain, admin email (for initial credit setup)
-- Terms: https://www.exedotcom.ca/api-terms
 
 == License & Privacy ==
 - Licensed under GPLv2 or later
-- No personal user data is collected or stored beyond domain/email for subscription validation
-- Each external service has its own privacy policy (see External Services section)
+- Uses OpenAI, Unsplash, and Exedotcom API services for functionality
+- Collects domain/email for license validation only (no personal user data shared)
 
-== Screenshots ==
-
-1. Welcome wizard — choose a prompt and generate your first AI story in seconds.
-2. Posts list integration — one-click "Generate AI Stories" button and per-post "AI Story Enhancer" action.
-3. AI Story Enhancer — select any text in your post and choose how to rewrite, expand, or improve it.
-4. SEO & Meta panel — generate optimised meta descriptions for your posts with a single click.
-
-== Changelog ==
-
-= 2.3.0 =
-* **NEW: Display User Transactions** — View credit history and transaction details in admin dashboard
-* **NEW: Multiple Photo Resources** — Support for Pexels and Pixabay in addition to Unsplash
-* **NEW: Keyword Support in Prompts** — Add keywords to prompts for better SEO optimization
-* **NEW: Externalized Styles** — Migrated inline CSS/JS to external files for better performance
-* **SECURITY: Authenticated Gateway Client Flow** — Server-side authentication for gateway requests, removed browser-exposed auth
-* **FIX: Subscription Email Updates** — Users can now update their subscription email anytime for account management
-* **IMPROVED: Subscription Security** — CSRF protection with proper nonce verification
-* **IMPROVED: Type Consistency** — Fixed null/int type handling for managed subscriptions
-* **TESTED: Full Feature Coverage** — Added unit tests for auth headers and subscription detection
+== Changelog Highlights ==
 
 = 2.2.1 =
 * Added privacy disclosure note in wizard header
@@ -142,7 +95,7 @@ This plugin makes requests to external services for core functionality:
 * Widget and display upgrades
 
 == Love the Plugin? ==
-Support development by leaving a review or buying a coffee ☕
+Support development by leaving a review or [buying a coffee](https://buymeacoffee.com/78vcTEm4i) ☕
 
 == Stay Updated ==
-Subscribe for feature updates and tutorials at storymakerplugin.com
+Subscribe for feature updates and tutorials at [storymakerplugin.com](https://www.storymakerplugin.com)
