@@ -267,5 +267,71 @@ class Test_AISTMA_Weekly_Scheduler extends WP_UnitTestCase {
 			$this->assertFalse( $is_enabled, 'Weekly should be disabled after reset' );
 		}
 	}
+
+	/**
+	 * REGRESSION TEST: Weekly scheduler initializes without errors (v2.3.0 fix)
+	 * Verifies that PHP parse error fix in admin class doesn't break scheduler
+	 */
+	public function test_regression_weekly_scheduler_initializes_without_errors() {
+		$scheduler = new AISTMA_Weekly_Scheduler();
+		$this->assertIsObject( $scheduler, 'Weekly scheduler should initialize successfully' );
+
+		// Verify core methods exist and are callable
+		$this->assertTrue( method_exists( $scheduler, 'enable_weekly' ), 'Should have enable_weekly method' );
+		$this->assertTrue( method_exists( $scheduler, 'is_weekly_enabled' ), 'Should have is_weekly_enabled method' );
+		$this->assertTrue( method_exists( $scheduler, 'should_generate_weekly' ), 'Should have should_generate_weekly method' );
+	}
+
+	/**
+	 * REGRESSION TEST: Weekly generation flow works after admin fix
+	 * End-to-end test of weekly scheduler functionality after v2.3.0 changes
+	 */
+	public function test_regression_weekly_generation_flow_after_admin_fix() {
+		// Enable weekly
+		$this->scheduler->enable_weekly( $this->user_id, 'story-adventure' );
+		$is_enabled = $this->scheduler->is_weekly_enabled( $this->user_id );
+		$this->assertTrue( $is_enabled, 'Weekly should be enabled after admin fix' );
+
+		// Check if should generate
+		$should_gen = $this->scheduler->should_generate_weekly( $this->user_id );
+		$this->assertTrue( $should_gen, 'Should allow first generation after enabling' );
+
+		// Get the prompt
+		$prompt = $this->scheduler->get_weekly_prompt( $this->user_id );
+		$this->assertEquals( 'story-adventure', $prompt, 'Should return correct prompt after admin fix' );
+
+		// Mark as generated
+		$this->scheduler->mark_weekly_generated( $this->user_id );
+
+		// Verify it was marked
+		$should_gen_again = $this->scheduler->should_generate_weekly( $this->user_id );
+		$this->assertFalse( $should_gen_again, 'Should not generate immediately after marking as generated' );
+	}
+
+	/**
+	 * REGRESSION TEST: Weekly state persists correctly
+	 * Ensures scheduler state is properly saved/retrieved after admin class changes
+	 */
+	public function test_regression_weekly_state_persistence_after_fix() {
+		$prompt_id = 'story-mystery';
+
+		// Enable weekly and set prompt
+		$this->scheduler->enable_weekly( $this->user_id, $prompt_id );
+
+		// Verify user meta is set correctly
+		$enabled_meta = get_user_meta( $this->user_id, '_aistma_weekly_enabled', true );
+		$this->assertTrue( (bool) $enabled_meta, 'Should have enabled flag in user meta' );
+
+		$prompt_meta = get_user_meta( $this->user_id, '_aistma_weekly_prompt', true );
+		$this->assertEquals( $prompt_id, $prompt_meta, 'Should have correct prompt in user meta' );
+
+		// Verify state persists through a fresh scheduler instance
+		$new_scheduler = new AISTMA_Weekly_Scheduler();
+		$is_enabled = $new_scheduler->is_weekly_enabled( $this->user_id );
+		$this->assertTrue( $is_enabled, 'Weekly enabled state should persist' );
+
+		$saved_prompt = $new_scheduler->get_weekly_prompt( $this->user_id );
+		$this->assertEquals( $prompt_id, $saved_prompt, 'Prompt should persist across scheduler instances' );
+	}
 }
 ?>

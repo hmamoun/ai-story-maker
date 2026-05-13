@@ -274,5 +274,79 @@ class Test_AJAX_Wizard_Generate extends WP_Ajax_UnitTestCase {
 		// Verify both posts created
 		$this->assertNotEquals( $response1['data']['post_id'], $response2['data']['post_id'], 'Should create different posts' );
 	}
+
+	/**
+	 * REGRESSION TEST: Verify admin class loads without parse errors (v2.3.0 fix)
+	 * Tests that PHP parse error fix in admin/class-aistma-admin.php doesn't break functionality
+	 */
+	public function test_regression_admin_class_loads_without_errors() {
+		$admin_class = 'AISTMA_Admin';
+
+		$this->assertTrue( class_exists( $admin_class ), 'Admin class should exist and load without parse errors' );
+
+		// Verify the class can be instantiated
+		$admin = new AISTMA_Admin();
+		$this->assertIsObject( $admin, 'Should instantiate admin class successfully' );
+	}
+
+	/**
+	 * REGRESSION TEST: Story generation works after admin class fix
+	 * Comprehensive end-to-end test verifying story generation is not broken by v2.3.0 changes
+	 */
+	public function test_regression_story_generation_end_to_end_after_fix() {
+		$_POST['nonce']  = wp_create_nonce( 'aistma_wizard_nonce' );
+		$_POST['prompt'] = 'story-adventure';
+
+		try {
+			$this->_handleAjax( 'aistma_wizard_generate' );
+		} catch ( WPAjaxDieStopException $e ) {
+			// Expected die behavior
+		}
+
+		$response = json_decode( $this->_last_response, true );
+
+		// Verify complete response structure
+		$this->assertTrue( $response['success'], 'Story generation should succeed after admin class fix' );
+		$this->assertArrayHasKey( 'post_id', $response['data'], 'Should return post_id' );
+		$this->assertArrayHasKey( 'title', $response['data'], 'Should return title' );
+		$this->assertArrayHasKey( 'excerpt', $response['data'], 'Should return excerpt' );
+		$this->assertArrayHasKey( 'featured_image', $response['data'], 'Should return featured_image' );
+
+		// Verify post was created with correct status
+		$post = get_post( $response['data']['post_id'] );
+		$this->assertNotNull( $post, 'Post should exist' );
+		$this->assertEquals( 'draft', $post->post_status, 'Post should be draft status' );
+		$this->assertEquals( 'post', $post->post_type, 'Post should be post type' );
+	}
+
+	/**
+	 * REGRESSION TEST: Credits properly tracked after generation
+	 * Ensures credit system works correctly after admin class changes
+	 */
+	public function test_regression_credits_validation_after_admin_fix() {
+		$initial_credits = AISTMA_Credits_Manager::get_user_credits( $this->user_id );
+		$this->assertEquals( 10, $initial_credits, 'User should start with 10 credits' );
+
+		$_POST['nonce']  = wp_create_nonce( 'aistma_wizard_nonce' );
+		$_POST['prompt'] = 'story-adventure';
+
+		try {
+			$this->_handleAjax( 'aistma_wizard_generate' );
+		} catch ( WPAjaxDieStopException $e ) {
+			// Expected
+		}
+
+		$response = json_decode( $this->_last_response, true );
+		$this->assertTrue( $response['success'], 'Generation should succeed with credits available' );
+
+		// Credits should NOT deduct on generate (only on save)
+		$after_generate = AISTMA_Credits_Manager::get_user_credits( $this->user_id );
+		$this->assertEquals( 10, $after_generate, 'Credits should not deduct on generate action' );
+
+		// Should indicate credits remaining in response
+		if ( isset( $response['data']['credits_remaining'] ) ) {
+			$this->assertEquals( 10, $response['data']['credits_remaining'], 'Response should show remaining credits' );
+		}
+	}
 }
 ?>
