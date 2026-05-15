@@ -408,7 +408,6 @@ class AISTMA_Admin {
 				'buttonText' => $button_text,
 			)
 		);
-		?>
 	}
 
 	/**
