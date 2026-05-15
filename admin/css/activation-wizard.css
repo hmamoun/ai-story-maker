@@ -139,6 +139,26 @@
 	font-size: 16px;
 }
 
+/* Enrollment Notification */
+.aistma-enrollment-notification {
+	padding: 12px 30px;
+	background: #d4edda;
+	border-top: 1px solid #e5e5e5;
+	border-bottom: 1px solid #c3e6cb;
+	animation: slideDown 0.3s ease-in-out;
+}
+
+@keyframes slideDown {
+	from {
+		opacity: 0;
+		max-height: 0;
+	}
+	to {
+		opacity: 1;
+		max-height: 100px;
+	}
+}
+
 /* Body - Prompts Grid */
 .aistma-wizard-body {
 	padding: 30px;

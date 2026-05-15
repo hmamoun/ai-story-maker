@@ -1889,11 +1889,15 @@ class AISTMA_Admin {
 
 				// Create startup credits account in gateway with admin email
 				$this->create_startup_credits_account( get_option( 'admin_email' ) );
+
+				// Auto-enroll in free package (no email verification required)
+				$this->auto_enroll_free_package( get_option( 'admin_email' ) );
 			}
 
 			wp_send_json_success( array(
-				'message' => __( 'Credits ensured.', 'ai-story-maker' ),
+				'message' => __( 'You will be enrolled in our Free plan. Get started with 5 monthly credits!', 'ai-story-maker' ),
 				'credits' => AISTMA_Credits_Manager::get_user_credits( $user_id ),
+				'enrollment_message' => __( 'you will be enrolled in the Free plan', 'ai-story-maker' ),
 			) );
 
 		} catch ( \Throwable $e ) {
@@ -1942,6 +1946,51 @@ class AISTMA_Admin {
 				$this->aistma_log_manager->log( 'info', 'Startup credits account created in gateway with admin email: ' . $admin_email );
 			} else {
 				$this->aistma_log_manager->log( 'warning', 'Gateway returned status ' . $response_code . ' for startup credits account creation.' );
+			}
+		}
+	}
+
+	/**
+	 * Auto-enroll user in free package via gateway.
+	 * Called when wizard is shown and user has no credits yet.
+	 * Does not require email verification.
+	 *
+	 * @param string $admin_email The admin email address.
+	 * @return void
+	 */
+	private function auto_enroll_free_package( $admin_email ) {
+		if ( empty( $admin_email ) ) {
+			$this->aistma_log_manager->log( 'warning', 'Admin email not available for free package enrollment.' );
+			return;
+		}
+
+		$domain = sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? wp_parse_url( home_url(), PHP_URL_HOST ) ) );
+
+		$gateway_url = defined( 'AISTMA_MASTER_API' ) ? AISTMA_MASTER_API : 'https://www.storymakerplugin.com';
+		$endpoint = trailingslashit( $gateway_url ) . 'wp-json/exaig/v1/auto-enroll-free';
+
+		$body = array(
+			'domain' => $domain,
+			'admin_email' => sanitize_email( $admin_email ),
+		);
+
+		$args = array(
+			'method' => 'POST',
+			'body' => wp_json_encode( $body ),
+			'headers' => array( 'Content-Type' => 'application/json' ),
+			'timeout' => 10,
+		);
+
+		$response = wp_remote_post( $endpoint, $args );
+
+		if ( is_wp_error( $response ) ) {
+			$this->aistma_log_manager->log( 'error', 'Failed to auto-enroll in free package: ' . $response->get_error_message() );
+		} else {
+			$response_code = wp_remote_retrieve_response_code( $response );
+			if ( 200 === $response_code || 201 === $response_code ) {
+				$this->aistma_log_manager->log( 'info', 'User auto-enrolled in free package via gateway' );
+			} else {
+				$this->aistma_log_manager->log( 'warning', 'Gateway returned status ' . $response_code . ' for free package enrollment.' );
 			}
 		}
 	}

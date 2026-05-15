@@ -32,7 +32,7 @@
 		 */
 		initializeStartupCredits: function () {
 			const self = this;
-			
+
 			// AJAX request to ensure user has startup credits
 			$.ajax({
 				url: ajaxurl,
@@ -44,12 +44,36 @@
 				},
 				success: function (response) {
 					if (response.success) {
+						// Show enrollment message if available
+						if (response.data && response.data.enrollment_message) {
+							self.showEnrollmentNotification(response.data.enrollment_message, response.data.message);
+						}
 					}
 				},
 				error: function () {
 					console.error('Failed to ensure startup credits');
 				},
 			});
+		},
+
+		/**
+		 * Show enrollment notification in the modal
+		 */
+		showEnrollmentNotification: function (enrollmentMsg, mainMsg) {
+			// Check if notification area exists, create if not
+			let $notif = this.$modal.find('.aistma-enrollment-notification');
+			if ($notif.length === 0) {
+				$notif = $(
+					'<div class="aistma-enrollment-notification">' +
+						'<p style="margin: 0; color: #27ae60; font-weight: 500; font-size: 14px;">' +
+							enrollmentMsg +
+						'</p>' +
+					'</div>'
+				);
+				this.$modal.find('.aistma-wizard-header').after($notif);
+			} else {
+				$notif.show();
+			}
 		},
 
 		/**
