@@ -47,40 +47,49 @@ class AISTMA_Wizard_Action_Widget {
 		</div>
 
 		<script type="text/javascript">
-			(function($) {
-				'use strict';
-				
-				function openWizardFromWidget() {
-					const btn = $('#aistma-widget-open-wizard');
-					if (!btn.length) return;
-					
-					btn.on('click', function(e) {
-						e.preventDefault();
-						
-						const modal = $('#aistma-wizard-modal');
-						if (modal.length) {
-							// Reset wizard state for fresh start
-							modal.find('.aistma-prompt-card').removeClass('selected');
-							modal.find('#aistma-wizard-dont-show').prop('checked', false);
-							
-							// Show modal
-							modal.fadeIn(200);
-							
-							// Log widget action
-							if (typeof AistmaWizard !== 'undefined') {
-								AistmaWizard.selectedPromptId = null;
-							}
+			// Ensure jQuery is available
+			if (typeof jQuery !== 'undefined') {
+				jQuery(document).ready(function($) {
+					'use strict';
+
+					function openWizardFromWidget() {
+						const btn = $('#aistma-widget-open-wizard');
+
+						if (!btn.length) {
+							console.warn('AISTMA: Widget button not found');
+							return;
 						}
-					});
-				}
-				
-				// Wait for jQuery and DOM to be ready
-				if (document.readyState === 'loading') {
-					document.addEventListener('DOMContentLoaded', openWizardFromWidget);
-				} else {
+
+						btn.on('click', function(e) {
+							e.preventDefault();
+							console.log('AISTMA: Widget button clicked');
+
+							const modal = $('#aistma-wizard-modal');
+							if (modal.length) {
+								console.log('AISTMA: Modal found, opening');
+								// Reset wizard state for fresh start
+								modal.find('.aistma-prompt-card').removeClass('selected');
+								modal.find('#aistma-wizard-dont-show').prop('checked', false);
+
+								// Show modal
+								modal.fadeIn(200);
+								modal.show();
+
+								// Log widget action
+								if (typeof AistmaWizard !== 'undefined') {
+									AistmaWizard.selectedPromptId = null;
+								}
+							} else {
+								console.warn('AISTMA: Modal not found - ID #aistma-wizard-modal');
+							}
+						});
+					}
+
 					openWizardFromWidget();
-				}
-			})(jQuery);
+				});
+			} else {
+				console.error('AISTMA: jQuery not available');
+			}
 		</script>
 		<?php
 	}
