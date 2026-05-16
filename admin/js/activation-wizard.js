@@ -25,6 +25,32 @@
 		init: function () {
 			this.cacheDom();
 			this.bindEvents();
+			this.ensureStartupCredits();
+		},
+
+		/**
+		 * Ensure startup credits are available
+		 */
+		ensureStartupCredits: function () {
+			const self = this;
+
+			$.ajax({
+				url: ajaxurl,
+				type: 'POST',
+				dataType: 'json',
+				data: {
+					action: 'aistma_ensure_startup_credits',
+					nonce: aistmaWizardL10n.startupCreditsNonce || '',
+				},
+				success: function (response) {
+					if (response.success) {
+						console.log('AISTMA: Startup credits ensured, balance:', response.data.credits);
+					}
+				},
+				error: function () {
+					console.log('AISTMA: Could not ensure startup credits');
+				},
+			});
 		},
 
 		/**

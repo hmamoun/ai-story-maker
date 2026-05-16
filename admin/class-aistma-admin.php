@@ -99,6 +99,7 @@ class AISTMA_Admin {
 		add_action( 'admin_head-edit.php', array( $this, 'aistma_add_posts_page_button' ) );
 		add_action( 'wp_ajax_aistma_wizard_generate', array( $this, 'aistma_wizard_generate' ) );
 		add_action( 'wp_ajax_aistma_wizard_save', array( $this, 'aistma_wizard_save' ) );
+		add_action( 'wp_ajax_aistma_ensure_startup_credits', array( $this, 'aistma_ensure_startup_credits' ) );
 		add_action( 'wp_ajax_aistma_wizard_cancel', array( $this, 'aistma_wizard_cancel' ) );
 		add_action( 'wp_ajax_aistma_wizard_dismiss', array( $this, 'aistma_wizard_dismiss' ) );
 		add_action( 'wp_ajax_aistma_confirm_weekly', array( $this, 'aistma_confirm_weekly' ) );
@@ -174,6 +175,7 @@ class AISTMA_Admin {
 				'cancelNonce' => wp_create_nonce( 'aistma_wizard_cancel_nonce' ),
 				'dismissNonce' => wp_create_nonce( 'aistma_wizard_dismiss_nonce' ),
 				'weeklyNonce' => wp_create_nonce( 'aistma_confirm_weekly_nonce' ),
+				'startupCreditsNonce' => wp_create_nonce( 'aistma_ensure_startup_credits_nonce' ),
 				'escapeNonce' => wp_create_nonce( 'aistma_log_wizard_escape_nonce' ),
 				'showTodayNonce' => wp_create_nonce( 'aistma_mark_wizard_shown_today_nonce' ),
 				'selectPrompt' => __( 'Please select a prompt first.', 'ai-story-maker' ),
@@ -1304,6 +1306,36 @@ class AISTMA_Admin {
 		// Use the story generator's subscription status method
 		$story_generator = new AISTMA_Story_Generator();
 		return $story_generator->aistma_get_subscription_status();
+	}
+
+	/**
+	 * AJAX handler to ensure startup credits are granted.
+	 *
+	 * Grants startup credits if user doesn't have any yet.
+	 * Called when wizard is first initialized.
+	 *
+	 * @return void
+	 */
+	public function aistma_ensure_startup_credits() {
+		if ( ! check_ajax_referer( 'aistma_ensure_startup_credits_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'ai-story-maker' ) ) );
+		}
+
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission.', 'ai-story-maker' ) ) );
+		}
+
+		$user_id = get_current_user_id();
+		$existing_balance = AISTMA_Credits_Manager::get_user_credits( $user_id );
+
+		if ( 0 === $existing_balance ) {
+			$startup_credits = absint( get_option( 'aistma_startup_credit_amount', 5 ) );
+			AISTMA_Credits_Manager::add_credits( $user_id, $startup_credits, 'Wizard initialization' );
+		}
+
+		wp_send_json_success( array(
+			'credits' => AISTMA_Credits_Manager::get_user_credits( $user_id ),
+		) );
 	}
 
 	/**
