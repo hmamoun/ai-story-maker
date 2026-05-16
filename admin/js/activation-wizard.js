@@ -131,6 +131,13 @@
 				return;
 			}
 
+			// Initialize startup credits only when user commits to generating (selecting a prompt)
+			// This ensures enrollment only happens if user doesn't cancel the wizard
+			if (!sessionStorage.getItem('aistma_startup_credits_initialized')) {
+				this.initializeStartupCredits();
+				sessionStorage.setItem('aistma_startup_credits_initialized', '1');
+			}
+
 			// Show loading state
 			this.$loading.show();
 
@@ -245,11 +252,6 @@
 		show: function () {
 			// Mark as shown today BEFORE displaying (prevents showing again today)
 			this.markShownToday();
-			// Initialize startup credits only once when wizard is shown (not on every page load)
-			if (!sessionStorage.getItem('aistma_startup_credits_initialized')) {
-				this.initializeStartupCredits();
-				sessionStorage.setItem('aistma_startup_credits_initialized', '1');
-			}
 			this.$modal.fadeIn(200);
 		},
 	};
