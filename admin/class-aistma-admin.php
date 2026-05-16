@@ -1932,6 +1932,14 @@ class AISTMA_Admin {
 		$response_code = wp_remote_retrieve_response_code( $response );
 		if ( 200 === $response_code || 201 === $response_code ) {
 			$this->aistma_log_manager->log( 'info', 'User auto-enrolled in free package for domain: ' . $domain );
+
+			// Store the gateway API key returned by enrollment so story generation can authenticate.
+			$body = json_decode( wp_remote_retrieve_body( $response ), true );
+			if ( ! empty( $body['api_key'] ) && empty( get_option( 'aistma_gateway_api_key' ) ) ) {
+				update_option( 'aistma_gateway_api_key', sanitize_text_field( $body['api_key'] ) );
+				$this->aistma_log_manager->log( 'info', 'Gateway API key stored for domain: ' . $domain );
+			}
+
 			return true;
 		} else {
 			$this->aistma_log_manager->log( 'warning', 'Gateway returned status ' . $response_code . ' for free package auto-enrollment.' );
