@@ -1363,6 +1363,7 @@ class AISTMA_Admin {
 			</script>
 			<?php
 		}
+	}
 
 	public function aistma_wizard_generate() {
 		// Check nonce
