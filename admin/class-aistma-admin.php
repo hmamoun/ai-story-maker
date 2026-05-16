@@ -125,7 +125,7 @@ class AISTMA_Admin {
 		$load_rating = false;
 
 		// Load wizard and rating modal on posts page and plugin pages
-		if ( 'edit.php' === $hook_suffix || 'post.php' === $hook_suffix || 'post-new.php' === $hook_suffix ) {
+		if ( in_array( $hook_suffix, [ 'edit.php', 'post.php', 'post-new.php', 'index.php' ], true ) ) {
 			$load_wizard = true;
 			$load_rating = true;
 		}

@@ -56,29 +56,16 @@ class AISTMA_Wizard_Action_Widget {
 
 				btn.addEventListener('click', function(e) {
 					e.preventDefault();
-					console.log('Widget button clicked');
 
-					// Ensure jQuery and AistmaWizard are available
+					var attempts = 0;
 					function showWizard() {
-						if (typeof jQuery === 'undefined') {
-							console.warn('jQuery not available yet');
+						if (typeof AistmaWizard !== 'undefined' && typeof AistmaWizard.show === 'function') {
+							AistmaWizard.show();
+							return;
+						}
+						if (++attempts < 20) {
 							setTimeout(showWizard, 100);
-							return;
 						}
-
-						if (typeof AistmaWizard === 'undefined') {
-							console.warn('AistmaWizard not available yet');
-							setTimeout(showWizard, 100);
-							return;
-						}
-
-						if (typeof AistmaWizard.show !== 'function') {
-							console.error('AistmaWizard.show is not a function');
-							return;
-						}
-
-						console.log('Calling AistmaWizard.show()');
-						AistmaWizard.show();
 					}
 
 					showWizard();
