@@ -575,6 +575,9 @@
 		},
 	};
 
+	// Expose globally so external scripts (e.g. dashboard widget) can call AistmaWizard.show()
+	window.AistmaWizard = AistmaWizard;
+
 	/**
 	 * Initialize on document ready
 	 */
