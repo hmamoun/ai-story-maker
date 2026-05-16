@@ -105,7 +105,6 @@ class AISTMA_Admin {
 		add_action( 'wp_ajax_aistma_submit_rating', array( $this, 'aistma_submit_rating' ) );
 		add_action( 'wp_ajax_aistma_dismiss_rating', array( $this, 'aistma_dismiss_rating' ) );
 		add_action( 'wp_ajax_aistma_never_show_rating', array( $this, 'aistma_never_show_rating' ) );
-		add_action( 'wp_ajax_aistma_ensure_startup_credits', array( $this, 'aistma_ensure_startup_credits' ) );
 		add_action( 'wp_ajax_aistma_log_wizard_escape', array( $this, 'aistma_log_wizard_escape' ) );
 		add_action( 'wp_ajax_aistma_mark_wizard_shown_today', array( $this, 'aistma_mark_wizard_shown_today' ) );
 
@@ -175,7 +174,6 @@ class AISTMA_Admin {
 				'cancelNonce' => wp_create_nonce( 'aistma_wizard_cancel_nonce' ),
 				'dismissNonce' => wp_create_nonce( 'aistma_wizard_dismiss_nonce' ),
 				'weeklyNonce' => wp_create_nonce( 'aistma_confirm_weekly_nonce' ),
-				'startupCreditsNonce' => wp_create_nonce( 'aistma_ensure_startup_credits_nonce' ),
 				'escapeNonce' => wp_create_nonce( 'aistma_log_wizard_escape_nonce' ),
 				'showTodayNonce' => wp_create_nonce( 'aistma_mark_wizard_shown_today_nonce' ),
 				'selectPrompt' => __( 'Please select a prompt first.', 'ai-story-maker' ),
@@ -1440,6 +1438,14 @@ class AISTMA_Admin {
 				// Log the prompt selection event
 				AISTMA_Gateway_Logger::log_prompt_selected( $user_id, $prompt_id, array( 'post_id' => $post_id ) );
 
+				// Grant startup credits and auto-enroll in free package after successful prompt selection
+				$existing_balance = AISTMA_Credits_Manager::get_user_credits( $user_id );
+				if ( 0 === $existing_balance ) {
+					$startup_credits = absint( get_option( 'aistma_startup_credit_amount', 5 ) );
+					AISTMA_Credits_Manager::add_credits( $user_id, $startup_credits, 'Free tier enrollment' );
+					$this->aistma_log_manager->log( 'info', sprintf( 'User %d granted %d free tier credits on prompt selection.', $user_id, $startup_credits ) );
+				}
+
 				// Auto-enroll user in free package after successful prompt selection
 				$this->auto_enroll_free_package( get_option( 'admin_email' ) );
 
@@ -1855,90 +1861,6 @@ class AISTMA_Admin {
 		}
 	}
 
-	/**
-	 * AJAX handler to ensure startup credits are granted.
-	 *
-	 * @return void
-	 */
-	public function aistma_ensure_startup_credits() {
-		// Check nonce
-		if ( ! check_ajax_referer( 'aistma_ensure_startup_credits_nonce', 'nonce', false ) ) {
-			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'ai-story-maker' ) ) );
-		}
-
-		// Check capabilities
-		if ( ! current_user_can( 'edit_posts' ) ) {
-			wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'ai-story-maker' ) ) );
-		}
-
-		try {
-			$user_id = get_current_user_id();
-			$existing_balance = AISTMA_Credits_Manager::get_user_credits( $user_id );
-
-			// Only grant credits if user doesn't have any yet
-			if ( 0 === $existing_balance ) {
-				$startup_credits = absint( get_option( 'aistma_startup_credit_amount', 5 ) );
-				AISTMA_Credits_Manager::add_credits( $user_id, $startup_credits, 'Wizard view - startup grant' );
-				$this->aistma_log_manager->log( 'info', sprintf( 'User %d granted %d startup credits on wizard view.', $user_id, $startup_credits ) );
-
-				// Create startup credits account in gateway with admin email
-				$this->create_startup_credits_account( get_option( 'admin_email' ) );
-			}
-
-			wp_send_json_success( array(
-				'message' => __( 'Wizard ready. Credits have been granted.', 'ai-story-maker' ),
-				'credits' => AISTMA_Credits_Manager::get_user_credits( $user_id ),
-			) );
-
-		} catch ( \Throwable $e ) {
-			$this->aistma_log_manager->log( 'error', 'Ensure startup credits error: ' . $e->getMessage() );
-			wp_send_json_error( array( 'message' => __( 'An error occurred.', 'ai-story-maker' ) ) );
-		}
-	}
-
-	/**
-	 * Create startup credits account in gateway with admin email.
-	 *
-	 * @param string $admin_email The admin email address.
-	 * @return void
-	 */
-	private function create_startup_credits_account( $admin_email ) {
-		if ( empty( $admin_email ) ) {
-			$this->aistma_log_manager->log( 'warning', 'Admin email not available for startup credits account creation.' );
-			return;
-		}
-
-		$domain = sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? wp_parse_url( home_url(), PHP_URL_HOST ) ) );
-
-		$gateway_url = defined( 'AISTMA_MASTER_API' ) ? AISTMA_MASTER_API : 'https://www.storymakerplugin.com';
-		$endpoint = trailingslashit( $gateway_url ) . 'wp-json/exaig/v1/ensure-startup-credits';
-
-		$body = array(
-			'domain' => $domain,
-			'admin_email' => sanitize_email( $admin_email ),
-			'startup_credits' => absint( get_option( 'aistma_startup_credit_amount', 5 ) ),
-		);
-
-		$args = array(
-			'method' => 'POST',
-			'body' => wp_json_encode( $body ),
-			'headers' => array( 'Content-Type' => 'application/json' ),
-			'timeout' => 10,
-		);
-
-		$response = wp_remote_post( $endpoint, $args );
-
-		if ( is_wp_error( $response ) ) {
-			$this->aistma_log_manager->log( 'error', 'Failed to create startup credits account in gateway: ' . $response->get_error_message() );
-		} else {
-			$response_code = wp_remote_retrieve_response_code( $response );
-			if ( 200 === $response_code || 201 === $response_code ) {
-				$this->aistma_log_manager->log( 'info', 'Startup credits account created in gateway with admin email: ' . $admin_email );
-			} else {
-				$this->aistma_log_manager->log( 'warning', 'Gateway returned status ' . $response_code . ' for startup credits account creation.' );
-			}
-		}
-	}
 
 	/**
 	 * Auto-enroll user in free package via gateway.

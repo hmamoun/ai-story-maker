@@ -28,35 +28,6 @@
 		},
 
 		/**
-		 * Initialize startup credits if user doesn't have any (called only when wizard is shown)
-		 */
-		initializeStartupCredits: function () {
-			const self = this;
-
-			// AJAX request to ensure user has startup credits
-			$.ajax({
-				url: ajaxurl,
-				type: 'POST',
-				dataType: 'json',
-				data: {
-					action: 'aistma_ensure_startup_credits',
-					nonce: aistmaWizardL10n.startupCreditsNonce || '',
-				},
-				success: function (response) {
-					if (response.success) {
-						// Show enrollment message if available
-						if (response.data && response.data.enrollment_message) {
-							self.showEnrollmentNotification(response.data.enrollment_message, response.data.message);
-						}
-					}
-				},
-				error: function () {
-					console.error('Failed to ensure startup credits');
-				},
-			});
-		},
-
-		/**
 		 * Show enrollment notification in the modal
 		 */
 		showEnrollmentNotification: function (enrollmentMsg, mainMsg) {
@@ -269,11 +240,7 @@
 		show: function () {
 			// Mark as shown today BEFORE displaying (prevents showing again today)
 			this.markShownToday();
-			// Initialize startup credits only once when wizard is shown (not on every page load)
-			if (!sessionStorage.getItem('aistma_startup_credits_initialized')) {
-				this.initializeStartupCredits();
-				sessionStorage.setItem('aistma_startup_credits_initialized', '1');
-			}
+			// Open wizard modal (credits granted upon prompt selection & enrollment)
 			this.$modal.fadeIn(200);
 		},
 	};
