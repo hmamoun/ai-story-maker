@@ -130,6 +130,11 @@ class AISTMA_Admin {
 			$load_rating = true;
 		}
 
+		// Load wizard on dashboard (where the "Create a Story Now" widget lives)
+		if ( 'index.php' === $hook_suffix ) {
+			$load_wizard = true;
+		}
+
 		// Load wizard on plugin settings pages
 		if ( strpos( $hook_suffix, 'aistma' ) !== false ) {
 			$load_wizard = true;
