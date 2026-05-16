@@ -131,13 +131,6 @@
 				return;
 			}
 
-			// Initialize startup credits only when user commits to generating (selecting a prompt)
-			// This ensures enrollment only happens if user doesn't cancel the wizard
-			if (!sessionStorage.getItem('aistma_startup_credits_initialized')) {
-				this.initializeStartupCredits();
-				sessionStorage.setItem('aistma_startup_credits_initialized', '1');
-			}
-
 			// Show loading state
 			this.$loading.show();
 

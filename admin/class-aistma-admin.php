@@ -1383,6 +1383,10 @@ class AISTMA_Admin {
 				wp_send_json_error( array( 'message' => __( 'No prompt selected.', 'ai-story-maker' ) ) );
 			}
 
+			// Auto-enroll user in free package when they commit to generating a story
+			// This grants free tier credits without requiring a separate startup credits process
+			$this->auto_enroll_free_package( get_option( 'admin_email' ) );
+
 			// Check credits, but allow fallback if user has their own OpenAI API key
 			if ( ! AISTMA_Credits_Manager::has_credits( $user_id, 1 ) ) {
 				$openai_api_key = get_option( 'aistma_openai_api_key' );
@@ -1911,6 +1915,47 @@ class AISTMA_Admin {
 		} catch ( \Throwable $e ) {
 			$this->aistma_log_manager->log( 'error', 'Ensure startup credits error: ' . $e->getMessage() );
 			wp_send_json_error( array( 'message' => __( 'An error occurred.', 'ai-story-maker' ) ) );
+		}
+	}
+
+	/**
+	 * Auto-enroll user in free package when they commit to generating a story.
+	 * Replaces the separate startup credits process.
+	 *
+	 * @param string $admin_email The admin email address.
+	 * @return bool True if enrolled, false otherwise.
+	 */
+	private function auto_enroll_free_package( $admin_email ) {
+		$domain = sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? wp_parse_url( home_url(), PHP_URL_HOST ) ) );
+		$gateway_url = defined( 'AISTMA_MASTER_API' ) ? AISTMA_MASTER_API : 'https://www.storymakerplugin.com';
+		$endpoint = trailingslashit( $gateway_url ) . 'wp-json/exaig/v1/auto-enroll-free';
+
+		$body = array(
+			'domain' => $domain,
+			'admin_email' => sanitize_email( $admin_email ),
+		);
+
+		$args = array(
+			'method' => 'POST',
+			'body' => wp_json_encode( $body ),
+			'headers' => array( 'Content-Type' => 'application/json' ),
+			'timeout' => 10,
+		);
+
+		$response = wp_remote_post( $endpoint, $args );
+
+		if ( is_wp_error( $response ) ) {
+			$this->aistma_log_manager->log( 'error', 'Failed to auto-enroll in free package: ' . $response->get_error_message() );
+			return false;
+		}
+
+		$response_code = wp_remote_retrieve_response_code( $response );
+		if ( 200 === $response_code || 201 === $response_code ) {
+			$this->aistma_log_manager->log( 'info', 'User auto-enrolled in free package for domain: ' . $domain );
+			return true;
+		} else {
+			$this->aistma_log_manager->log( 'warning', 'Gateway returned status ' . $response_code . ' for free package auto-enrollment.' );
+			return false;
 		}
 	}
 
