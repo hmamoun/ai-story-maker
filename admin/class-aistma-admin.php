@@ -1440,6 +1440,9 @@ class AISTMA_Admin {
 				// Log the prompt selection event
 				AISTMA_Gateway_Logger::log_prompt_selected( $user_id, $prompt_id, array( 'post_id' => $post_id ) );
 
+				// Auto-enroll user in free package after successful prompt selection
+				$this->auto_enroll_free_package( get_option( 'admin_email' ) );
+
 				// Prepare response with generated post data
 				$credits_remaining = AISTMA_Credits_Manager::get_user_credits( $user_id );
 
@@ -1880,15 +1883,11 @@ class AISTMA_Admin {
 
 				// Create startup credits account in gateway with admin email
 				$this->create_startup_credits_account( get_option( 'admin_email' ) );
-
-				// Auto-enroll in free package (no email verification required)
-				$this->auto_enroll_free_package( get_option( 'admin_email' ) );
 			}
 
 			wp_send_json_success( array(
-				'message' => __( 'You will be enrolled in our Free plan. Get started with 5 monthly credits!', 'ai-story-maker' ),
+				'message' => __( 'Wizard ready. Credits have been granted.', 'ai-story-maker' ),
 				'credits' => AISTMA_Credits_Manager::get_user_credits( $user_id ),
-				'enrollment_message' => __( 'you will be enrolled in the Free plan', 'ai-story-maker' ),
 			) );
 
 		} catch ( \Throwable $e ) {
