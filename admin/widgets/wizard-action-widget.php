@@ -47,43 +47,43 @@ class AISTMA_Wizard_Action_Widget {
 		</div>
 
 		<script type="text/javascript">
-			(function() {
-				'use strict';
+			document.addEventListener('DOMContentLoaded', function() {
+				const btn = document.getElementById('aistma-widget-open-wizard');
+				if (!btn) {
+					console.warn('aistma-widget-open-wizard button not found');
+					return;
+				}
 
-				function openWizardFromWidget() {
-					// Wait for jQuery to be available
-					if (typeof jQuery === 'undefined') {
-						setTimeout(openWizardFromWidget, 50);
-						return;
+				btn.addEventListener('click', function(e) {
+					e.preventDefault();
+					console.log('Widget button clicked');
+
+					// Ensure jQuery and AistmaWizard are available
+					function showWizard() {
+						if (typeof jQuery === 'undefined') {
+							console.warn('jQuery not available yet');
+							setTimeout(showWizard, 100);
+							return;
+						}
+
+						if (typeof AistmaWizard === 'undefined') {
+							console.warn('AistmaWizard not available yet');
+							setTimeout(showWizard, 100);
+							return;
+						}
+
+						if (typeof AistmaWizard.show !== 'function') {
+							console.error('AistmaWizard.show is not a function');
+							return;
+						}
+
+						console.log('Calling AistmaWizard.show()');
+						AistmaWizard.show();
 					}
 
-					const $ = jQuery;
-					const btn = $('#aistma-widget-open-wizard');
-					if (!btn.length) return;
-
-					btn.on('click', function(e) {
-						e.preventDefault();
-
-						// Use AistmaWizard.show() to properly initialize the wizard
-						if (typeof AistmaWizard !== 'undefined' && AistmaWizard.show) {
-							AistmaWizard.show();
-						} else {
-							// Fallback if AistmaWizard is not available
-							const modal = $('#aistma-wizard-modal');
-							if (modal.length) {
-								modal.fadeIn(200);
-							}
-						}
-					});
-				}
-
-				// Wait for DOM and jQuery to be ready
-				if (document.readyState === 'loading') {
-					document.addEventListener('DOMContentLoaded', openWizardFromWidget);
-				} else {
-					openWizardFromWidget();
-				}
-			})();
+					showWizard();
+				});
+			});
 		</script>
 		<?php
 	}
