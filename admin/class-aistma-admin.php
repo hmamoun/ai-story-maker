@@ -124,10 +124,15 @@ class AISTMA_Admin {
 		$load_wizard = false;
 		$load_rating = false;
 
-		// Load wizard and rating modal on posts page and plugin pages
-		if ( in_array( $hook_suffix, [ 'edit.php', 'post.php', 'post-new.php', 'index.php' ], true ) ) {
+		// Load wizard and rating modal on posts pages
+		if ( in_array( $hook_suffix, [ 'edit.php', 'post.php', 'post-new.php' ], true ) ) {
 			$load_wizard = true;
 			$load_rating = true;
+		}
+
+		// Load wizard on dashboard (for widget button) but not the rating modal
+		if ( 'index.php' === $hook_suffix ) {
+			$load_wizard = true;
 		}
 
 		// Load wizard on plugin settings pages
@@ -1347,21 +1352,23 @@ class AISTMA_Admin {
 		// Render weekly confirmation modal template
 		include AISTMA_PATH . 'admin/templates/weekly-confirmation-modal-template.php';
 
-		// Render rating modal template
-		include AISTMA_PATH . 'admin/templates/rating-modal-template.php';
+		// Rating modal only on post-editing pages, not on the dashboard
+		global $hook_suffix;
+		if ( 'index.php' !== $hook_suffix ) {
+			include AISTMA_PATH . 'admin/templates/rating-modal-template.php';
 
-		// Conditionally show rating modal if user qualifies
-		$user_id = get_current_user_id();
-		if ( AISTMA_Rating_Request::should_show_rating( $user_id ) ) {
-			?>
-			<script type="text/javascript">
-				jQuery(document).ready(function () {
-					if (typeof AistmaRating !== 'undefined') {
-						AistmaRating.show();
-					}
-				});
-			</script>
-			<?php
+			$user_id = get_current_user_id();
+			if ( AISTMA_Rating_Request::should_show_rating( $user_id ) ) {
+				?>
+				<script type="text/javascript">
+					jQuery(document).ready(function () {
+						if (typeof AistmaRating !== 'undefined') {
+							AistmaRating.show();
+						}
+					});
+				</script>
+				<?php
+			}
 		}
 	}
 
