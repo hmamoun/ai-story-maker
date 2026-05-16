@@ -1908,7 +1908,7 @@ class AISTMA_Admin {
 	private function auto_enroll_free_package( $admin_email ) {
 		$domain = sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? wp_parse_url( home_url(), PHP_URL_HOST ) ) );
 		$gateway_url = defined( 'AISTMA_MASTER_API' ) ? AISTMA_MASTER_API : 'https://www.storymakerplugin.com';
-		$endpoint = trailingslashit( $gateway_url ) . 'wp-json/exaig/v1/auto-enroll-free';
+		$endpoint = trailingslashit( $gateway_url ) . 'wp-json/exaig/v1/wizard-enroll-free';
 
 		$body = array(
 			'domain' => $domain,
