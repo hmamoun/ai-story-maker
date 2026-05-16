@@ -1883,39 +1883,11 @@ class AISTMA_Admin {
 	 * @return void
 	 */
 	public function aistma_ensure_startup_credits() {
-		// Check nonce
-		if ( ! check_ajax_referer( 'aistma_ensure_startup_credits_nonce', 'nonce', false ) ) {
-			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'ai-story-maker' ) ) );
-		}
-
-		// Check capabilities
-		if ( ! current_user_can( 'edit_posts' ) ) {
-			wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'ai-story-maker' ) ) );
-		}
-
-		try {
-			$user_id = get_current_user_id();
-			$existing_balance = AISTMA_Credits_Manager::get_user_credits( $user_id );
-
-			// Only grant credits if user doesn't have any yet
-			if ( 0 === $existing_balance ) {
-				$startup_credits = absint( get_option( 'aistma_startup_credit_amount', 5 ) );
-				AISTMA_Credits_Manager::add_credits( $user_id, $startup_credits, 'Wizard view - startup grant' );
-				$this->aistma_log_manager->log( 'info', sprintf( 'User %d granted %d startup credits on wizard view.', $user_id, $startup_credits ) );
-
-				// Create startup credits account in gateway with admin email
-				$this->create_startup_credits_account( get_option( 'admin_email' ) );
-			}
-
-			wp_send_json_success( array(
-				'message' => __( 'Credits ensured.', 'ai-story-maker' ),
-				'credits' => AISTMA_Credits_Manager::get_user_credits( $user_id ),
-			) );
-
-		} catch ( \Throwable $e ) {
-			$this->aistma_log_manager->log( 'error', 'Ensure startup credits error: ' . $e->getMessage() );
-			wp_send_json_error( array( 'message' => __( 'An error occurred.', 'ai-story-maker' ) ) );
-		}
+		// DEPRECATED: Startup credits are now granted via auto_enroll_free_package
+		// This handler is kept for backward compatibility but no longer used
+		wp_send_json_success( array(
+			'message' => __( 'Credits ensured.', 'ai-story-maker' ),
+		) );
 	}
 
 	/**
