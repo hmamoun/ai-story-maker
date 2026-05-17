@@ -17,6 +17,23 @@ if ( ! isset( $active_tab ) ) {
 	$active_tab = 'subscribe';
 }
 
+/**
+ * Returns a masked version of an API key: asterisks for the first 90%, plain text for the last 10%.
+ *
+ * @param string $key The raw API key.
+ * @return string Masked key, or empty string if key is empty.
+ */
+if ( ! function_exists( 'aistma_mask_api_key' ) ) {
+	function aistma_mask_api_key( $key ) {
+		if ( empty( $key ) ) {
+			return '';
+		}
+		$len  = strlen( $key );
+		$show = max( 1, (int) ceil( $len * 0.1 ) );
+		return str_repeat( '*', $len - $show ) . substr( $key, -$show );
+	}
+}
+
 // Get current user email
 $current_user = wp_get_current_user();
 $current_user_email = $current_user->user_email;
@@ -401,22 +418,22 @@ document.addEventListener('DOMContentLoaded', function() {
 	<label for="aistma_openai_api_key">
 		<?php esc_html_e( 'OpenAI', 'ai-story-maker' ); ?> <a href="https://platform.openai.com/" target="_blank"><?php esc_html_e( 'API', 'ai-story-maker' ); ?></a> <?php esc_html_e( 'Key:', 'ai-story-maker' ); ?>
 	</label>
-	<input type="text" id="aistma_openai_api_key" data-setting="aistma_openai_api_key" value="<?php echo esc_attr( get_option( 'aistma_openai_api_key' ) ); ?>">
+	<input type="text" id="aistma_openai_api_key" data-setting="aistma_openai_api_key" value="<?php echo esc_attr( aistma_mask_api_key( get_option( 'aistma_openai_api_key' ) ) ); ?>" autocomplete="off">
 
 	<label for="aistma_unsplash_api_key">
 		<?php esc_html_e( 'Unsplash', 'ai-story-maker' ); ?> <a href="https://unsplash.com/developers" target="_blank"><?php esc_html_e( 'API Key and Secret', 'ai-story-maker' ); ?></a>:
 	</label>
 	<div class="inline-fields">
 		<label for="aistma_unsplash_api_key"><?php esc_html_e( 'Key:', 'ai-story-maker' ); ?></label>
-		<input type="text" id="aistma_unsplash_api_key" data-setting="aistma_unsplash_api_key" value="<?php echo esc_attr( get_option( 'aistma_unsplash_api_key' ) ); ?>">
+		<input type="text" id="aistma_unsplash_api_key" data-setting="aistma_unsplash_api_key" value="<?php echo esc_attr( aistma_mask_api_key( get_option( 'aistma_unsplash_api_key' ) ) ); ?>" autocomplete="off">
 		<label for="aistma_unsplash_api_secret"><?php esc_html_e( 'Secret:', 'ai-story-maker' ); ?></label>
-		<input type="text" id="aistma_unsplash_api_secret" data-setting="aistma_unsplash_api_secret" value="<?php echo esc_attr( get_option( 'aistma_unsplash_api_secret' ) ); ?>">
+		<input type="text" id="aistma_unsplash_api_secret" data-setting="aistma_unsplash_api_secret" value="<?php echo esc_attr( aistma_mask_api_key( get_option( 'aistma_unsplash_api_secret' ) ) ); ?>" autocomplete="off">
 	</div>
 
 	<label for="aistma_gateway_api_key">
 		<?php esc_html_e( 'ExeDotCom hosted service auth key:', 'ai-story-maker' ); ?>
 	</label>
-	<input type="password" id="aistma_gateway_api_key" data-setting="aistma_gateway_api_key" value="<?php echo esc_attr( get_option( 'aistma_gateway_api_key' ) ); ?>" autocomplete="off">
+	<input type="text" id="aistma_gateway_api_key" data-setting="aistma_gateway_api_key" value="<?php echo esc_attr( aistma_mask_api_key( get_option( 'aistma_gateway_api_key' ) ) ); ?>" autocomplete="off">
 	<p class="description">
 		<?php esc_html_e( 'Advanced: only required when ExeDotCom provides a managed-service auth key for protected gateway calls.', 'ai-story-maker' ); ?>
 	</p>

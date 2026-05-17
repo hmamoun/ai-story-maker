@@ -1560,6 +1560,9 @@ class AISTMA_Story_Generator {
 				'next_billing_date' => $data['next_billing_date'] ?? '',
 				'user_email' => $data['user_email'] ?? '',
 			);
+			if ( ! empty( $data['client_api_key'] ) && empty( get_option( 'aistma_gateway_api_key' ) ) ) {
+				update_option( 'aistma_gateway_api_key', sanitize_text_field( $data['client_api_key'] ) );
+			}
 			return $this->subscription_status;
 		}
 		if ( isset( $data['valid'] ) && $data['valid'] ) {
@@ -1575,6 +1578,12 @@ class AISTMA_Story_Generator {
 				'next_billing_date' => $data['next_billing_date'] ?? '',
 				'authenticated' => ! empty( $data['authenticated'] ),
 			);
+
+			// Store the gateway API key so subsequent authenticated calls (story generation) succeed.
+			if ( ! empty( $data['client_api_key'] ) && empty( get_option( 'aistma_gateway_api_key' ) ) ) {
+				update_option( 'aistma_gateway_api_key', sanitize_text_field( $data['client_api_key'] ) );
+				$this->aistma_log_manager->log( 'info', 'Gateway API key stored from subscription verification for domain: ' . $domain );
+			}
 		} else {
 			$this->aistma_log_manager->log( 'info', 'No active subscription found for domain: ' . $domain . ', message: ' . ( $data['message'] ?? 'No message' ) );
 			$this->subscription_status = array(

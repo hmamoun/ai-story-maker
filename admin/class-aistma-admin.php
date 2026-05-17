@@ -124,10 +124,15 @@ class AISTMA_Admin {
 		$load_wizard = false;
 		$load_rating = false;
 
-		// Load wizard and rating modal on posts page and plugin pages
-		if ( 'edit.php' === $hook_suffix || 'post.php' === $hook_suffix || 'post-new.php' === $hook_suffix ) {
+		// Load wizard and rating modal on posts pages
+		if ( in_array( $hook_suffix, [ 'edit.php', 'post.php', 'post-new.php' ], true ) ) {
 			$load_wizard = true;
 			$load_rating = true;
+		}
+
+		// Load wizard on dashboard (for widget button) but not the rating modal
+		if ( 'index.php' === $hook_suffix ) {
+			$load_wizard = true;
 		}
 
 		// Load wizard on plugin settings pages
@@ -1347,22 +1352,25 @@ class AISTMA_Admin {
 		// Render weekly confirmation modal template
 		include AISTMA_PATH . 'admin/templates/weekly-confirmation-modal-template.php';
 
-		// Render rating modal template
-		include AISTMA_PATH . 'admin/templates/rating-modal-template.php';
+		// Rating modal only on post-editing pages, not on the dashboard
+		$screen = get_current_screen();
+		if ( ! $screen || 'dashboard' !== $screen->id ) {
+			include AISTMA_PATH . 'admin/templates/rating-modal-template.php';
 
-		// Conditionally show rating modal if user qualifies
-		$user_id = get_current_user_id();
-		if ( AISTMA_Rating_Request::should_show_rating( $user_id ) ) {
-			?>
-			<script type="text/javascript">
-				jQuery(document).ready(function () {
-					if (typeof AistmaRating !== 'undefined') {
-						AistmaRating.show();
-					}
-				});
-			</script>
-			<?php
+			$user_id = get_current_user_id();
+			if ( AISTMA_Rating_Request::should_show_rating( $user_id ) ) {
+				?>
+				<script type="text/javascript">
+					jQuery(document).ready(function () {
+						if (typeof AistmaRating !== 'undefined') {
+							AistmaRating.show();
+						}
+					});
+				</script>
+				<?php
+			}
 		}
+	}
 
 	public function aistma_wizard_generate() {
 		// Check nonce
@@ -1381,6 +1389,12 @@ class AISTMA_Admin {
 
 			if ( empty( $prompt_id ) ) {
 				wp_send_json_error( array( 'message' => __( 'No prompt selected.', 'ai-story-maker' ) ) );
+			}
+
+			// Auto-enroll in free package only when not yet enrolled (no gateway key = not enrolled).
+			// Guarded to avoid an outbound HTTP call on every story generation.
+			if ( empty( get_option( 'aistma_gateway_api_key' ) ) ) {
+				$this->auto_enroll_free_package( get_option( 'admin_email' ) );
 			}
 
 			// Check credits, but allow fallback if user has their own OpenAI API key
@@ -1879,38 +1893,59 @@ class AISTMA_Admin {
 	 * @return void
 	 */
 	public function aistma_ensure_startup_credits() {
-		// Check nonce
-		if ( ! check_ajax_referer( 'aistma_ensure_startup_credits_nonce', 'nonce', false ) ) {
-			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'ai-story-maker' ) ) );
+		// DEPRECATED: Startup credits are now granted via auto_enroll_free_package
+		// This handler is kept for backward compatibility but no longer used
+		wp_send_json_success( array(
+			'message' => __( 'Credits ensured.', 'ai-story-maker' ),
+		) );
+	}
+
+	/**
+	 * Auto-enroll user in free package when they commit to generating a story.
+	 * Replaces the separate startup credits process.
+	 *
+	 * @param string $admin_email The admin email address.
+	 * @return bool True if enrolled, false otherwise.
+	 */
+	private function auto_enroll_free_package( $admin_email ) {
+		$domain = sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? wp_parse_url( home_url(), PHP_URL_HOST ) ) );
+		$gateway_url = defined( 'AISTMA_MASTER_API' ) ? AISTMA_MASTER_API : 'https://www.storymakerplugin.com';
+		$endpoint = trailingslashit( $gateway_url ) . 'wp-json/exaig/v1/wizard-enroll-free';
+
+		$body = array(
+			'domain' => $domain,
+			'admin_email' => sanitize_email( $admin_email ),
+		);
+
+		$args = array(
+			'method' => 'POST',
+			'body' => wp_json_encode( $body ),
+			'headers' => array( 'Content-Type' => 'application/json' ),
+			'timeout' => 10,
+		);
+
+		$response = wp_remote_post( $endpoint, $args );
+
+		if ( is_wp_error( $response ) ) {
+			$this->aistma_log_manager->log( 'error', 'Failed to auto-enroll in free package: ' . $response->get_error_message() );
+			return false;
 		}
 
-		// Check capabilities
-		if ( ! current_user_can( 'edit_posts' ) ) {
-			wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'ai-story-maker' ) ) );
-		}
+		$response_code = wp_remote_retrieve_response_code( $response );
+		if ( 200 === $response_code || 201 === $response_code ) {
+			$this->aistma_log_manager->log( 'info', 'User auto-enrolled in free package for domain: ' . $domain );
 
-		try {
-			$user_id = get_current_user_id();
-			$existing_balance = AISTMA_Credits_Manager::get_user_credits( $user_id );
-
-			// Only grant credits if user doesn't have any yet
-			if ( 0 === $existing_balance ) {
-				$startup_credits = absint( get_option( 'aistma_startup_credit_amount', 5 ) );
-				AISTMA_Credits_Manager::add_credits( $user_id, $startup_credits, 'Wizard view - startup grant' );
-				$this->aistma_log_manager->log( 'info', sprintf( 'User %d granted %d startup credits on wizard view.', $user_id, $startup_credits ) );
-
-				// Create startup credits account in gateway with admin email
-				$this->create_startup_credits_account( get_option( 'admin_email' ) );
+			// Store the gateway API key returned by enrollment so story generation can authenticate.
+			$body = json_decode( wp_remote_retrieve_body( $response ), true );
+			if ( ! empty( $body['api_key'] ) && empty( get_option( 'aistma_gateway_api_key' ) ) ) {
+				update_option( 'aistma_gateway_api_key', sanitize_text_field( $body['api_key'] ) );
+				$this->aistma_log_manager->log( 'info', 'Gateway API key stored for domain: ' . $domain );
 			}
 
-			wp_send_json_success( array(
-				'message' => __( 'Credits ensured.', 'ai-story-maker' ),
-				'credits' => AISTMA_Credits_Manager::get_user_credits( $user_id ),
-			) );
-
-		} catch ( \Throwable $e ) {
-			$this->aistma_log_manager->log( 'error', 'Ensure startup credits error: ' . $e->getMessage() );
-			wp_send_json_error( array( 'message' => __( 'An error occurred.', 'ai-story-maker' ) ) );
+			return true;
+		} else {
+			$this->aistma_log_manager->log( 'warning', 'Gateway returned status ' . $response_code . ' for free package auto-enrollment.' );
+			return false;
 		}
 	}
 

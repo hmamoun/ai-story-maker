@@ -47,40 +47,32 @@ class AISTMA_Wizard_Action_Widget {
 		</div>
 
 		<script type="text/javascript">
-			(function($) {
-				'use strict';
-				
-				function openWizardFromWidget() {
-					const btn = $('#aistma-widget-open-wizard');
-					if (!btn.length) return;
-					
-					btn.on('click', function(e) {
-						e.preventDefault();
-						
-						const modal = $('#aistma-wizard-modal');
-						if (modal.length) {
-							// Reset wizard state for fresh start
-							modal.find('.aistma-prompt-card').removeClass('selected');
-							modal.find('#aistma-wizard-dont-show').prop('checked', false);
-							
-							// Show modal
-							modal.fadeIn(200);
-							
-							// Log widget action
-							if (typeof AistmaWizard !== 'undefined') {
-								AistmaWizard.selectedPromptId = null;
-							}
+			document.addEventListener('DOMContentLoaded', function() {
+				const btn = document.getElementById('aistma-widget-open-wizard');
+				if (!btn) {
+					console.warn('aistma-widget-open-wizard button not found');
+					return;
+				}
+
+				btn.addEventListener('click', function(e) {
+					e.preventDefault();
+
+					var attempts = 0;
+					function showWizard() {
+						if (typeof AistmaWizard !== 'undefined' && typeof AistmaWizard.show === 'function') {
+							AistmaWizard.show();
+							return;
 						}
-					});
-				}
-				
-				// Wait for jQuery and DOM to be ready
-				if (document.readyState === 'loading') {
-					document.addEventListener('DOMContentLoaded', openWizardFromWidget);
-				} else {
-					openWizardFromWidget();
-				}
-			})(jQuery);
+						if (++attempts < 20) {
+							setTimeout(showWizard, 100);
+						} else {
+							console.warn('AistmaWizard: timed out waiting for wizard script to load.');
+						}
+					}
+
+					showWizard();
+				});
+			});
 		</script>
 		<?php
 	}

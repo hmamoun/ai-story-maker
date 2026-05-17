@@ -245,11 +245,6 @@
 		show: function () {
 			// Mark as shown today BEFORE displaying (prevents showing again today)
 			this.markShownToday();
-			// Initialize startup credits only once when wizard is shown (not on every page load)
-			if (!sessionStorage.getItem('aistma_startup_credits_initialized')) {
-				this.initializeStartupCredits();
-				sessionStorage.setItem('aistma_startup_credits_initialized', '1');
-			}
 			this.$modal.fadeIn(200);
 		},
 	};
@@ -579,6 +574,9 @@
 			this.$modal.fadeOut(200);
 		},
 	};
+
+	// Expose globally so external scripts (e.g. dashboard widget) can call AistmaWizard.show()
+	window.AistmaWizard = AistmaWizard;
 
 	/**
 	 * Initialize on document ready
