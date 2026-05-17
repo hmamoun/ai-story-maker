@@ -65,6 +65,8 @@ class AISTMA_Wizard_Action_Widget {
 						}
 						if (++attempts < 20) {
 							setTimeout(showWizard, 100);
+						} else {
+							console.warn('AistmaWizard: timed out waiting for wizard script to load.');
 						}
 					}
 

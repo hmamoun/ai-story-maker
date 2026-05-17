@@ -1353,8 +1353,8 @@ class AISTMA_Admin {
 		include AISTMA_PATH . 'admin/templates/weekly-confirmation-modal-template.php';
 
 		// Rating modal only on post-editing pages, not on the dashboard
-		global $hook_suffix;
-		if ( 'index.php' !== $hook_suffix ) {
+		$screen = get_current_screen();
+		if ( ! $screen || 'dashboard' !== $screen->id ) {
 			include AISTMA_PATH . 'admin/templates/rating-modal-template.php';
 
 			$user_id = get_current_user_id();
@@ -1391,9 +1391,11 @@ class AISTMA_Admin {
 				wp_send_json_error( array( 'message' => __( 'No prompt selected.', 'ai-story-maker' ) ) );
 			}
 
-			// Auto-enroll user in free package when they commit to generating a story
-			// This grants free tier credits without requiring a separate startup credits process
-			$this->auto_enroll_free_package( get_option( 'admin_email' ) );
+			// Auto-enroll in free package only when not yet enrolled (no gateway key = not enrolled).
+			// Guarded to avoid an outbound HTTP call on every story generation.
+			if ( empty( get_option( 'aistma_gateway_api_key' ) ) ) {
+				$this->auto_enroll_free_package( get_option( 'admin_email' ) );
+			}
 
 			// Check credits, but allow fallback if user has their own OpenAI API key
 			if ( ! AISTMA_Credits_Manager::has_credits( $user_id, 1 ) ) {

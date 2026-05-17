@@ -23,13 +23,15 @@ if ( ! isset( $active_tab ) ) {
  * @param string $key The raw API key.
  * @return string Masked key, or empty string if key is empty.
  */
-function aistma_mask_api_key( $key ) {
-	if ( empty( $key ) ) {
-		return '';
+if ( ! function_exists( 'aistma_mask_api_key' ) ) {
+	function aistma_mask_api_key( $key ) {
+		if ( empty( $key ) ) {
+			return '';
+		}
+		$len  = strlen( $key );
+		$show = max( 1, (int) ceil( $len * 0.1 ) );
+		return str_repeat( '*', $len - $show ) . substr( $key, -$show );
 	}
-	$len  = strlen( $key );
-	$show = max( 1, (int) ceil( $len * 0.1 ) );
-	return str_repeat( '*', $len - $show ) . substr( $key, -$show );
 }
 
 // Get current user email

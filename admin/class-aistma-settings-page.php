@@ -99,7 +99,7 @@ class AISTMA_Settings_Page {
 		switch ( $setting_name ) {
 			case 'aistma_openai_api_key':
 				// Skip save if the submitted value is still the masked placeholder.
-				if ( strpos( $setting_value, '*' ) === 0 ) {
+				if ( str_contains( $setting_value, '***' ) ) {
 					wp_send_json_success( [ 'message' => __( 'No change detected.', 'ai-story-maker' ) ] );
 					wp_die();
 				}
@@ -111,21 +111,21 @@ class AISTMA_Settings_Page {
 				update_option( 'aistma_openai_api_key', sanitize_text_field( $setting_value ) );
 				break;
 			case 'aistma_unsplash_api_key':
-				if ( strpos( $setting_value, '*' ) === 0 ) {
+				if ( str_contains( $setting_value, '***' ) ) {
 					wp_send_json_success( [ 'message' => __( 'No change detected.', 'ai-story-maker' ) ] );
 					wp_die();
 				}
 				update_option( 'aistma_unsplash_api_key', sanitize_text_field( $setting_value ) );
 				break;
 			case 'aistma_unsplash_api_secret':
-				if ( strpos( $setting_value, '*' ) === 0 ) {
+				if ( str_contains( $setting_value, '***' ) ) {
 					wp_send_json_success( [ 'message' => __( 'No change detected.', 'ai-story-maker' ) ] );
 					wp_die();
 				}
 				update_option( 'aistma_unsplash_api_secret', sanitize_text_field( $setting_value ) );
 				break;
 			case 'aistma_gateway_api_key':
-				if ( strpos( $setting_value, '*' ) === 0 ) {
+				if ( str_contains( $setting_value, '***' ) ) {
 					wp_send_json_success( [ 'message' => __( 'No change detected.', 'ai-story-maker' ) ] );
 					wp_die();
 				}
