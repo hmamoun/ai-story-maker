@@ -1391,23 +1391,6 @@ class AISTMA_Admin {
 				wp_send_json_error( array( 'message' => __( 'No prompt selected.', 'ai-story-maker' ) ) );
 			}
 
-			// Auto-enroll in free package only when not yet enrolled (no gateway key = not enrolled).
-			// Guarded to avoid an outbound HTTP call on every story generation.
-			if ( empty( get_option( 'aistma_gateway_api_key' ) ) ) {
-				$this->auto_enroll_free_package( get_option( 'admin_email' ) );
-			}
-
-			// Check credits, but allow fallback if user has their own OpenAI API key
-			if ( ! AISTMA_Credits_Manager::has_credits( $user_id, 1 ) ) {
-				$openai_api_key = get_option( 'aistma_openai_api_key' );
-				if ( empty( $openai_api_key ) ) {
-					wp_send_json_error( array(
-						'message' => __( 'no credit left, pick a subscription plan from the next screen', 'ai-story-maker' ),
-						'redirect_url' => admin_url( 'admin.php?page=aistma-settings&tab=ai_writer' )
-					) );
-				}
-			}
-
 			// Get the selected prompt from wizard defaults
 			$prompts = AISTMA_Activation_Wizard::get_default_prompts();
 			$selected_prompt = null;
@@ -1422,10 +1405,18 @@ class AISTMA_Admin {
 				wp_send_json_error( array( 'message' => __( 'Invalid prompt selected.', 'ai-story-maker' ) ) );
 			}
 
-			// Get subscription and API key info for story generation
+			// Get subscription status. If invalid, attempt free-tier enrollment and re-check.
+			// This handles both: no API key yet, and API key exists but domain has no subscription in gateway DB.
 			$story_generator = new AISTMA_Story_Generator();
 			$subscription_info = $story_generator->get_subscription_info();
 			$has_valid_subscription = $subscription_info['valid'];
+
+			if ( ! $has_valid_subscription ) {
+				$this->auto_enroll_free_package( get_option( 'admin_email' ) );
+				$subscription_info = $story_generator->get_subscription_info();
+				$has_valid_subscription = $subscription_info['valid'];
+			}
+
 			$has_local_credits = AISTMA_Credits_Manager::has_credits( $user_id, 1 );
 
 			// Require an OpenAI API key only when the user has neither a subscription nor credits.
