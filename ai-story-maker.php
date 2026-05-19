@@ -93,15 +93,11 @@ add_action(
 
 
 
-// Include Transactions Page class
-require_once plugin_dir_path( __FILE__ ) . 'admin/class-aistma-transactions-page.php';
-
 // Initialize Settings Page instance early to handle AJAX and OAuth
 add_action( 'plugins_loaded', function() {
     // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- OAuth callback parameter check, actual security verification in Settings Page class
     if ( is_admin() || ( defined( 'DOING_AJAX' ) && DOING_AJAX ) || isset( $_GET['aistma_facebook_oauth'] ) ) {
         new \exedotcom\aistorymaker\AISTMA_Settings_Page();
-        new \exedotcom\aistorymaker\AISTMA_Transactions_Page();
     }
 });
 
@@ -152,20 +148,12 @@ function aistma_process_weekly_generations() {
 			continue;
 		}
 		
-		// Check user has credits
-		if ( ! exedotcom\aistorymaker\AISTMA_Credits_Manager::has_credits( $user_id, 1 ) ) {
-			$log_manager->log( 'info', sprintf( 'User %d out of credits for weekly generation.', $user_id ) );
-			continue;
-		}
-		
-		// Perform story generation
+		// Credits are owned and enforced by the gateway. generate_ai_story_for_user()
+		// authorizes against the gateway and the gateway deducts server-side.
 		try {
 			$post_id = exedotcom\aistorymaker\AISTMA_Story_Generator::generate_ai_story_for_user( $user_id, $prompt_id );
-			
+
 			if ( $post_id ) {
-				// Deduct credit
-				exedotcom\aistorymaker\AISTMA_Credits_Manager::deduct_credits( $user_id, 1, 'Weekly auto-generated story' );
-				
 				// Update last generated timestamp
 				exedotcom\aistorymaker\AISTMA_Weekly_Scheduler::update_last_generated( $user_id );
 				
