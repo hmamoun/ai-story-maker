@@ -4,7 +4,7 @@ Tags: ai, content creation, blog automation, article generation, wordpress ai pl
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 2.3.0
+Stable tag: 2.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Plugin URI: https://www.storymakerplugin.com/
@@ -106,6 +106,13 @@ This plugin makes requests to external services for core functionality:
 4. SEO & Meta panel — generate optimised meta descriptions for your posts with a single click.
 
 == Changelog ==
+
+= 2.3.1 =
+* **FIX: Insufficient credits after subscription cancellation** -- wizard now re-enrolls in the free tier when the gateway no longer authorizes generation, not only when no API key is stored
+* **FIX: Gateway is the single source of truth for credits** -- removed the local credit ledger so a stale local count cannot block generation when the gateway has valid credits
+* **FIX: Wizard auto-enrollment** -- calls /wizard-enroll-free and stores the returned gateway API key, then re-checks the subscription before generating
+* **FIX: API keys masked in settings page** -- only last 10% of stored keys is shown
+* **FIX: Dashboard 'Create Story Now'** -- wizard initializes reliably from the dashboard widget; rating modal excluded from dashboard to prevent fadeIn crash
 
 = 2.3.0 =
 * **NEW: Display User Transactions** — View credit history and transaction details in admin dashboard
