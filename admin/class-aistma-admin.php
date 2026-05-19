@@ -1372,12 +1372,6 @@ class AISTMA_Admin {
 				wp_send_json_error( array( 'message' => __( 'No prompt selected.', 'ai-story-maker' ) ) );
 			}
 
-			// Auto-enroll in free package only when not yet enrolled (no gateway key = not enrolled).
-			// Guarded to avoid an outbound HTTP call on every story generation.
-			if ( empty( get_option( 'aistma_gateway_api_key' ) ) ) {
-				$this->auto_enroll_free_package( get_option( 'admin_email' ) );
-			}
-
 			// Get the selected prompt from wizard defaults
 			$prompts = AISTMA_Activation_Wizard::get_default_prompts();
 			$selected_prompt = null;
@@ -1392,21 +1386,24 @@ class AISTMA_Admin {
 				wp_send_json_error( array( 'message' => __( 'Invalid prompt selected.', 'ai-story-maker' ) ) );
 			}
 
-			// The gateway is the single source of truth for credits. A fresh
-			// AISTMA_Story_Generator re-verifies against the gateway, so the free
-			// plan just enrolled above is reflected here.
+			// The gateway is the single source of truth for credits. If it does not
+			// authorize generation (no subscription, or stored API key but invalid
+			// subscription — e.g. after cancellation), attempt free-tier enrollment
+			// once and re-check before falling back to a site OpenAI key.
 			$story_generator = new AISTMA_Story_Generator();
 
-			// Gateway-authorized generation routes through the master API (no key
-			// needed). Otherwise fall back to the site's own OpenAI key.
 			$api_key = null;
 			if ( ! $story_generator->gateway_can_generate() ) {
-				$api_key = get_option( 'aistma_openai_api_key' );
-				if ( ! $api_key ) {
-					wp_send_json_error( array(
-						'message' => __( 'No subscription or credits found. Please upgrade your plan, purchase credits, or add an OpenAI API key.', 'ai-story-maker' ),
-						'redirect_url' => admin_url( 'admin.php?page=aistma-settings&tab=ai_writer' )
-					) );
+				$this->auto_enroll_free_package( get_option( 'admin_email' ) );
+				$story_generator->clear_cached_subscription_status();
+				if ( ! $story_generator->gateway_can_generate() ) {
+					$api_key = get_option( 'aistma_openai_api_key' );
+					if ( ! $api_key ) {
+						wp_send_json_error( array(
+							'message' => __( 'No subscription or credits found. Please upgrade your plan, purchase credits, or add an OpenAI API key.', 'ai-story-maker' ),
+							'redirect_url' => admin_url( 'admin.php?page=aistma-settings&tab=ai_writer' )
+						) );
+					}
 				}
 			}
 
