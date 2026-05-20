@@ -261,7 +261,7 @@ class AISTMA_Story_Calendar_Widget {
 	/**
 	 * Get widget-specific CSS styles
 	 */
-	private static function get_widget_styles() {
+	public static function get_widget_styles() {
 		return '
 		.aistma-story-calendar-widget {
 			--heatmap-square-size: 10px;

@@ -36,6 +36,7 @@ class AISTMA_Plugin {
 				'includes/class-aistma-gateway-logger.php',
 				'includes/class-aistma-story-generator.php',
 				'includes/shortcode-story-scroller.php',
+				'includes/shortcode-dashboard-widgets.php',
 				'admin/class-aistma-admin.php',
 			)
 		);

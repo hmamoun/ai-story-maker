@@ -252,7 +252,7 @@ class AISTMA_Data_Cards_Widget {
 	/**
 	 * Get widget-specific CSS styles
 	 */
-	private static function get_widget_styles() {
+	public static function get_widget_styles() {
 		return '
 		.aistma-data-cards-widget {
 			font-size: 13px;
@@ -384,7 +384,7 @@ class AISTMA_Data_Cards_Widget {
 	/**
 	 * Get widget-specific JavaScript
 	 */
-	private static function get_widget_scripts() {
+	public static function get_widget_scripts() {
 		return '
 		document.addEventListener("DOMContentLoaded", function() {
 			// Add hover effects and interactions for data cards
