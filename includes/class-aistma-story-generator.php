@@ -87,28 +87,22 @@ class AISTMA_Story_Generator {
 
 		// Check subscription status and API key availability before generating stories
 		try {
-			$subscription_status    = $instance->aistma_get_subscription_status();
-			$has_valid_subscription = $subscription_status['valid'];
-			$current_user_id        = get_current_user_id();
-			$has_credits            = $current_user_id > 0
-				&& class_exists( __NAMESPACE__ . '\\AISTMA_Credits_Manager' )
-				&& AISTMA_Credits_Manager::has_credits( $current_user_id, 1 );
+			$subscription_status   = $instance->aistma_get_subscription_status();
+			$gateway_can_generate  = $instance->gateway_can_generate();
 
-			if ( $has_valid_subscription ) {
-				$instance->aistma_log_manager::log( 'info', 'Subscription validated for domain: ' . ( $subscription_status['domain'] ?? 'unknown' ) . ' - Package: ' . ( $subscription_status['package_name'] ?? 'unknown' ) );
-			} elseif ( $has_credits ) {
-				$instance->aistma_log_manager::log( 'info', 'No subscription but user has credits — will use master API.' );
+			if ( $gateway_can_generate ) {
+				$instance->aistma_log_manager::log( 'info', 'Gateway authorized generation for domain: ' . ( $subscription_status['domain'] ?? 'unknown' ) . ' - Package: ' . ( $subscription_status['package_name'] ?? 'unknown' ) . ' - Credits remaining: ' . var_export( $subscription_status['credits_remaining'] ?? null, true ) );
 			} else {
-				// No subscription and no credits: require an OpenAI API key
+				// Gateway has no usable credits: require a local OpenAI API key.
 				$openai_api_key = get_option( 'aistma_openai_api_key' );
 				if ( empty( $openai_api_key ) ) {
 					$error_message = isset( $subscription_status['error'] )
-						? 'Subscription check failed: ' . $subscription_status['error'] . '. Also, no credits or OpenAI API key found.'
-						: 'No subscription, no credits, and no OpenAI API key configured.';
+						? 'Subscription check failed: ' . $subscription_status['error'] . '. Also, no OpenAI API key found.'
+						: 'No gateway credits available and no OpenAI API key configured.';
 					$instance->aistma_log_manager::log( 'error', $error_message );
 					return array( 'success' => false, 'message' => $error_message );
 				} else {
-					$instance->aistma_log_manager::log( 'info', 'No subscription or credits found, but OpenAI API key is available. Will use direct OpenAI API calls.' );
+					$instance->aistma_log_manager::log( 'info', 'No gateway credits, but OpenAI API key is available. Will use direct OpenAI API calls.' );
 				}
 			}
 		} catch ( \RuntimeException $e ) {
@@ -152,14 +146,13 @@ class AISTMA_Story_Generator {
 	public function generate_ai_story( $prompt_id, $prompt, $default_settings, $api_key, $aistma_master_instructions ) {
 		$merged_settings        = array_merge( $default_settings, $prompt );
 
-		// Check credits before proceeding with generation
-		$current_user_id = get_current_user_id();
-		if ( $current_user_id > 0 && class_exists( __NAMESPACE__ . '\\AISTMA_Credits_Manager' ) ) {
-			if ( ! AISTMA_Credits_Manager::has_credits( $current_user_id, 1 ) ) {
-				$error = __( 'You do not have enough credits to generate a story. Please purchase more credits.', 'ai-story-maker' );
-				$this->aistma_log_manager->log( 'warning', $error . ' (User: ' . $current_user_id . ')' );
-				throw new \RuntimeException( esc_html( $error ) );
-			}
+		// The gateway is the single source of truth for credits. Block here only
+		// when the gateway has no usable credits AND there is no local OpenAI key
+		// to fall back to.
+		if ( ! $this->gateway_can_generate() && empty( get_option( 'aistma_openai_api_key' ) ) ) {
+			$error = __( 'You do not have enough credits to generate a story. Please purchase more credits.', 'ai-story-maker' );
+			$this->aistma_log_manager->log( 'warning', $error );
+			throw new \RuntimeException( esc_html( $error ) );
 		}
 
 		$recent_posts = $this->aistma_get_recent_posts( 20, $prompt['category'] );
@@ -196,16 +189,14 @@ class AISTMA_Story_Generator {
 			);
 		}
 
-		// Credits route through the master API the same way a subscription does.
+		// Gateway-authorized generation routes through the master API; otherwise
+		// fall back to a direct OpenAI call using the local key.
 		$subscription_info = $this->get_subscription_info();
-		$current_user_id   = get_current_user_id();
-		$has_credits       = $current_user_id > 0
-			&& class_exists( __NAMESPACE__ . '\\AISTMA_Credits_Manager' )
-			&& AISTMA_Credits_Manager::has_credits( $current_user_id, 1 );
 
-		if ( $subscription_info['valid'] || $has_credits ) {
+		if ( $this->gateway_can_generate() ) {
 			return $this->generate_story_via_master_api( $prompt_id, $prompt, $merged_settings, $the_prompt, $subscription_info );
 		} else {
+			$current_user_id = get_current_user_id();
 			// Fallback to direct OpenAI API call
 			if ( $prompt['photos'] > 0 ) {
 				$the_prompt .= "\n" . __( 'Include at least ', 'ai-story-maker' ) . $prompt['photos'] . __( ' placeholders for images in the article. Use the format {img_RESOURCE:keyword1,keyword2,keyword3} where RESOURCE is one of: unsplash, pexels, or pixabay. Choose the most appropriate resource and use the most relevant keywords for fetching related images.', 'ai-story-maker' );
@@ -253,16 +244,10 @@ class AISTMA_Story_Generator {
 			'successes' => array(),
 		);
 		
-		// Check subscription status first
-		$subscription_info = $this->get_subscription_info();
-		$has_valid_subscription = $subscription_info['valid'];
-		$current_user_id = get_current_user_id();
-		$has_credits = $current_user_id > 0
-			&& class_exists( __NAMESPACE__ . '\\AISTMA_Credits_Manager' )
-			&& AISTMA_Credits_Manager::has_credits( $current_user_id, 1 );
+		// The gateway is the single source of truth for credits.
+		$gateway_can_generate = $this->gateway_can_generate();
 
-		// Check OpenAI API key only if no subscription AND no credits
-		if ( ! $has_valid_subscription && ! $has_credits ) {
+		if ( ! $gateway_can_generate ) {
 			$this->api_key = get_option( 'aistma_openai_api_key' );
 			if ( ! $this->api_key ) {
 				$error = __( 'No credits, subscribe to get more.', 'ai-story-maker' );
@@ -271,13 +256,9 @@ class AISTMA_Story_Generator {
 				throw new \RuntimeException( esc_html( $error ) );
 			}
 		} else {
-			// For subscription or credit users, we'll use master API, so OpenAI key is not required
+			// Gateway-authorized generation uses the master API; no OpenAI key needed.
 			$this->api_key = null;
-			if ( $has_valid_subscription ) {
-				$this->aistma_log_manager->log( 'info', 'Valid subscription detected, will use Master API for story generation' );
-			} else {
-				$this->aistma_log_manager->log( 'info', 'User has available credits, will use Master API for story generation' );
-			}
+			$this->aistma_log_manager->log( 'info', 'Gateway authorized generation, will use Master API for story generation' );
 		}
 
 		$raw_settings = get_option( 'aistma_prompts', '' );
@@ -669,19 +650,11 @@ class AISTMA_Story_Generator {
 			add_post_meta( $post_id, '_aistma_prompt_id', $stored_prompt_id, true );
 		}
 
-		// Deduct credit after successful post creation
+		// Credits are deducted by the gateway server-side. Just log the event.
 		if ( $post_id ) {
 			$current_user_id = get_current_user_id();
-			if ( $current_user_id > 0 && class_exists( __NAMESPACE__ . '\\AISTMA_Credits_Manager' ) ) {
-				$new_balance = AISTMA_Credits_Manager::deduct_credits( $current_user_id, 1, 'Story generation for post ' . $post_id );
-				if ( false !== $new_balance ) {
-					$this->aistma_log_manager->log( 'info', 'Credit deducted for user ' . $current_user_id . '. New balance: ' . $new_balance );
-					
-					// Log event to gateway
-					if ( class_exists( __NAMESPACE__ . '\\AISTMA_Gateway_Logger' ) ) {
-						AISTMA_Gateway_Logger::log_story_generated( $current_user_id, $post_id, $prompt_id, 1 );
-					}
-				}
+			if ( $current_user_id > 0 && class_exists( __NAMESPACE__ . '\\AISTMA_Gateway_Logger' ) ) {
+				AISTMA_Gateway_Logger::log_story_generated( $current_user_id, $post_id, $prompt_id, 1 );
 			}
 		}
 
@@ -842,22 +815,9 @@ class AISTMA_Story_Generator {
 			add_post_meta( $post_id, '_aistma_prompt_id', $stored_prompt_id, true );
 		}
 
-		// Deduct credit after successful post creation (use passed $user_id to support background generation)
-		if ( $post_id && $user_id > 0 ) {
-			if ( class_exists( __NAMESPACE__ . '\\AISTMA_Credits_Manager' ) ) {
-				$new_balance = AISTMA_Credits_Manager::deduct_credits( $user_id, 1, 'Story generation for post ' . $post_id );
-				if ( false !== $new_balance ) {
-					$this->aistma_log_manager->log( 'info', 'Credit deducted for user ' . $user_id . '. New balance: ' . $new_balance );
-
-					// Log event to gateway
-					if ( class_exists( __NAMESPACE__ . '\\AISTMA_Gateway_Logger' ) ) {
-						AISTMA_Gateway_Logger::log_story_generated( $user_id, $post_id, $prompt_id, 1 );
-					}
-				} else {
-					// Log error if deduction fails (DB error, insufficient credits, etc.)
-					$this->aistma_log_manager->log( 'error', 'Credit deduction failed for user ' . $user_id . ' on post ' . $post_id );
-				}
-			}
+		// Credits are deducted by the gateway server-side. Just log the event.
+		if ( $post_id && $user_id > 0 && class_exists( __NAMESPACE__ . '\\AISTMA_Gateway_Logger' ) ) {
+			AISTMA_Gateway_Logger::log_story_generated( $user_id, $post_id, $prompt_id, 1 );
 		}
 
 		// Add tags to the post if provided
@@ -1644,6 +1604,38 @@ class AISTMA_Story_Generator {
 			'price' => 0.0,
 			'created_at' => '',
 		);
+	}
+
+	/**
+	 * Whether the gateway authorizes story generation for this domain.
+	 *
+	 * The gateway is the single source of truth for credits: a domain may
+	 * generate when it has a valid subscription that is not out of credits.
+	 * A null credits_remaining means the gateway did not report a number
+	 * (e.g. unmetered plan) — treat as allowed and let the gateway enforce.
+	 *
+	 * @return bool
+	 */
+	public function gateway_can_generate() {
+		$info = $this->get_subscription_info();
+		if ( empty( $info['valid'] ) ) {
+			return false;
+		}
+		$remaining = array_key_exists( 'credits_remaining', $info ) ? $info['credits_remaining'] : null;
+		return ( null === $remaining || intval( $remaining ) > 0 );
+	}
+
+	/**
+	 * Remaining gateway credits for this domain.
+	 *
+	 * @return int|null Remaining credit count, or null if unknown/unmetered.
+	 */
+	public function gateway_credits_remaining() {
+		$info = $this->get_subscription_info();
+		if ( empty( $info['valid'] ) || ! array_key_exists( 'credits_remaining', $info ) ) {
+			return 0;
+		}
+		return null === $info['credits_remaining'] ? null : intval( $info['credits_remaining'] );
 	}
 
 	/**

@@ -83,7 +83,6 @@ class AISTMA_Admin {
 			'admin/class-aistma-settings-page.php',
 			'includes/class-aistma-log-manager.php',
 			'includes/class-aistma-activation-wizard.php',
-			'includes/class-aistma-credits-manager.php',
 			'includes/class-aistma-gateway-logger.php',
 			'includes/class-aistma-rating-request.php',
 			'admin/widgets/widgets-manager.php',
@@ -243,24 +242,6 @@ class AISTMA_Admin {
 			9
 		);
 
-		// Add submenu page for transactions
-		add_submenu_page(
-			'aistma-settings',
-			__( 'User Transactions', 'ai-story-maker' ),
-			__( 'Transactions', 'ai-story-maker' ),
-			'manage_options',
-			'aistma-transactions',
-			array( $this, 'aistma_render_transactions_page' )
-		);
-	}
-
-	/**
-	 * Render the transactions page.
-	 *
-	 * @return void
-	 */
-	public function aistma_render_transactions_page() {
-		AISTMA_Transactions_Page::render_page();
 	}
 
 	/**
@@ -1405,30 +1386,24 @@ class AISTMA_Admin {
 				wp_send_json_error( array( 'message' => __( 'Invalid prompt selected.', 'ai-story-maker' ) ) );
 			}
 
-			// Get subscription status. If invalid, attempt free-tier enrollment and re-check.
-			// This handles both: no API key yet, and API key exists but domain has no subscription in gateway DB.
+			// The gateway is the single source of truth for credits. If it does not
+			// authorize generation (no subscription, or stored API key but invalid
+			// subscription — e.g. after cancellation), attempt free-tier enrollment
+			// once and re-check before falling back to a site OpenAI key.
 			$story_generator = new AISTMA_Story_Generator();
-			$subscription_info = $story_generator->get_subscription_info();
-			$has_valid_subscription = $subscription_info['valid'];
 
-			if ( ! $has_valid_subscription ) {
-				$this->auto_enroll_free_package( get_option( 'admin_email' ) );
-				$subscription_info = $story_generator->get_subscription_info();
-				$has_valid_subscription = $subscription_info['valid'];
-			}
-
-			$has_local_credits = AISTMA_Credits_Manager::has_credits( $user_id, 1 );
-
-			// Require an OpenAI API key only when the user has neither a subscription nor credits.
-			// Credits route through the master API just like a subscription does.
 			$api_key = null;
-			if ( ! $has_valid_subscription && ! $has_local_credits ) {
-				$api_key = get_option( 'aistma_openai_api_key' );
-				if ( ! $api_key ) {
-					wp_send_json_error( array(
-						'message' => __( 'No subscription or credits found. Please upgrade your plan, purchase credits, or add an OpenAI API key.', 'ai-story-maker' ),
-						'redirect_url' => admin_url( 'admin.php?page=aistma-settings&tab=ai_writer' )
-					) );
+			if ( ! $story_generator->gateway_can_generate() ) {
+				$this->auto_enroll_free_package( get_option( 'admin_email' ) );
+				$story_generator->clear_cached_subscription_status();
+				if ( ! $story_generator->gateway_can_generate() ) {
+					$api_key = get_option( 'aistma_openai_api_key' );
+					if ( ! $api_key ) {
+						wp_send_json_error( array(
+							'message' => __( 'No subscription or credits found. Please upgrade your plan, purchase credits, or add an OpenAI API key.', 'ai-story-maker' ),
+							'redirect_url' => admin_url( 'admin.php?page=aistma-settings&tab=ai_writer' )
+						) );
+					}
 				}
 			}
 
@@ -1466,8 +1441,10 @@ class AISTMA_Admin {
 				// Log the prompt selection event
 				AISTMA_Gateway_Logger::log_prompt_selected( $user_id, $prompt_id, array( 'post_id' => $post_id ) );
 
-				// Prepare response with generated post data
-				$credits_remaining = AISTMA_Credits_Manager::get_user_credits( $user_id );
+				// Prepare response with generated post data. Re-query the gateway
+				// so the count reflects the credit just consumed server-side.
+				$story_generator->clear_cached_subscription_status();
+				$credits_remaining = $story_generator->gateway_credits_remaining();
 
 				wp_send_json_success( array(
 					'post_id' => $post_id,
@@ -1596,9 +1573,11 @@ class AISTMA_Admin {
 			// Check if rating should be shown
 			$show_rating = AISTMA_Rating_Request::should_show_rating( $user_id );
 
+			$credits_remaining = ( new AISTMA_Story_Generator() )->gateway_credits_remaining();
+
 			wp_send_json_success( array(
 				'post_id' => $post_id,
-				'credits_remaining' => AISTMA_Credits_Manager::get_user_credits( $user_id ),
+				'credits_remaining' => $credits_remaining,
 				'edit_url' => get_edit_post_link( $post_id, 'raw' ),
 				'show_rating' => $show_rating,
 			) );

@@ -79,7 +79,6 @@ class AISTMA_Gateway_Logger {
 				'post_id'       => $post_id,
 				'prompt_id'     => $prompt_id,
 				'credits_used'  => $credits_used,
-				'credits_remaining' => AISTMA_Credits_Manager::get_user_credits( $user_id ),
 				'timestamp'     => current_time( 'mysql' ),
 			),
 			$data
