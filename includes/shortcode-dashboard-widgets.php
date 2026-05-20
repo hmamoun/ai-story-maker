@@ -57,6 +57,10 @@ class AISTMA_Dashboard_Shortcodes {
 			return '';
 		}
 
+		if ( class_exists( 'AISTMA_Widgets_Manager' ) ) {
+			AISTMA_Widgets_Manager::load_widget_classes();
+		}
+
 		if ( ! class_exists( $widget_class ) || ! method_exists( $widget_class, 'render_widget' ) ) {
 			return '';
 		}
