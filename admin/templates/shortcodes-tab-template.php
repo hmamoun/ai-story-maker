@@ -42,6 +42,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 
 		<div class="aistma-shortcode-section">
+			<h3><?php esc_html_e( 'Dashboard widgets (frontend)', 'ai-story-maker' ); ?></h3>
+			<p><?php esc_html_e( 'Embed the same analytics widgets from your WordPress dashboard on any page or post.', 'ai-story-maker' ); ?></p>
+			<ul class="aistma-sub-list">
+				<li><code>[aistma_data_overview]</code> — <?php esc_html_e( 'Key stats cards (total posts, AI generated, etc.)', 'ai-story-maker' ); ?></li>
+				<li><code>[aistma_generation_calendar]</code> — <?php esc_html_e( 'Story generation heatmap (last 3 months)', 'ai-story-maker' ); ?></li>
+				<li><code>[aistma_recent_activity]</code> — <?php esc_html_e( 'Recent posts traffic heatmap', 'ai-story-maker' ); ?></li>
+			</ul>
+			<h4><?php esc_html_e( 'Visibility', 'ai-story-maker' ); ?></h4>
+			<p><?php esc_html_e( 'Optional attribute viewable_by: public (default), logged_in, or admin.', 'ai-story-maker' ); ?></p>
+			<ul class="aistma-sub-list">
+				<li><code>[aistma_data_overview viewable_by="logged_in"]</code></li>
+				<li><code>[aistma_generation_calendar viewable_by="admin"]</code></li>
+			</ul>
+		</div>
+
+		<div class="aistma-shortcode-section">
 			<h3>News Scroller: <code>[aistma_scroller]</code></h3>
 			<p><?php esc_html_e( 'Displays a sticky, auto‑scrolling story bar at the bottom of the screen with your latest AI‑generated stories. Add it to any page to enable the scroller for that page.', 'ai-story-maker' ); ?></p>
 		</div>

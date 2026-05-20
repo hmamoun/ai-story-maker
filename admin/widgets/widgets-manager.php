@@ -33,22 +33,17 @@ class AISTMA_Widgets_Manager {
 	}
 
 	/**
-	 * Load all dashboard widgets
+	 * Load widget class files (frontend + admin).
+	 *
+	 * Required on the frontend so dashboard-widget shortcodes can call render_widget().
 	 */
-	public static function load_widgets() {
-		// Only load widgets in admin area
-		if ( ! is_admin() ) {
-			return;
-		}
-
+	public static function load_widget_classes() {
 		$widgets_path = AISTMA_PATH . 'admin/widgets/';
-		
-		// Load individual widget files
+
 		$widgets = array(
-			'wizard-action-widget.php',
 			'data-cards-widget.php',
 			'story-calendar-widget.php',
-			'posts-activity-widget.php'
+			'posts-activity-widget.php',
 		);
 
 		foreach ( $widgets as $widget_file ) {
@@ -57,14 +52,34 @@ class AISTMA_Widgets_Manager {
 				require_once $widget_path;
 			}
 		}
-		
-		// Register wizard action widget
-		add_action( 'wp_dashboard_setup', function() {
-			$class = 'exedotcom\\aistorymaker\\AISTMA_Wizard_Action_Widget';
-			if ( class_exists( $class ) ) {
-				call_user_func( array( $class, 'register_widget' ) );
+	}
+
+	/**
+	 * Load admin-only dashboard widgets (wizard, etc.).
+	 */
+	public static function load_widgets() {
+		self::load_widget_classes();
+
+		if ( ! is_admin() ) {
+			return;
+		}
+
+		$widgets_path = AISTMA_PATH . 'admin/widgets/';
+		$wizard_path  = $widgets_path . 'wizard-action-widget.php';
+
+		if ( file_exists( $wizard_path ) ) {
+			require_once $wizard_path;
+		}
+
+		add_action(
+			'wp_dashboard_setup',
+			function () {
+				$class = 'exedotcom\\aistorymaker\\AISTMA_Wizard_Action_Widget';
+				if ( class_exists( $class ) ) {
+					call_user_func( array( $class, 'register_widget' ) );
+				}
 			}
-		} );
+		);
 	}
 
 	/**
