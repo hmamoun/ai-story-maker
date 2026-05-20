@@ -68,7 +68,7 @@ class AISTMA_Dashboard_Shortcodes {
 		ob_start();
 		self::maybe_print_assets( $widget_class );
 		echo '<div class="aistma-shortcode-wrapper">';
-		call_user_func( array( $widget_class, 'render_widget' ) );
+		call_user_func( array( $widget_class, 'render_widget' ), array( 'show_footer' => false ) );
 		echo '</div>';
 		return ob_get_clean();
 	}

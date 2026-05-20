@@ -62,9 +62,9 @@ class Test_Database_Migration extends WP_UnitTestCase {
 		$this->assertEquals( '2.3.0', $version, 'Site option should be stored and retrieved' );
 
 		// Update
-		update_option( 'aistma_version', '2.3.1' );
+		update_option( 'aistma_version', '2.3.2' );
 		$new_version = get_option( 'aistma_version' );
-		$this->assertEquals( '2.3.1', $new_version, 'Option should update correctly' );
+		$this->assertEquals( '2.3.2', $new_version, 'Option should update correctly' );
 
 		// Delete
 		delete_option( 'aistma_version' );

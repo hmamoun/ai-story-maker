@@ -151,8 +151,19 @@ class AISTMA_Story_Calendar_Widget {
 
 	/**
 	 * Render the dashboard widget
+	 *
+	 * @param array $args {
+	 *     @type bool $show_footer Whether to show the View Analytics footer link. Default true.
+	 * }
 	 */
-	public static function render_widget() {
+	public static function render_widget( $args = array() ) {
+		$args = wp_parse_args(
+			$args,
+			array(
+				'show_footer' => true,
+			)
+		);
+
 		$story_data = self::get_story_generation_data();
 		$calendar_result = self::generate_calendar_data( $story_data );
 		$calendar_data = $calendar_result['calendar'];
@@ -246,13 +257,13 @@ class AISTMA_Story_Calendar_Widget {
 				</div>
 			</div>
 
+			<?php if ( $args['show_footer'] && current_user_can( 'manage_options' ) ) : ?>
 			<div class="aistma-widget-footer">
-				<?php if ( current_user_can( 'manage_options' ) ) : ?>
 				<a href="<?php echo esc_url( admin_url( 'admin.php?page=aistma-settings&tab=analytics' ) ); ?>" class="button button-primary button-small">
 					<?php esc_html_e( 'View Analytics', 'ai-story-maker' ); ?>
 				</a>
-				<?php endif; ?>
 			</div>
+			<?php endif; ?>
 		</div>
 		<?php
 	}
