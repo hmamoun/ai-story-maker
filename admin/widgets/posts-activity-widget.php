@@ -316,7 +316,7 @@ class AISTMA_Posts_Activity_Widget {
 	/**
 	 * Get widget-specific CSS styles
 	 */
-	private static function get_widget_styles() {
+	public static function get_widget_styles() {
 		return '
 		.aistma-posts-activity-widget {
 			font-size: 12px;
