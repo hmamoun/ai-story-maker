@@ -42,18 +42,36 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 
 		<div class="aistma-shortcode-section">
-			<h3><?php esc_html_e( 'Dashboard widgets (frontend)', 'ai-story-maker' ); ?></h3>
-			<p><?php esc_html_e( 'Embed the same analytics widgets from your WordPress dashboard on any page or post.', 'ai-story-maker' ); ?></p>
+			<h3><?php esc_html_e( 'Analytics dashboard widgets', 'ai-story-maker' ); ?></h3>
+			<p><?php esc_html_e( 'Show the same analytics widgets from your WordPress dashboard on any public page, post, or widget area. Useful for author dashboards, member-only stats pages, or internal reporting.', 'ai-story-maker' ); ?></p>
+
+			<h4><?php esc_html_e( 'Data Overview:', 'ai-story-maker' ); ?> <code>[aistma_data_overview]</code></h4>
+			<p><?php esc_html_e( 'Displays key publishing metrics in a card layout: total posts, AI-generated post count, stories over the last six months, posts published this month, and a quick list of your latest posts.', 'ai-story-maker' ); ?></p>
 			<ul class="aistma-sub-list">
-				<li><code>[aistma_data_overview]</code> — <?php esc_html_e( 'Key stats cards (total posts, AI generated, etc.)', 'ai-story-maker' ); ?></li>
-				<li><code>[aistma_generation_calendar]</code> — <?php esc_html_e( 'Story generation heatmap (last 3 months)', 'ai-story-maker' ); ?></li>
-				<li><code>[aistma_recent_activity]</code> — <?php esc_html_e( 'Recent posts traffic heatmap', 'ai-story-maker' ); ?></li>
-			</ul>
-			<h4><?php esc_html_e( 'Visibility', 'ai-story-maker' ); ?></h4>
-			<p><?php esc_html_e( 'Optional attribute viewable_by: public (default), logged_in, or admin.', 'ai-story-maker' ); ?></p>
-			<ul class="aistma-sub-list">
+				<li><code>[aistma_data_overview]</code></li>
 				<li><code>[aistma_data_overview viewable_by="logged_in"]</code></li>
+			</ul>
+
+			<h4><?php esc_html_e( 'Generation Calendar:', 'ai-story-maker' ); ?> <code>[aistma_generation_calendar]</code></h4>
+			<p><?php esc_html_e( 'Shows a GitHub-style heatmap of how many AI stories were generated each day over the last three months. Darker squares mean more stories on that day.', 'ai-story-maker' ); ?></p>
+			<ul class="aistma-sub-list">
+				<li><code>[aistma_generation_calendar]</code></li>
 				<li><code>[aistma_generation_calendar viewable_by="admin"]</code></li>
+			</ul>
+
+			<h4><?php esc_html_e( 'Recent Activity:', 'ai-story-maker' ); ?> <code>[aistma_recent_activity]</code></h4>
+			<p><?php esc_html_e( 'Shows a heatmap of page views for your most recent posts over the last 14 days (based on AI Story Maker traffic logging). Each row is a post; each column is a day.', 'ai-story-maker' ); ?></p>
+			<ul class="aistma-sub-list">
+				<li><code>[aistma_recent_activity]</code></li>
+				<li><code>[aistma_recent_activity viewable_by="logged_in"]</code></li>
+			</ul>
+
+			<h4><?php esc_html_e( 'Visibility option (all three widgets)', 'ai-story-maker' ); ?></h4>
+			<p><?php esc_html_e( 'Use the viewable_by attribute to control who can see the widget. If the viewer is not allowed, nothing is output.', 'ai-story-maker' ); ?></p>
+			<ul class="aistma-sub-list">
+				<li><strong>viewable_by="public"</strong> — <?php esc_html_e( 'everyone (default)', 'ai-story-maker' ); ?></li>
+				<li><strong>viewable_by="logged_in"</strong> — <?php esc_html_e( 'registered users only', 'ai-story-maker' ); ?></li>
+				<li><strong>viewable_by="admin"</strong> — <?php esc_html_e( 'site administrators only', 'ai-story-maker' ); ?></li>
 			</ul>
 		</div>
 
