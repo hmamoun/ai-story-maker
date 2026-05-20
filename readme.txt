@@ -4,7 +4,7 @@ Tags: ai, content creation, blog automation, article generation, wordpress ai pl
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 2.3.2
+Stable tag: 2.3.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Plugin URI: https://www.storymakerplugin.com/
@@ -106,6 +106,9 @@ This plugin makes requests to external services for core functionality:
 4. SEO & Meta panel — generate optimised meta descriptions for your posts with a single click.
 
 == Changelog ==
+
+= 2.3.3 =
+* Maintenance release: republished 2.3.2 content under a new tag to ensure the WP.org plugin directory receives the latest code (the prior tag had been packaged from an outdated working copy).
 
 = 2.3.2 =
 * **NEW: Frontend dashboard widgets as shortcodes** -- the Data Overview, Generation Calendar, and Recent Posts Activity admin widgets can now be embedded on any page via [aistma_data_overview], [aistma_generation_calendar], and [aistma_recent_activity]
