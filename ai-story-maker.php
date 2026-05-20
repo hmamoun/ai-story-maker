@@ -3,7 +3,7 @@
  * Plugin Name: AI Story Maker
  * Plugin URI: https://www.storymakerplugin.com/
  * Description: AI-powered content generator for WordPress — create engaging stories with a single click.
- * Version: 2.3.2
+ * Version: 2.3.3
  * Author: Hayan Mamoun
  * Author URI: https://exedotcom.ca
  * License: GPLv2 or later
@@ -26,7 +26,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 define( 'AISTMA_PATH', plugin_dir_path( __FILE__ ) );
 define( 'AISTMA_URL', plugin_dir_url( __FILE__ ) );
-define( 'AISTMA_VERSION', '2.3.2' );
+define( 'AISTMA_VERSION', '2.3.3' );
 
 
 use exedotcom\aistorymaker\AISTMA_Story_Generator;
