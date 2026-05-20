@@ -108,6 +108,10 @@ This plugin makes requests to external services for core functionality:
 == Changelog ==
 
 = 2.3.2 =
+* **NEW: Frontend dashboard widgets as shortcodes** -- the Data Overview, Generation Calendar, and Recent Posts Activity admin widgets can now be embedded on any page via [aistma_data_overview], [aistma_generation_calendar], and [aistma_recent_activity]
+* **FIX: Shortcode rendering on the frontend** -- widget classes are now loaded outside the admin context so the new shortcodes render their HTML instead of producing empty output
+
+= 2.3.1 =
 * **FIX: Insufficient credits after subscription cancellation** -- wizard now re-enrolls in the free tier when the gateway no longer authorizes generation, not only when no API key is stored
 * **FIX: Gateway is the single source of truth for credits** -- removed the local credit ledger so a stale local count cannot block generation when the gateway has valid credits
 * **FIX: Wizard auto-enrollment** -- calls /wizard-enroll-free and stores the returned gateway API key, then re-checks the subscription before generating
