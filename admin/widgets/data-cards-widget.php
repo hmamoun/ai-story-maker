@@ -79,10 +79,11 @@ class AISTMA_Data_Cards_Widget {
 		// AI-generated posts
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- AI content statistics for widget
 		$stats['ai_generated_posts'] = $wpdb->get_var(
-			"SELECT COUNT(*) FROM {$wpdb->posts} p 
-			JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id 
-			WHERE p.post_type = 'post' AND p.post_status = 'publish' 
-			AND pm.meta_key = '_aistma_generated'"
+			"SELECT COUNT(*) FROM {$wpdb->posts} p
+			JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
+			WHERE p.post_type = 'post' AND p.post_status = 'publish'
+			AND pm.meta_key = 'ai_story_maker_generated_via'
+			AND pm.meta_value IN ('master_api', 'openai_api')"
 		);
 		
 		// Posts this week
@@ -112,8 +113,9 @@ class AISTMA_Data_Cards_Widget {
 			WHERE post_type = 'post' AND post_status = 'publish' 
 			AND post_date >= %s
 			AND ID IN (
-				SELECT post_id FROM {$wpdb->postmeta} 
-				WHERE meta_key = '_aistma_generated'
+				SELECT post_id FROM {$wpdb->postmeta}
+				WHERE meta_key = 'ai_story_maker_generated_via'
+				AND meta_value IN ('master_api', 'openai_api')
 			)
 			GROUP BY DATE(post_date)",
 			$six_months_ago
