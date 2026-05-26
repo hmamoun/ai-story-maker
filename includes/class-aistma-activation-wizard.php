@@ -24,7 +24,7 @@ class AISTMA_Activation_Wizard {
 
 	const WIZARD_SHOWN_KEY = 'aistma_wizard_shown';
 	const WIZARD_LAST_SHOWN_KEY = 'aistma_wizard_last_shown_time';
-	const WIZARD_PROMPTS_KEY = 'aistma_default_prompts';
+	const WIZARD_PROMPTS_KEY = 'aistma_default_prompts_v2';
 
 	/**
 	 * Check if wizard should be displayed for current user.
@@ -109,14 +109,6 @@ class AISTMA_Activation_Wizard {
 				'photos'      => 1,
 			),
 			array(
-				'id'          => 'lifestyle-trends',
-				'name'        => 'Lifestyle Trends',
-				'description' => 'Explore the latest lifestyle and fashion trends.',
-				'category'    => 'Lifestyle',
-				'example'     => 'The best minimalist lifestyle hacks for 2024...',
-				'photos'      => 2,
-			),
-			array(
 				'id'          => 'food-culture',
 				'name'        => 'Food & Culture',
 				'description' => 'Tell stories about food, recipes, and cultural cuisines.',
@@ -130,30 +122,6 @@ class AISTMA_Activation_Wizard {
 				'description' => 'Inspire readers with personal development stories.',
 				'category'    => 'Self-Help',
 				'example'     => '5 transformative habits that changed my life...',
-				'photos'      => 1,
-			),
-			array(
-				'id'          => 'entertainment',
-				'name'        => 'Entertainment',
-				'description' => 'Create entertaining stories and pop culture commentary.',
-				'category'    => 'Entertainment',
-				'example'     => 'Hidden gems in the streaming world...',
-				'photos'      => 2,
-			),
-			array(
-				'id'          => 'science-discovery',
-				'name'        => 'Science Discovery',
-				'description' => 'Explain fascinating scientific discoveries and breakthroughs.',
-				'category'    => 'Science',
-				'example'     => 'The latest discoveries in quantum physics...',
-				'photos'      => 1,
-			),
-			array(
-				'id'          => 'education-learning',
-				'name'        => 'Education & Learning',
-				'description' => 'Share educational content and learning tips.',
-				'category'    => 'Education',
-				'example'     => 'The best ways to master a new skill...',
 				'photos'      => 1,
 			),
 		);

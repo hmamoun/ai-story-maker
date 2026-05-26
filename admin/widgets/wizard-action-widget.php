@@ -46,34 +46,7 @@ class AISTMA_Wizard_Action_Widget {
 			</p>
 		</div>
 
-		<script type="text/javascript">
-			document.addEventListener('DOMContentLoaded', function() {
-				const btn = document.getElementById('aistma-widget-open-wizard');
-				if (!btn) {
-					console.warn('aistma-widget-open-wizard button not found');
-					return;
-				}
-
-				btn.addEventListener('click', function(e) {
-					e.preventDefault();
-
-					var attempts = 0;
-					function showWizard() {
-						if (typeof AistmaWizard !== 'undefined' && typeof AistmaWizard.show === 'function') {
-							AistmaWizard.show();
-							return;
-						}
-						if (++attempts < 20) {
-							setTimeout(showWizard, 100);
-						} else {
-							console.warn('AistmaWizard: timed out waiting for wizard script to load.');
-						}
-					}
-
-					showWizard();
-				});
-			});
-		</script>
+		<?php /* Click handled by activation-wizard.js via delegated $(document).on() */ ?>
 		<?php
 	}
 }

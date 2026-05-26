@@ -12,7 +12,7 @@
  * Domain Path: /languages
  * Requires PHP: 7.4
  * Requires at least: 5.8
- * Tested up to: 6.9
+ * Tested up to: 7.0
  *
  * @package AI_Story_Maker
  */
@@ -27,6 +27,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 define( 'AISTMA_PATH', plugin_dir_path( __FILE__ ) );
 define( 'AISTMA_URL', plugin_dir_url( __FILE__ ) );
 define( 'AISTMA_VERSION', '2.3.3' );
+define( 'AISTMA_PRICING_URL', 'https://www.storymakerplugin.com/#pricing' );
 
 
 use exedotcom\aistorymaker\AISTMA_Story_Generator;
@@ -38,6 +39,7 @@ require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-content-editor
 require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-open-graph.php';
 require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-activation-wizard.php';
 require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-weekly-scheduler.php';
+require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-abilities.php';
 
 // Hooks.
 register_activation_hook( __FILE__, array( 'exedotcom\\aistorymaker\\AISTMA_Plugin', 'aistma_activate' ) );
@@ -61,6 +63,11 @@ if ( class_exists( '\\exedotcom\\aistorymaker\\AISTMA_Content_Editor_Handler' ) 
 // Initialize Open Graph Meta Tags Handler
 if ( class_exists( '\\exedotcom\\aistorymaker\\AISTMA_Open_Graph' ) ) {
     new \exedotcom\aistorymaker\AISTMA_Open_Graph();
+}
+
+// Register WP 7.0 Abilities (no-op on WP < 7.0 — wp_register_ability won't exist).
+if ( class_exists( '\\exedotcom\\aistorymaker\\AISTMA_Abilities' ) ) {
+    new \exedotcom\aistorymaker\AISTMA_Abilities();
 }
 
 /**

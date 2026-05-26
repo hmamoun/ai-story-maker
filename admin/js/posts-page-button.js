@@ -4,7 +4,7 @@
  * @package AI_Story_Maker
  */
 
-document.addEventListener('DOMContentLoaded', function() {
+function aistmaInitPostsPageButton() {
 	// Add the Generate Stories button next to "Add New" button
 	const addNewButton = document.querySelector('.page-title-action');
 	if (addNewButton) {
@@ -142,4 +142,10 @@ document.addEventListener('DOMContentLoaded', function() {
 			}
 		}
 	}
-});
+}
+
+if (document.readyState === 'loading') {
+	document.addEventListener('DOMContentLoaded', aistmaInitPostsPageButton);
+} else {
+	aistmaInitPostsPageButton();
+}

@@ -81,7 +81,8 @@ class AISTMA_Story_Calendar_Widget {
 			AND post_date >= %s
 			AND ID IN (
 				SELECT post_id FROM {$wpdb->postmeta} 
-				WHERE meta_key = '_aistma_generated'
+				WHERE meta_key = 'ai_story_maker_generated_via'
+				AND meta_value IN ('master_api', 'openai_api')
 			)
 			GROUP BY DATE(post_date)
 			ORDER BY date ASC",

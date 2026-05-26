@@ -55,7 +55,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<!-- Weekly Toggle -->
 		<div class="aistma-preview-weekly-toggle">
 			<label for="aistma-weekly-toggle" class="aistma-weekly-toggle-label">
-				<input type="checkbox" id="aistma-weekly-toggle" class="aistma-weekly-toggle-checkbox" checked>
+				<input type="checkbox" id="aistma-weekly-toggle" class="aistma-weekly-toggle-checkbox">
 				<span class="aistma-weekly-toggle-text"><?php esc_html_e( 'Auto-generate stories every week', 'ai-story-maker' ); ?></span>
 			</label>
 			<p class="aistma-weekly-toggle-help"><?php esc_html_e( 'This will use 1 credit per week. Can disable anytime.', 'ai-story-maker' ); ?></p>
