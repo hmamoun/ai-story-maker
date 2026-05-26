@@ -129,6 +129,7 @@
 				const $status = $('#aistma-site-prompt-status');
 
 				$btn.prop('disabled', true);
+				$status.hide().empty();
 				$status.html('<span class="spinner is-active" style="float:none;vertical-align:middle;margin-right:6px;"></span>' +
 					(aistmaWizardL10n.generatingPrompt || 'Building your prompt…')).show();
 
@@ -168,8 +169,8 @@
 								'</div>'
 							);
 
-							// Prepend with CSS order so it sits first, and rebind click handlers
-							$('.aistma-prompts-grid').css('display','flex').css('flex-wrap','wrap').prepend($card);
+							// Prepend into the existing grid; CSS order:-1 on the card places it first
+							$('.aistma-prompts-grid').prepend($card);
 							$card.on('click', function () { self.selectAndGenerate($card); });
 							$card.find('.aistma-select-prompt').on('click', function (e) {
 								e.stopPropagation();

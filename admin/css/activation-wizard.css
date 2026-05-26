@@ -150,6 +150,38 @@
 	font-size: 16px;
 }
 
+/* Site Topic Section */
+.aistma-site-topic-section {
+	background: #f0f6fc;
+	border: 1px solid #c3c4c7;
+	border-radius: 6px;
+	padding: 14px 18px;
+	margin-bottom: 0;
+}
+
+.aistma-site-topic-heading {
+	margin: 0 0 6px;
+	font-size: 14px;
+}
+
+.aistma-site-topic-description {
+	margin: 0 0 10px;
+	color: #646970;
+	font-size: 13px;
+}
+
+.aistma-site-topic-controls {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+	align-items: center;
+}
+
+.aistma-site-prompt-status {
+	margin-top: 8px;
+	font-size: 13px;
+}
+
 /* OR Divider */
 .aistma-or-divider {
 	display: flex;

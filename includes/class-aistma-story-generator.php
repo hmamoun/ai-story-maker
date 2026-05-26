@@ -96,7 +96,7 @@ class AISTMA_Story_Generator {
 			} else {
 				$error_message = isset( $subscription_status['error'] )
 					? 'Subscription check failed: ' . $subscription_status['error']
-					: 'No active plan or credits found. Please visit storymakerplugin.com/#pricing to choose a plan.';
+					: 'No active plan or credits found. Please visit ' . AISTMA_PRICING_URL . ' to choose a plan.';
 				$instance->aistma_log_manager::log( 'error', $error_message );
 				return array( 'success' => false, 'message' => $error_message );
 			}
@@ -144,7 +144,8 @@ class AISTMA_Story_Generator {
 		// The gateway is the single source of truth for credits. Block here only
 		// Gateway is the only generation path. Block if it can't generate.
 		if ( ! $this->gateway_can_generate() ) {
-			$error = __( 'No active plan or credits found. Please visit storymakerplugin.com/#pricing to choose a plan.', 'ai-story-maker' );
+			/* translators: %s: pricing page URL */
+			$error = sprintf( __( 'No active plan or credits found. Please visit %s to choose a plan.', 'ai-story-maker' ), AISTMA_PRICING_URL );
 			$this->aistma_log_manager->log( 'warning', $error );
 			throw new \RuntimeException( esc_html( $error ) );
 		}
@@ -229,7 +230,8 @@ class AISTMA_Story_Generator {
 		
 		// Gateway is the only generation path — no local API key fallback.
 		if ( ! $this->gateway_can_generate() ) {
-			$error = __( 'No active plan or credits found. Please visit storymakerplugin.com/#pricing to choose a plan.', 'ai-story-maker' );
+			/* translators: %s: pricing page URL */
+			$error = sprintf( __( 'No active plan or credits found. Please visit %s to choose a plan.', 'ai-story-maker' ), AISTMA_PRICING_URL );
 			$this->aistma_log_manager->log( 'error', $error );
 			$results['errors'][] = $error;
 			throw new \RuntimeException( esc_html( $error ) );

@@ -177,7 +177,6 @@ class AISTMA_Admin {
 				'showWizard' => AISTMA_Activation_Wizard::maybe_show_wizard() ? '1' : '0',
 				'generateNonce' => wp_create_nonce( 'aistma_wizard_generate_nonce' ),
 				'saveNonce' => wp_create_nonce( 'aistma_wizard_save_nonce' ),
-				'cancelNonce' => wp_create_nonce( 'aistma_wizard_cancel_nonce' ),
 				'dismissNonce' => wp_create_nonce( 'aistma_wizard_dismiss_nonce' ),
 				'weeklyNonce' => wp_create_nonce( 'aistma_confirm_weekly_nonce' ),
 				'startupCreditsNonce' => wp_create_nonce( 'aistma_ensure_startup_credits_nonce' ),
@@ -191,12 +190,13 @@ class AISTMA_Admin {
 				'editPostUrl' => admin_url( 'post.php?action=edit' ),
 				'postsPageUrl'    => admin_url( 'edit.php' ),
 				'draftSavedNotice' => __( 'Your story draft was saved — find it in Posts → All Posts.', 'ai-story-maker' ),
+				'viewDrafts'        => __( 'View Posts', 'ai-story-maker' ),
 				'siteName'          => esc_js( get_bloginfo( 'name' ) ),
 				'siteDescription'   => esc_js( get_bloginfo( 'description' ) ),
 				'sitePromptNonce'   => wp_create_nonce( 'aistma_site_prompt_nonce' ),
 				'enterSiteDescription' => __( 'Please describe your site first.', 'ai-story-maker' ),
-				'generatingPrompt'  => __( 'Building your promptâ¦', 'ai-story-maker' ),
-				'promptReady'       => __( 'Your custom prompt is ready â click Generate Post Now on the highlighted card.', 'ai-story-maker' ),
+				'generatingPrompt'  => __( 'Building your prompt…', 'ai-story-maker' ),
+				'promptReady'       => __( 'Your custom prompt is ready — click Generate Post Now on the highlighted card.', 'ai-story-maker' ),
 				'generatePostNow'   => __( 'Generate Post Now', 'ai-story-maker' ),
 				'redirectAfterSave' => true,
 			) );
@@ -318,7 +318,11 @@ class AISTMA_Admin {
 			if ( $notice === 'accounts_required' ) {
 				echo '<div class="notice notice-warning is-dismissible">';
 				echo '<p><strong>' . esc_html__( 'Account Setup Required', 'ai-story-maker' ) . '</strong></p>';
-				echo '<p>' . esc_html__( 'Please activate a plan at storymakerplugin.com/#pricing to start generating stories.', 'ai-story-maker' ) . '</p>';
+				echo '<p>' . sprintf(
+					/* translators: %s: pricing page URL */
+					esc_html__( 'Please activate a plan at %s to start generating stories.', 'ai-story-maker' ),
+					esc_url( AISTMA_PRICING_URL )
+				) . '</p>';
 				echo '</div>';
 			} elseif ( $notice === 'prompts_required' ) {
 				echo '<div class="notice notice-warning is-dismissible">';
@@ -1171,7 +1175,8 @@ class AISTMA_Admin {
 		// No active gateway plan found — direct user to purchase a plan.
 		return array(
 			'valid' => false,
-			'message' => __( 'No active plan found. Please visit storymakerplugin.com/#pricing to get started.', 'ai-story-maker' ),
+			/* translators: %s: pricing page URL */
+			'message' => sprintf( __( 'No active plan found. Please visit %s to get started.', 'ai-story-maker' ), AISTMA_PRICING_URL ),
 			'type' => 'none'
 		);
 	}
@@ -1403,7 +1408,7 @@ class AISTMA_Admin {
 				if ( ! $story_generator->gateway_can_generate() ) {
 					wp_send_json_error( array(
 						'message' => __( 'Your free plan could not be activated automatically. Please choose a plan to start generating stories.', 'ai-story-maker' ),
-						'redirect_url' => 'https://www.storymakerplugin.com/#pricing',
+						'redirect_url' => AISTMA_PRICING_URL,
 					) );
 					return;
 				}

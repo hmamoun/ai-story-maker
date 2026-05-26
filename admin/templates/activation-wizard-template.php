@@ -38,10 +38,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 
 		<!-- Site Topic Section -->
-		<div class="aistma-site-topic-section" style="background:#f0f6fc;border:1px solid #c3c4c7;border-radius:6px;padding:14px 18px;margin-bottom:0;">
-			<h3 style="margin:0 0 6px;font-size:14px;"><?php esc_html_e( 'Generate a story about YOUR site', 'ai-story-maker' ); ?></h3>
-			<p style="margin:0 0 10px;color:#646970;font-size:13px;"><?php esc_html_e( 'Describe your site and we will build a custom prompt — or pick a topic below.', 'ai-story-maker' ); ?></p>
-			<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+		<div class="aistma-site-topic-section">
+			<h3 class="aistma-site-topic-heading"><?php esc_html_e( 'Generate a story about YOUR site', 'ai-story-maker' ); ?></h3>
+			<p class="aistma-site-topic-description"><?php esc_html_e( 'Describe your site and we will build a custom prompt — or pick a topic below.', 'ai-story-maker' ); ?></p>
+			<div class="aistma-site-topic-controls">
 				<div class="aistma-site-topic-input-wrap">
 					<input
 						type="text"
@@ -59,7 +59,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<?php esc_html_e( 'Create my prompt', 'ai-story-maker' ); ?>
 				</button>
 			</div>
-			<div id="aistma-site-prompt-status" style="display:none;margin-top:8px;font-size:13px;"></div>
+			<div id="aistma-site-prompt-status" class="aistma-site-prompt-status" style="display:none;"></div>
 		</div>
 
 		<!-- OR Divider -->
