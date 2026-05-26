@@ -85,25 +85,20 @@ class AISTMA_Story_Generator {
 			return array( 'success' => false, 'message' => 'Story generation is already in progress.' );
 		}
 
-		// Check subscription status and API key availability before generating stories
+		// Check gateway authorization before generating. We never fall back to a
+		// local OpenAI key — the gateway is the only generation path.
 		try {
-			$subscription_status   = $instance->aistma_get_subscription_status();
-			$gateway_can_generate  = $instance->gateway_can_generate();
+			$subscription_status  = $instance->aistma_get_subscription_status();
+			$gateway_can_generate = $instance->gateway_can_generate();
 
 			if ( $gateway_can_generate ) {
 				$instance->aistma_log_manager::log( 'info', 'Gateway authorized generation for domain: ' . ( $subscription_status['domain'] ?? 'unknown' ) . ' - Package: ' . ( $subscription_status['package_name'] ?? 'unknown' ) . ' - Credits remaining: ' . var_export( $subscription_status['credits_remaining'] ?? null, true ) );
 			} else {
-				// Gateway has no usable credits: require a local OpenAI API key.
-				$openai_api_key = get_option( 'aistma_openai_api_key' );
-				if ( empty( $openai_api_key ) ) {
-					$error_message = isset( $subscription_status['error'] )
-						? 'Subscription check failed: ' . $subscription_status['error'] . '. Also, no OpenAI API key found.'
-						: 'No gateway credits available and no OpenAI API key configured.';
-					$instance->aistma_log_manager::log( 'error', $error_message );
-					return array( 'success' => false, 'message' => $error_message );
-				} else {
-					$instance->aistma_log_manager::log( 'info', 'No gateway credits, but OpenAI API key is available. Will use direct OpenAI API calls.' );
-				}
+				$error_message = isset( $subscription_status['error'] )
+					? 'Subscription check failed: ' . $subscription_status['error']
+					: 'No active plan or credits found. Please visit storymakerplugin.com/#pricing to choose a plan.';
+				$instance->aistma_log_manager::log( 'error', $error_message );
+				return array( 'success' => false, 'message' => $error_message );
 			}
 		} catch ( \RuntimeException $e ) {
 			$error = $e->getMessage();
@@ -147,10 +142,9 @@ class AISTMA_Story_Generator {
 		$merged_settings        = array_merge( $default_settings, $prompt );
 
 		// The gateway is the single source of truth for credits. Block here only
-		// when the gateway has no usable credits AND there is no local OpenAI key
-		// to fall back to.
-		if ( ! $this->gateway_can_generate() && empty( get_option( 'aistma_openai_api_key' ) ) ) {
-			$error = __( 'You do not have enough credits to generate a story. Please purchase more credits.', 'ai-story-maker' );
+		// Gateway is the only generation path. Block if it can't generate.
+		if ( ! $this->gateway_can_generate() ) {
+			$error = __( 'No active plan or credits found. Please visit storymakerplugin.com/#pricing to choose a plan.', 'ai-story-maker' );
 			$this->aistma_log_manager->log( 'warning', $error );
 			throw new \RuntimeException( esc_html( $error ) );
 		}
@@ -189,20 +183,9 @@ class AISTMA_Story_Generator {
 			);
 		}
 
-		// Gateway-authorized generation routes through the master API; otherwise
-		// fall back to a direct OpenAI call using the local key.
+		// All generation goes through the master API (gateway).
 		$subscription_info = $this->get_subscription_info();
-
-		if ( $this->gateway_can_generate() ) {
-			return $this->generate_story_via_master_api( $prompt_id, $prompt, $merged_settings, $the_prompt, $subscription_info );
-		} else {
-			$current_user_id = get_current_user_id();
-			// Fallback to direct OpenAI API call
-			if ( $prompt['photos'] > 0 ) {
-				$the_prompt .= "\n" . __( 'Include at least ', 'ai-story-maker' ) . $prompt['photos'] . __( ' placeholders for images in the article. Use the format {img_RESOURCE:keyword1,keyword2,keyword3} where RESOURCE is one of: unsplash, pexels, or pixabay. Choose the most appropriate resource and use the most relevant keywords for fetching related images.', 'ai-story-maker' );
-			}
-			return $this->generate_story_via_openai_api( $prompt_id, $prompt, $merged_settings, $api_key, $the_prompt, $current_user_id );
-		}
+		return $this->generate_story_via_master_api( $prompt_id, $prompt, $merged_settings, $the_prompt, $subscription_info );
 	}
 
 	/**
@@ -244,22 +227,16 @@ class AISTMA_Story_Generator {
 			'successes' => array(),
 		);
 		
-		// The gateway is the single source of truth for credits.
-		$gateway_can_generate = $this->gateway_can_generate();
-
-		if ( ! $gateway_can_generate ) {
-			$this->api_key = get_option( 'aistma_openai_api_key' );
-			if ( ! $this->api_key ) {
-				$error = __( 'No credits, subscribe to get more.', 'ai-story-maker' );
-				$this->aistma_log_manager->log( 'error', $error );
-				$results['errors'][] = $error;
-				throw new \RuntimeException( esc_html( $error ) );
-			}
-		} else {
-			// Gateway-authorized generation uses the master API; no OpenAI key needed.
-			$this->api_key = null;
-			$this->aistma_log_manager->log( 'info', 'Gateway authorized generation, will use Master API for story generation' );
+		// Gateway is the only generation path — no local API key fallback.
+		if ( ! $this->gateway_can_generate() ) {
+			$error = __( 'No active plan or credits found. Please visit storymakerplugin.com/#pricing to choose a plan.', 'ai-story-maker' );
+			$this->aistma_log_manager->log( 'error', $error );
+			$results['errors'][] = $error;
+			throw new \RuntimeException( esc_html( $error ) );
 		}
+
+		$this->api_key = null;
+		$this->aistma_log_manager->log( 'info', 'Gateway authorized generation, will use Master API for story generation' );
 
 		$raw_settings = get_option( 'aistma_prompts', '' );
 		$settings     = json_decode( $raw_settings, true );

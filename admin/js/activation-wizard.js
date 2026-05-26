@@ -101,6 +101,94 @@
 			this.$content.on('click', function (e) {
 				e.stopPropagation();
 			});
+
+			// AI icon: fill the site-topic field from WordPress site metadata
+			$('#aistma-fetch-site-meta').on('click', function () {
+				const name = aistmaWizardL10n.siteName || '';
+				const desc = aistmaWizardL10n.siteDescription || '';
+				let combined = '';
+
+				if ( name && desc ) {
+					combined = name + ' — ' + desc;
+				} else {
+					combined = desc || name;
+				}
+
+				$('#aistma-site-topic').val( combined ).trigger('focus');
+			});
+
+			// Site-topic: generate a custom prompt from the user's site description
+			$('#aistma-generate-my-prompt').on('click', function () {
+				const topic = $('#aistma-site-topic').val().trim();
+				if (!topic) {
+					alert(aistmaWizardL10n.enterSiteDescription || 'Please describe your site first.');
+					return;
+				}
+
+				const $btn    = $(this);
+				const $status = $('#aistma-site-prompt-status');
+
+				$btn.prop('disabled', true);
+				$status.html('<span class="spinner is-active" style="float:none;vertical-align:middle;margin-right:6px;"></span>' +
+					(aistmaWizardL10n.generatingPrompt || 'Building your prompt…')).show();
+
+				$.ajax({
+					url: ajaxurl,
+					type: 'POST',
+					dataType: 'json',
+					data: {
+						action: 'aistma_generate_site_prompt',
+						nonce: aistmaWizardL10n.sitePromptNonce || '',
+						site_description: topic,
+					},
+					success: function (response) {
+						if (response.success) {
+							const p = response.data;
+
+							// Remove stale custom card if the user clicked twice
+							$('.aistma-prompt-card[data-prompt-id="custom-site-prompt"]').remove();
+
+							const $card = $(
+								'<div class="aistma-prompt-card aistma-custom-prompt-card"' +
+									' data-prompt-id="custom-site-prompt"' +
+									' style="border:2px solid #0073aa;order:-1;">' +
+								'<div class="aistma-prompt-card-header">' +
+									'<h3>' + $('<span>').text(p.name).html() + '</h3>' +
+									'<span class="aistma-prompt-category" style="background:#0073aa;color:#fff;">✨ Your Site</span>' +
+								'</div>' +
+								'<div class="aistma-prompt-card-body">' +
+									'<p>' + $('<span>').text(p.description).html() + '</p>' +
+									'<div class="aistma-prompt-example"><small>' + $('<span>').text(p.example).html() + '</small></div>' +
+								'</div>' +
+								'<div class="aistma-prompt-card-footer">' +
+									'<button type="button" class="aistma-select-prompt button button-primary">' +
+									(aistmaWizardL10n.generatePostNow || 'Generate Post Now') +
+									'</button>' +
+								'</div>' +
+								'</div>'
+							);
+
+							// Prepend with CSS order so it sits first, and rebind click handlers
+							$('.aistma-prompts-grid').css('display','flex').css('flex-wrap','wrap').prepend($card);
+							$card.on('click', function () { self.selectAndGenerate($card); });
+							$card.find('.aistma-select-prompt').on('click', function (e) {
+								e.stopPropagation();
+								self.selectAndGenerate($card);
+							});
+
+							$status.html('✅ ' + (aistmaWizardL10n.promptReady || 'Your custom prompt is ready — click Generate Post Now on the highlighted card.')).show();
+						} else {
+							$status.html('⚠️ ' + (response.data.message || 'Failed to create prompt.')).show();
+						}
+					},
+					error: function () {
+						$status.html('⚠️ ' + (aistmaWizardL10n.generateError || 'Connection error. Please try again.')).show();
+					},
+					complete: function () {
+						$btn.prop('disabled', false);
+					},
+				});
+			});
 		},
 
 		/**
@@ -224,11 +312,11 @@
 		 * Mark wizard as shown today for 24-hour throttling.
 		 */
 		markShownToday: function () {
-			// Set localStorage flag to prevent double-showing on this browser
 			const today = new Date().toDateString();
-			localStorage.setItem('aistma_wizard_shown_date', today);
-			
-			// Also mark server-side
+			try { localStorage.setItem('aistma_wizard_shown_date', today); } catch (e) {}
+
+			if (typeof aistmaWizardL10n === 'undefined') return;
+
 			$.ajax({
 				url: ajaxurl,
 				type: 'POST',
@@ -254,7 +342,7 @@
 	 */
 	const AistmaPreview = {
 		postData: null,
-		weeklyToggleChecked: true,
+		weeklyToggleChecked: false,
 
 		/**
 		 * Initialize preview interactions
@@ -548,27 +636,26 @@
 		},
 
 		/**
-		 * Close the preview modal
+		 * Close the preview modal — draft is intentionally preserved.
+		 * A dismissible admin notice guides the user to Posts > All Posts.
 		 */
 		close: function () {
-			const self = this;
-
-			// Delete the draft post if it exists
 			if (this.postData && this.postData.post_id) {
-				$.ajax({
-					url: ajaxurl,
-					type: 'POST',
-					dataType: 'json',
-					data: {
-						action: 'aistma_wizard_cancel',
-						nonce: aistmaWizardL10n.cancelNonce || '',
-						post_id: this.postData.post_id,
-					},
-					error: function () {
-						// Log error but don't block the modal close
-						console.error('Failed to delete draft post.');
-					},
-				});
+				const noticeId = 'aistma-draft-saved-notice';
+				if (!document.getElementById(noticeId)) {
+					const msg = (aistmaWizardL10n.draftSavedNotice || 'Your story draft was saved — find it in Posts → All Posts.');
+					const postsUrl = aistmaWizardL10n.postsPageUrl || '';
+					const $notice = $(
+						'<div id="' + noticeId + '" class="notice notice-success is-dismissible">' +
+						'<p>' + msg +
+						(postsUrl ? ' <a href="' + postsUrl + '">' + (aistmaWizardL10n.viewDrafts || 'View Posts') + '</a>' : '') +
+						'</p></div>'
+					);
+					$('#wpbody-content').prepend($notice);
+					$notice.find('.notice-dismiss, button.notice-dismiss').on('click', function () {
+						$notice.fadeOut(200, function () { $notice.remove(); });
+					});
+				}
 			}
 
 			this.$modal.fadeOut(200);
@@ -585,12 +672,20 @@
 		AistmaWizard.init();
 		AistmaPreview.init();
 
-		// Check if wizard should be shown (and not already shown today)
-		if (aistmaWizardL10n.showWizard === '1') {
+		// Dashboard widget "Create a Story Now" button — bind here so jQuery
+		// handles the already-ready DOM correctly (inline widget scripts can
+		// be unreliable in the WP admin footer execution order).
+		$(document).on('click', '#aistma-widget-open-wizard', function (e) {
+			e.preventDefault();
+			AistmaWizard.show();
+		});
+
+		// Auto-show wizard if configured and not already shown today
+		if (typeof aistmaWizardL10n !== 'undefined' && aistmaWizardL10n.showWizard === '1') {
 			const today = new Date().toDateString();
-			const lastShownDate = localStorage.getItem('aistma_wizard_shown_date');
-			
-			// Only show if not already shown today on this browser
+			let lastShownDate;
+			try { lastShownDate = localStorage.getItem('aistma_wizard_shown_date'); } catch (e) {}
+
 			if (lastShownDate !== today) {
 				AistmaWizard.show();
 			}

@@ -98,7 +98,8 @@ class AISTMA_Admin {
 		add_action( 'admin_head-edit.php', array( $this, 'aistma_add_posts_page_button' ) );
 		add_action( 'wp_ajax_aistma_wizard_generate', array( $this, 'aistma_wizard_generate' ) );
 		add_action( 'wp_ajax_aistma_wizard_save', array( $this, 'aistma_wizard_save' ) );
-		add_action( 'wp_ajax_aistma_wizard_cancel', array( $this, 'aistma_wizard_cancel' ) );
+		add_action( 'wp_ajax_aistma_wizard_cancel',         array( $this, 'aistma_wizard_cancel' ) );
+		add_action( 'wp_ajax_aistma_generate_site_prompt', array( $this, 'aistma_generate_site_prompt' ) );
 		add_action( 'wp_ajax_aistma_wizard_dismiss', array( $this, 'aistma_wizard_dismiss' ) );
 		add_action( 'wp_ajax_aistma_confirm_weekly', array( $this, 'aistma_confirm_weekly' ) );
 		add_action( 'wp_ajax_aistma_submit_rating', array( $this, 'aistma_submit_rating' ) );
@@ -188,7 +189,15 @@ class AISTMA_Admin {
 				'saveSuccess' => __( 'Story saved successfully!', 'ai-story-maker' ),
 				'unknownError' => __( 'An unknown error occurred.', 'ai-story-maker' ),
 				'editPostUrl' => admin_url( 'post.php?action=edit' ),
-				'postsPageUrl' => admin_url( 'edit.php' ),
+				'postsPageUrl'    => admin_url( 'edit.php' ),
+				'draftSavedNotice' => __( 'Your story draft was saved — find it in Posts → All Posts.', 'ai-story-maker' ),
+				'siteName'          => esc_js( get_bloginfo( 'name' ) ),
+				'siteDescription'   => esc_js( get_bloginfo( 'description' ) ),
+				'sitePromptNonce'   => wp_create_nonce( 'aistma_site_prompt_nonce' ),
+				'enterSiteDescription' => __( 'Please describe your site first.', 'ai-story-maker' ),
+				'generatingPrompt'  => __( 'Building your promptâ¦', 'ai-story-maker' ),
+				'promptReady'       => __( 'Your custom prompt is ready â click Generate Post Now on the highlighted card.', 'ai-story-maker' ),
+				'generatePostNow'   => __( 'Generate Post Now', 'ai-story-maker' ),
 				'redirectAfterSave' => true,
 			) );
 
@@ -309,7 +318,7 @@ class AISTMA_Admin {
 			if ( $notice === 'accounts_required' ) {
 				echo '<div class="notice notice-warning is-dismissible">';
 				echo '<p><strong>' . esc_html__( 'Account Setup Required', 'ai-story-maker' ) . '</strong></p>';
-				echo '<p>' . esc_html__( 'Please set up your subscription account or API keys before generating stories.', 'ai-story-maker' ) . '</p>';
+				echo '<p>' . esc_html__( 'Please activate a plan at storymakerplugin.com/#pricing to start generating stories.', 'ai-story-maker' ) . '</p>';
 				echo '</div>';
 			} elseif ( $notice === 'prompts_required' ) {
 				echo '<div class="notice notice-warning is-dismissible">';
@@ -1156,24 +1165,13 @@ class AISTMA_Admin {
 			}
 			
 		} catch ( \Exception $e ) {
-			// Subscription check failed, log the exception and continue to API key check
 			$this->aistma_log_manager->log( 'warning', 'Subscription check exception: ' . $e->getMessage() );
 		}
 
-		// Check if we have a valid OpenAI API key as fallback
-		$openai_api_key = get_option( 'aistma_openai_api_key' );
-		if ( ! empty( $openai_api_key ) ) {
-			return array(
-				'valid' => true,
-				'message' => __( 'OpenAI API key found', 'ai-story-maker' ),
-				'type' => 'api_key'
-			);
-		}
-
-		// No valid accounts found
+		// No active gateway plan found — direct user to purchase a plan.
 		return array(
 			'valid' => false,
-			'message' => __( 'No valid subscription or API keys found. Please set up your accounts before generating stories.', 'ai-story-maker' ),
+			'message' => __( 'No active plan found. Please visit storymakerplugin.com/#pricing to get started.', 'ai-story-maker' ),
 			'type' => 'none'
 		);
 	}
@@ -1372,13 +1370,21 @@ class AISTMA_Admin {
 				wp_send_json_error( array( 'message' => __( 'No prompt selected.', 'ai-story-maker' ) ) );
 			}
 
-			// Get the selected prompt from wizard defaults
-			$prompts = AISTMA_Activation_Wizard::get_default_prompts();
+			// Get the selected prompt — first check user's custom site-topic prompt
+			// (stored as a transient by aistma_generate_site_prompt), then fall back
+			// to the built-in wizard prompt list.
 			$selected_prompt = null;
-			foreach ( $prompts as $prompt ) {
-				if ( $prompt['id'] === $prompt_id ) {
-					$selected_prompt = $prompt;
-					break;
+			if ( 'custom-site-prompt' === $prompt_id ) {
+				$selected_prompt = get_transient( 'aistma_custom_prompt_' . $user_id );
+			}
+
+			if ( ! $selected_prompt ) {
+				$prompts = AISTMA_Activation_Wizard::get_default_prompts();
+				foreach ( $prompts as $prompt ) {
+					if ( $prompt['id'] === $prompt_id ) {
+						$selected_prompt = $prompt;
+						break;
+					}
 				}
 			}
 
@@ -1386,24 +1392,20 @@ class AISTMA_Admin {
 				wp_send_json_error( array( 'message' => __( 'Invalid prompt selected.', 'ai-story-maker' ) ) );
 			}
 
-			// The gateway is the single source of truth for credits. If it does not
-			// authorize generation (no subscription, or stored API key but invalid
-			// subscription — e.g. after cancellation), attempt free-tier enrollment
-			// once and re-check before falling back to a site OpenAI key.
+			// The gateway is the single source of truth for credits. If the domain
+			// has no active plan, auto-enroll the free tier (5 credits) and retry.
+			// We never fall back to a local OpenAI key — users should purchase a plan.
 			$story_generator = new AISTMA_Story_Generator();
 
-			$api_key = null;
 			if ( ! $story_generator->gateway_can_generate() ) {
 				$this->auto_enroll_free_package( get_option( 'admin_email' ) );
 				$story_generator->clear_cached_subscription_status();
 				if ( ! $story_generator->gateway_can_generate() ) {
-					$api_key = get_option( 'aistma_openai_api_key' );
-					if ( ! $api_key ) {
-						wp_send_json_error( array(
-							'message' => __( 'No subscription or credits found. Please upgrade your plan, purchase credits, or add an OpenAI API key.', 'ai-story-maker' ),
-							'redirect_url' => admin_url( 'admin.php?page=aistma-settings&tab=ai_writer' )
-						) );
-					}
+					wp_send_json_error( array(
+						'message' => __( 'Your free plan could not be activated automatically. Please choose a plan to start generating stories.', 'ai-story-maker' ),
+						'redirect_url' => 'https://www.storymakerplugin.com/#pricing',
+					) );
+					return;
 				}
 			}
 
@@ -1429,7 +1431,7 @@ class AISTMA_Admin {
 
 			// Call the existing story generation function
 			try {
-				$post_id = $story_generator->generate_ai_story( $prompt_id, $prompt_for_generation, $default_settings, $api_key, $aistma_master_instructions );
+				$post_id = $story_generator->generate_ai_story( $prompt_id, $prompt_for_generation, $default_settings, null, $aistma_master_instructions );
 
 				$this->aistma_log_manager->log( 'debug', sprintf( 'Wizard generation returned post_id: %s (type: %s)', var_export( $post_id, true ), gettype( $post_id ) ) );
 
@@ -1604,35 +1606,64 @@ class AISTMA_Admin {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'ai-story-maker' ) ) );
 		}
 
-		try {
-			$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
+		// The draft is intentionally preserved so the user does not lose their credit.
+		// The JS layer shows a notice directing the user to Posts > All Posts.
+		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
+		$this->aistma_log_manager->log( 'info', 'Wizard closed by user ' . get_current_user_id() . ' — draft ' . $post_id . ' preserved.' );
 
-			if ( ! $post_id ) {
-				wp_send_json_error( array( 'message' => __( 'Invalid post ID.', 'ai-story-maker' ) ) );
-			}
+		wp_send_json_success( array( 'message' => __( 'Draft preserved.', 'ai-story-maker' ) ) );
+	}
 
-			// Verify the post belongs to the current user
-			$post = get_post( $post_id );
-			if ( ! $post || $post->post_author != get_current_user_id() ) {
-				wp_send_json_error( array( 'message' => __( 'You do not have permission to delete this post.', 'ai-story-maker' ) ) );
-			}
-
-			// Only delete draft posts (safety check)
-			if ( 'draft' !== $post->post_status ) {
-				wp_send_json_error( array( 'message' => __( 'Only draft posts can be deleted via the wizard.', 'ai-story-maker' ) ) );
-			}
-
-			// Delete the draft post
-			wp_delete_post( $post_id, true );
-
-			$this->aistma_log_manager->log( 'info', 'Draft post ' . $post_id . ' deleted by user ' . get_current_user_id() );
-
-			wp_send_json_success( array( 'message' => __( 'Draft post deleted.', 'ai-story-maker' ) ) );
-
-		} catch ( \Throwable $e ) {
-			$this->aistma_log_manager->log( 'error', 'Wizard cancel error: ' . $e->getMessage() );
-			wp_send_json_error( array( 'message' => __( 'An error occurred while deleting the draft.', 'ai-story-maker' ) ) );
+	/**
+	 * AJAX handler: generate a custom wizard prompt from the site description.
+	 *
+	 * Receives a free-text site description typed by the user in the wizard and
+	 * returns a ready-to-use prompt object without requiring an AI API call —
+	 * the prompt text is built server-side from a template so it works for every
+	 * user regardless of their subscription or API key status.
+	 *
+	 * The prompt is also stashed in a 30-minute transient so aistma_wizard_generate
+	 * can look it up by the 'custom-site-prompt' prompt_id.
+	 *
+	 * @return void
+	 */
+	public function aistma_generate_site_prompt() {
+		if ( ! check_ajax_referer( 'aistma_site_prompt_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'ai-story-maker' ) ) );
 		}
+
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'ai-story-maker' ) ) );
+		}
+
+		$raw_description = isset( $_POST['site_description'] ) ? sanitize_text_field( wp_unslash( $_POST['site_description'] ) ) : '';
+		if ( empty( $raw_description ) ) {
+			wp_send_json_error( array( 'message' => __( 'Please enter what your site is about.', 'ai-story-maker' ) ) );
+		}
+
+		// Build a prompt from the site description without any external API call.
+		$prompt_text = sprintf(
+			/* translators: %s: site description entered by the user */
+			__( 'Write an engaging, informative article for a website about: %s. Include practical tips, real-world examples, and a compelling introduction that hooks readers immediately. Structure the article with clear sections and a strong conclusion.', 'ai-story-maker' ),
+			$raw_description
+		);
+
+		$short_name = wp_trim_words( $raw_description, 6, '...' );
+
+		$prompt_data = array(
+			'id'          => 'custom-site-prompt',
+			'name'        => $short_name,
+			'description' => __( 'Custom prompt generated from your site description.', 'ai-story-maker' ),
+			'category'    => 'General',
+			'example'     => $raw_description,
+			'photos'      => 1,
+			'text'        => $prompt_text,
+		);
+
+		// Stash the prompt so aistma_wizard_generate can retrieve it by prompt_id.
+		set_transient( 'aistma_custom_prompt_' . get_current_user_id(), $prompt_data, 30 * MINUTE_IN_SECONDS );
+
+		wp_send_json_success( $prompt_data );
 	}
 
 	/**
