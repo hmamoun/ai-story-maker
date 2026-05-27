@@ -102,19 +102,11 @@
 				e.stopPropagation();
 			});
 
-			// AI icon: fill the site-topic field from WordPress site metadata
+			// AI icon: fill the site-topic field with the full site context
+			// (title + tagline + homepage SEO meta description, built server-side).
 			$('#aistma-fetch-site-meta').on('click', function () {
-				const name = aistmaWizardL10n.siteName || '';
-				const desc = aistmaWizardL10n.siteDescription || '';
-				let combined = '';
-
-				if ( name && desc ) {
-					combined = name + ' — ' + desc;
-				} else {
-					combined = desc || name;
-				}
-
-				$('#aistma-site-topic').val( combined ).trigger('focus');
+				const context = aistmaWizardL10n.siteContext || '';
+				$('#aistma-site-topic').val( context ).trigger('focus');
 			});
 
 			// Site-topic: generate a custom prompt from the user's site description

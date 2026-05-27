@@ -46,7 +46,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<input
 						type="text"
 						id="aistma-site-topic"
-						value="<?php echo esc_attr( get_bloginfo( 'description' ) ); ?>"
+						value="<?php echo esc_attr( $site_context ); ?>"
 						placeholder="<?php esc_attr_e( 'e.g. A blog about home gardening and urban farming', 'ai-story-maker' ); ?>"
 					/>
 					<button type="button" id="aistma-fetch-site-meta" class="aistma-ai-icon-btn" title="<?php esc_attr_e( 'Fill from WordPress site info', 'ai-story-maker' ); ?>" aria-label="<?php esc_attr_e( 'Fill from WordPress site info', 'ai-story-maker' ); ?>">
