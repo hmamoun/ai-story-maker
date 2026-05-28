@@ -459,6 +459,16 @@ Coming soon:
 - Well-documented code
 - Extensible architecture
 
+### Q: Can I use AI Story Maker Abilities to generate posts without installing or activating the plugin?
+**A:** No. The Abilities API is a WordPress 7.0 feature that works locally — abilities are registered by the plugin when it loads on your site. If the plugin is not installed and activated, its abilities do not exist in the registry and cannot be invoked by any agent or workflow.
+
+There is no remote service or cloud endpoint that exposes the abilities independently. The plugin must be present and active on the WordPress site where you want generation to happen.
+
+### Q: When using Abilities to generate stories, will it deduct my credits like regular story generation?
+**A:** Yes. The `generate-story` ability goes through the exact same gateway path as every other generation method — the manual generate button, the activation wizard, and the weekly scheduler all call the same underlying code. Credits are deducted server-side by the gateway regardless of what triggered the generation. There is no separate credit pool or discount for ability-invoked generation.
+
+If your plan has no credits remaining, the ability returns an error and no post is created — same behaviour as any other generation attempt.
+
 ### Q: How do I report bugs or request features?
 **A:** 
 - GitHub Issues: https://github.com/hmamoun/ai-story-maker/issues
