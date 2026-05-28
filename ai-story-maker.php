@@ -40,6 +40,7 @@ require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-open-graph.php
 require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-activation-wizard.php';
 require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-weekly-scheduler.php';
 require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-abilities.php';
+require_once plugin_dir_path( __FILE__ ) . 'includes/class-aistma-review-notice.php';
 
 // Hooks.
 register_activation_hook( __FILE__, array( 'exedotcom\\aistorymaker\\AISTMA_Plugin', 'aistma_activate' ) );
@@ -68,6 +69,11 @@ if ( class_exists( '\\exedotcom\\aistorymaker\\AISTMA_Open_Graph' ) ) {
 // Register WP 7.0 Abilities (no-op on WP < 7.0 — wp_register_ability won't exist).
 if ( class_exists( '\\exedotcom\\aistorymaker\\AISTMA_Abilities' ) ) {
     new \exedotcom\aistorymaker\AISTMA_Abilities();
+}
+
+// Admin review notice — only registers hooks for manage_options users.
+if ( is_admin() && class_exists( '\\exedotcom\\aistorymaker\\AISTMA_Review_Notice' ) ) {
+    new \exedotcom\aistorymaker\AISTMA_Review_Notice();
 }
 
 /**

@@ -1,0 +1,242 @@
+/**
+ * AI Story Maker — Admin Review Notice Styles
+ *
+ * Styles the inline admin notice bar that asks users to rate the plugin.
+ * Built on top of WP's .notice infrastructure so it blends naturally with
+ * the admin UI without fighting core styles.
+ *
+ * Structure:
+ *   #aistma-review-notice.notice
+ *     .aistma-rn-inner          (flex row: icon | message | stars | dismiss)
+ *     .aistma-rn-feedback       (hidden → slides in for 1–3 stars)
+ *     .aistma-rn-thankyou       (hidden → slides in after feedback submit)
+ *
+ * @package AI_Story_Maker
+ * @since   2.4.0
+ */
+
+/* =============================================================================
+   Notice wrapper
+   ========================================================================== */
+
+#aistma-review-notice.aistma-review-notice {
+	padding: 0;
+	border-left: 4px solid #0073aa;
+	background: #fff;
+	box-shadow: 0 1px 3px rgba( 0, 0, 0, 0.06 );
+	/* Override WP's default margin-bottom so spacing stays consistent. */
+	margin-bottom: 20px;
+}
+
+/* =============================================================================
+   Primary row
+   ========================================================================== */
+
+.aistma-rn-inner {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 12px 36px 12px 14px; /* right padding leaves space for dismiss × */
+	flex-wrap: wrap;
+	position: relative;
+}
+
+/* =============================================================================
+   Icon
+   ========================================================================== */
+
+.aistma-rn-icon {
+	font-size: 22px;
+	line-height: 1;
+	flex-shrink: 0;
+	/* Prevent the emoji from growing when the row wraps. */
+	align-self: center;
+}
+
+/* =============================================================================
+   Message text
+   ========================================================================== */
+
+.aistma-rn-message {
+	flex: 1;
+	min-width: 180px;
+	margin: 0;
+	font-size: 14px;
+	color: #1d2327;
+	line-height: 1.5;
+}
+
+.aistma-rn-message strong {
+	font-weight: 600;
+	margin-right: 4px;
+}
+
+/* =============================================================================
+   Star buttons
+   ========================================================================== */
+
+.aistma-rn-stars {
+	display: flex;
+	gap: 2px;
+	flex-shrink: 0;
+	align-items: center;
+}
+
+.aistma-rn-star {
+	background: none;
+	border: none;
+	padding: 2px;
+	margin: 0;
+	font-size: 26px;
+	line-height: 1;
+	color: #c3c4c7;  /* WP grey — unlit */
+	cursor: pointer;
+	transition: color 0.12s ease, transform 0.12s ease;
+	width: 30px;
+	height: 30px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.aistma-rn-star:hover,
+.aistma-rn-star--lit {
+	color: #ffd700;
+}
+
+.aistma-rn-star:focus-visible {
+	outline: 2px solid #0073aa;
+	outline-offset: 2px;
+	border-radius: 3px;
+}
+
+/* Pulse animation on click */
+@keyframes aistma-rn-pulse {
+	0%   { transform: scale( 1 ); }
+	50%  { transform: scale( 1.4 ); }
+	100% { transform: scale( 1.1 ); }
+}
+
+.aistma-rn-star--pulse {
+	animation: aistma-rn-pulse 0.35s ease-out forwards;
+}
+
+/* =============================================================================
+   Dismiss button (WP .notice-dismiss)
+   Overriding WP's absolute positioning so it stays in the flex row.
+   ========================================================================== */
+
+#aistma-review-notice .aistma-rn-dismiss.notice-dismiss {
+	/* WP renders .notice-dismiss as position:absolute top/right.
+	   We override to static so flex handles placement. */
+	position: absolute;
+	top: 50%;
+	right: 8px;
+	transform: translateY( -50% );
+	/* Ensure it doesn't collapse. */
+	flex-shrink: 0;
+}
+
+/* =============================================================================
+   Low-rating feedback area
+   ========================================================================== */
+
+.aistma-rn-feedback {
+	padding: 12px 14px 16px;
+	border-top: 1px solid #f0f0f1;
+	background: #fafafa;
+}
+
+.aistma-rn-feedback-prompt {
+	margin: 0 0 10px;
+	font-size: 13px;
+	color: #50575e;
+	line-height: 1.5;
+}
+
+.aistma-rn-feedback-text {
+	display: block;
+	width: 100%;
+	max-width: 600px;
+	box-sizing: border-box;
+	resize: vertical;
+	font-size: 13px;
+	font-family: inherit;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	padding: 8px 10px;
+	line-height: 1.5;
+	color: #1d2327;
+	background: #fff;
+	margin-bottom: 10px;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.aistma-rn-feedback-text:focus {
+	border-color: #0073aa;
+	box-shadow: 0 0 0 1px #0073aa;
+	outline: none;
+}
+
+.aistma-rn-feedback-actions {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+	align-items: center;
+}
+
+/* =============================================================================
+   Thank-you message
+   ========================================================================== */
+
+.aistma-rn-thankyou {
+	padding: 10px 14px 14px;
+	border-top: 1px solid #f0f0f1;
+}
+
+.aistma-rn-thankyou p {
+	margin: 0;
+	font-size: 14px;
+	color: #1d2327;
+	line-height: 1.5;
+}
+
+/* =============================================================================
+   Responsive — narrow admin (mobile / collapsed sidebar)
+   ========================================================================== */
+
+@media ( max-width: 782px ) {
+	.aistma-rn-inner {
+		gap: 10px;
+		padding: 10px 36px 10px 12px;
+	}
+
+	.aistma-rn-icon {
+		font-size: 18px;
+	}
+
+	.aistma-rn-message {
+		font-size: 13px;
+		min-width: 140px;
+	}
+
+	.aistma-rn-star {
+		font-size: 22px;
+		width: 26px;
+		height: 26px;
+	}
+}
+
+@media ( max-width: 480px ) {
+	/* On very small screens stack message above stars. */
+	.aistma-rn-inner {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 8px;
+		padding-right: 36px;
+	}
+
+	.aistma-rn-stars {
+		align-self: flex-start;
+	}
+}
