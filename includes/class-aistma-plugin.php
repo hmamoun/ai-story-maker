@@ -115,6 +115,12 @@ class AISTMA_Plugin {
 			AISTMA_Traffic_Logger::ensure_tables();
 		}
 
+		// Record first-activation timestamp for the review notice engagement threshold.
+		// Uses add_option() internally — safe to call on every activation; written once.
+		if ( class_exists( __NAMESPACE__ . '\\AISTMA_Review_Notice' ) ) {
+			AISTMA_Review_Notice::record_activation_time();
+		}
+
 		// Credits are owned by the gateway (per-domain). Nothing is granted
 		// locally on activation; just log the activation event to the gateway.
 		$current_user_id = get_current_user_id();
