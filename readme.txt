@@ -55,6 +55,21 @@ Ideal for bloggers, marketers, coaches, educators, and content creators.
 - Automatic fallback: generate stories using master API when credits are available, no subscription required
 - Clean shortcode and widget setup
 - Multilingual ready
+- **Native WP 7.0 AI agent support** — three Abilities registered automatically for orchestration by any WP 7.0 AI workflow
+
+== WordPress 7.0 AI Agent Integration ==
+
+AI Story Maker is AI agent-ready for WordPress 7.0. Three named Abilities are registered automatically when the plugin is active, making your content engine orchestratable by any WP 7.0 AI workflow:
+
+* **ai-story-maker/generate-story** — Generate a new story using your configured prompts. Pass an optional `prompt_id` to run a single prompt, or omit it to run all active prompts in one batch.
+* **ai-story-maker/enhance-content** — Improve or rewrite a block of existing post content using AI. Pass the post ID, the text to improve, and a plain-English instruction.
+* **ai-story-maker/schedule-stories** — Enable or disable weekly automatic story generation for a user and set which prompt to use.
+
+**Credit usage:** Ability-invoked generation uses the same credit pool as every other generation method — the manual button, the wizard, and the scheduler all go through the same gateway. No separate billing, no extra setup.
+
+**Backwards compatible:** On WordPress 6.x the plugin functions normally. The Abilities registration is silently skipped if `wp_register_ability()` does not exist.
+
+For full developer documentation including input/output schemas, code examples, and recipes, see `docs/abilities-api.md`.
 
 == Installation ==
 1. Upload the plugin folder to `/wp-content/plugins/` or install via the WordPress plugin screen.
@@ -104,6 +119,14 @@ This plugin makes requests to external services for core functionality:
 2. Posts list integration — one-click "Generate AI Stories" button and per-post "AI Story Enhancer" action.
 3. AI Story Enhancer — select any text in your post and choose how to rewrite, expand, or improve it.
 4. SEO & Meta panel — generate optimised meta descriptions for your posts with a single click.
+
+== Frequently Asked Questions ==
+
+= Can I use the AI Story Maker Abilities to generate posts without installing or activating the plugin? =
+No. Abilities are registered locally by the plugin when it loads on your WordPress site. If the plugin is not installed and active, its abilities do not exist in the registry and cannot be invoked. There is no remote service that exposes them independently.
+
+= Will using Abilities to generate stories deduct my credits? =
+Yes, exactly the same as every other generation method. Ability-invoked generation goes through the same gateway path as the manual button, the activation wizard, and the weekly scheduler. Credits are deducted server-side by the gateway. If your plan has no credits remaining, the ability returns an error and no post is created.
 
 == Changelog ==
 

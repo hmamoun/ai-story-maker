@@ -27,6 +27,33 @@ Whether you're a blogger, marketer, or educator, AI Story Maker helps you build 
 - **Custom Story Scroller** – Display stories dynamically on the frontend.
 - **Auto Model Attribution** – Add a model credit note automatically for transparency.
 - **Logging System** – Monitor and debug AI generations easily.
+- **WP 7.0 AI Agent Ready** – Three named Abilities registered automatically so any WP 7.0 AI workflow can orchestrate story generation, content enhancement, and scheduling.
+
+== WordPress 7.0 AI Agent Integration ==
+
+AI Story Maker registers three Abilities with the WordPress 7.0 Ability Registry, making your content engine orchestratable by any WP 7.0 AI workflow or agent plugin.
+
+| Ability | What it does |
+|---|---|
+| `ai-story-maker/generate-story` | Generate a new story using your configured prompts |
+| `ai-story-maker/enhance-content` | Improve or rewrite existing post content with AI |
+| `ai-story-maker/schedule-stories` | Enable or disable weekly auto-generation for a user |
+
+**Quick example** — invoke from any WP 7.0 workflow:
+
+```php
+$result = wp_invoke_ability( 'ai-story-maker/generate-story', [
+    'prompt_id' => 'my-prompt-id',
+] );
+
+if ( $result['success'] ) {
+    // $result['post_id'] and $result['post_url'] are ready to use
+}
+```
+
+Credits are deducted the same way as every other generation method — no separate billing. On WordPress 6.x the plugin functions normally; the Abilities registration is silently skipped.
+
+→ Full documentation: [docs/abilities-api.md](docs/abilities-api.md)
 
 == Installation ==
 
@@ -172,6 +199,12 @@ Yes, edit the "General Instructions" field to control structure, tone, and style
 
 = Can I disable automatic generation? =
 Yes, set "Generate New Stories Every" to `0` to disable scheduled stories.
+
+= Can I use the AI Story Maker Abilities to generate posts without installing or activating the plugin? =
+No. Abilities are registered locally by the plugin when it loads on your WordPress site. If the plugin is not installed and active, its abilities do not exist in the registry and cannot be invoked. There is no remote service that exposes them independently.
+
+= Will using Abilities to generate stories deduct my credits? =
+Yes, exactly the same as every other generation method. Ability-invoked generation goes through the same gateway path as the manual button, the activation wizard, and the weekly scheduler. Credits are deducted server-side by the gateway. If your plan has no credits remaining, the ability returns an error and no post is created.
 
 == Changelog ==
 
