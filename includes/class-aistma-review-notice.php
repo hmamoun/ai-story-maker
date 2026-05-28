@@ -443,6 +443,29 @@ class AISTMA_Review_Notice {
 		// Permanently suppress notice and modal.
 		update_user_meta( $user_id, self::META_KEY_NEVER_SHOW, true );
 
+		// Email the site admin so feedback doesn't go unread.
+		if ( ! empty( $feedback ) ) {
+			$user       = get_userdata( $user_id );
+			$user_label = $user ? $user->user_email : sprintf( __( 'User #%d', 'ai-story-maker' ), $user_id );
+			$subject    = sprintf(
+				/* translators: %d: star rating 1–3 */
+				__( '[AI Story Maker] New %d-star feedback from your site', 'ai-story-maker' ),
+				$rating
+			);
+			$body = sprintf(
+				/* translators: 1: star rating, 2: user email or ID, 3: site URL, 4: feedback text */
+				__(
+					"A user left feedback on AI Story Maker:\n\nRating : %d / 5\nUser   : %s\nSite   : %s\n\nFeedback:\n%s",
+					'ai-story-maker'
+				),
+				$rating,
+				$user_label,
+				home_url(),
+				$feedback
+			);
+			wp_mail( get_option( 'admin_email' ), $subject, $body );
+		}
+
 		// Log to gateway.
 		if ( class_exists( __NAMESPACE__ . '\\AISTMA_Gateway_Logger' ) ) {
 			AISTMA_Gateway_Logger::log_rating_submitted( $user_id, 0, $rating, $feedback );
