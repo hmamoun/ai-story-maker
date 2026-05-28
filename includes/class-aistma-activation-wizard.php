@@ -188,12 +188,53 @@ class AISTMA_Activation_Wizard {
 	}
 
 	/**
+	 * Build the richest available site-context string for the wizard prompt field.
+	 *
+	 * Combines Site Title, Tagline, and — when a static front page is set —
+	 * the homepage SEO meta description from the most common SEO plugins
+	 * (Yoast SEO, Rank Math, All in One SEO, SEOPress). Empty parts are
+	 * dropped and adjacent duplicates are removed so the string stays clean.
+	 *
+	 * @return string Plain-text context string, ready for use as an input value.
+	 */
+	public static function build_site_context() {
+		$parts = array_filter( array(
+			trim( get_bloginfo( 'name' ) ),
+			trim( get_bloginfo( 'description' ) ),
+		) );
+
+		// Pull the homepage SEO meta description when a static front page exists.
+		$front_page_id = 'page' === get_option( 'show_on_front' ) ? (int) get_option( 'page_on_front' ) : 0;
+		if ( $front_page_id > 0 ) {
+			$seo_desc = get_post_meta( $front_page_id, '_yoast_wpseo_metadesc', true )
+				?: get_post_meta( $front_page_id, 'rank_math_description', true )
+				?: get_post_meta( $front_page_id, '_aioseo_description', true )
+				?: get_post_meta( $front_page_id, '_seopress_titles_desc', true );
+
+			if ( ! empty( $seo_desc ) ) {
+				$parts[] = trim( $seo_desc );
+			}
+		}
+
+		// Deduplicate adjacent identical values (e.g. tagline === SEO description).
+		$unique = array();
+		foreach ( $parts as $part ) {
+			if ( empty( $unique ) || end( $unique ) !== $part ) {
+				$unique[] = $part;
+			}
+		}
+
+		return implode( ' — ', $unique );
+	}
+
+	/**
 	 * Get the HTML for the wizard modal.
 	 *
 	 * @return string The wizard modal HTML.
 	 */
 	public static function get_wizard_modal_html() {
-		$prompts = self::get_default_prompts();
+		$prompts      = self::get_default_prompts();
+		$site_context = self::build_site_context();
 		ob_start();
 		include AISTMA_PATH . 'admin/templates/activation-wizard-template.php';
 		return ob_get_clean();
