@@ -4,7 +4,7 @@ Tags: ai, content creation, blog automation, article generation, wordpress ai pl
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.3.3
+Stable tag: 2.3.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Plugin URI: https://www.storymakerplugin.com/
@@ -129,6 +129,11 @@ No. Abilities are registered locally by the plugin when it loads on your WordPre
 Yes, exactly the same as every other generation method. Ability-invoked generation goes through the same gateway path as the manual button, the activation wizard, and the weekly scheduler. Credits are deducted server-side by the gateway. If your plan has no credits remaining, the ability returns an error and no post is created.
 
 == Changelog ==
+
+= 2.3.4 =
+* **NEW: Admin review notice** — after 5 story generations or 7 days of use, administrators see a friendly rating bar. 4–5 stars redirect to WordPress.org; 1–3 stars reveal a feedback form and email the site admin automatically.
+* **NEW: WP 7.0 Abilities API** — registers `generate-story`, `enhance-content`, and `schedule-stories` abilities so AI agents and WP 7.0 workflows can orchestrate the plugin without custom integration code.
+* **NEW: Enriched site-topic prompt** — the activation wizard enriches the site-topic field with the site title, tagline, and SEO meta for higher-quality first prompts.
 
 = 2.3.3 =
 * Maintenance release: republished 2.3.2 content under a new tag to ensure the WP.org plugin directory receives the latest code (the prior tag had been packaged from an outdated working copy).
