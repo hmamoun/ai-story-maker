@@ -48,3 +48,16 @@ whiskey_discord_monitor.py
 # OS files
 Thumbs.db
 .DS_Store
+
+# Local-only marketing site & scratch files (NOT part of the plugin)
+/*.html
+/*.docx
+/*.patch
+/*.css
+/COWORK-CONTEXT.md
+/DEPLOY-UAT.sh
+/PUSH-BRANCHES.sh
+/wp-publish-page.sh
+/wp-create-page-payload.json
+/functions.php
+/functions-snippet.php
