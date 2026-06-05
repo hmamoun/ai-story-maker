@@ -112,8 +112,10 @@ say "Staging adds/deletes in trunk"
 cd "$SVN_DIR/trunk"
 # Schedule unversioned files for addition.
 svn add --force . --quiet 2>/dev/null || true
-# Schedule missing files for deletion.
-svn status | awk '/^!/{ $1=""; sub(/^[ \t]+/,""); print }' | while IFS= read -r f; do
+# Schedule missing files for deletion — scoped to trunk/ only.
+# Old tags on macOS have a case-sensitivity conflict (README.txt vs readme.txt)
+# that makes them permanently show as ! locally; never delete those.
+svn status . | awk '/^!/{ $1=""; sub(/^[ \t]+/,""); print }' | while IFS= read -r f; do
   [[ -n "$f" ]] && svn delete --force "$f" >/dev/null 2>&1 || true
 done
 
