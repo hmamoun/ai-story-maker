@@ -1,45 +1,75 @@
-=== AI Story Maker ===
-Contributors: hmamoun
-Tags: ai, content creation, blog automation, article generation, wordpress ai plugin
-Requires at least: 5.8
-Tested up to: 7.0
-Requires PHP: 7.4
-Stable tag: 2.3.4
-License: GPLv2 or later
-License URI: https://www.gnu.org/licenses/gpl-2.0.html
-Plugin URI: https://github.com/hmamoun/ai-story-maker
-Author: Hayan Mamoun
-Author URI: https://exedotcom.ca
+# AI Story Maker — WordPress Plugin
 
-AI-powered WordPress plugin to automatically generate unique stories, articles, and visuals using OpenAI and Unsplash APIs.
+**Auto-generate, schedule & publish AI stories to WordPress + Facebook — no writing experience needed. Free to start.**
 
-== Description ==
+[![WordPress](https://img.shields.io/badge/WordPress-5.8%2B-blue)](https://wordpress.org/plugins/ai-story-maker/)
+[![PHP](https://img.shields.io/badge/PHP-7.4%2B-purple)](https://php.net)
+[![License](https://img.shields.io/badge/License-GPLv2-green)](https://www.gnu.org/licenses/gpl-2.0.html)
+[![Tested up to](https://img.shields.io/badge/Tested%20up%20to-WP%207.0-blue)](https://wordpress.org/plugins/ai-story-maker/)
 
-**AI Story Maker** helps you instantly generate unique, high-quality WordPress posts using AI and royalty-free images. It integrates with OpenAI for text generation and Unsplash for fetching dynamic images, saving you hours of content creation time.
+[🌐 Website](https://www.storymakerplugin.com/) · [📦 WordPress.org](https://wordpress.org/plugins/ai-story-maker/) · [📖 Docs](docs/abilities-api.md) · [☕ Support the project](https://buymeacoffee.com/78vcTEm4i)
 
-Whether you're a blogger, marketer, or educator, AI Story Maker helps you build a full content strategy effortlessly.
+---
 
-== Features ==
+## What it does
 
-- **AI-Generated Stories** – Create unique, professional stories and articles using OpenAI.
-- **Smart Image Integration** – Fetch dynamic, royalty-free images from Unsplash.
-- **Prompt Editor** – Build, customize, and organize your own prompts.
-- **Custom Story Scroller** – Display stories dynamically on the frontend.
-- **Auto Model Attribution** – Add a model credit note automatically for transparency.
-- **Logging System** – Monitor and debug AI generations easily.
-- **WP 7.0 AI Agent Ready** – Three named Abilities registered automatically so any WP 7.0 AI workflow can orchestrate story generation, content enhancement, and scheduling.
+Stop staring at a blank editor. AI Story Maker generates complete, publish-ready WordPress posts from a short prompt — with images, scheduling, and Facebook auto-posting built in.
 
-== WordPress 7.0 AI Agent Integration ==
+Set it up once. Stories publish themselves.
 
-AI Story Maker registers three Abilities with the WordPress 7.0 Ability Registry, making your content engine orchestratable by any WP 7.0 AI workflow or agent plugin.
+---
 
-| Ability | What it does |
+## Features
+
+### 🆓 AI Story Enhancer — Free, No Credits Required
+Improve existing posts without a subscription.
+
+- Select any text inside a post and describe the improvement
+- Rewrite, expand, or improve any post content
+- Generate SEO meta descriptions with one click
+- Update tags and keywords automatically
+- Access directly from **Posts → All Posts**
+
+### ⚡ AI Story Generation
+Generate complete WordPress posts from a prompt — images included.
+
+- Powered by OpenAI (GPT models)
+- Royalty-free images from Unsplash, Pexels, and Pixabay
+- Schedule daily, weekly, or custom automated generation
+- Reusable prompt templates with categories and tone controls
+- Image placeholders: `{img_unsplash:keyword}`
+- Batch generate multiple stories at once
+- Stories saved as drafts for review before publishing
+
+### 📣 Social Media Auto-Posting
+- Auto-posts to Facebook when a story goes live
+- Converts post tags to hashtags automatically
+- Multi-account support
+- LinkedIn, X (Twitter), and Instagram coming soon
+
+### 📊 Analytics & Performance
+- Per-post views and click-through rates
+- Content heatmaps and trend tracking
+- Fully asynchronous — zero performance impact
+
+### 🔧 Flexible Credentials
+- Use a **subscription** (credits included) or your own **OpenAI + Unsplash API keys**
+- Subscription credits take priority; API keys act as automatic fallback
+- Switch anytime from plugin settings
+
+---
+
+## WordPress 7.0 AI Agent Integration
+
+AI Story Maker is AI agent-ready. Three Abilities are registered automatically when the plugin is active:
+
+| Ability | Description |
 |---|---|
-| `ai-story-maker/generate-story` | Generate a new story using your configured prompts |
-| `ai-story-maker/enhance-content` | Improve or rewrite existing post content with AI |
-| `ai-story-maker/schedule-stories` | Enable or disable weekly auto-generation for a user |
+| `ai-story-maker/generate-story` | Generate a new story using configured prompts |
+| `ai-story-maker/enhance-content` | Rewrite or improve existing post content |
+| `ai-story-maker/schedule-stories` | Enable or disable weekly auto-generation per user |
 
-**Quick example** — invoke from any WP 7.0 workflow:
+**Example — invoke from any WP 7.0 workflow:**
 
 ```php
 $result = wp_invoke_ability( 'ai-story-maker/generate-story', [
@@ -47,216 +77,111 @@ $result = wp_invoke_ability( 'ai-story-maker/generate-story', [
 ] );
 
 if ( $result['success'] ) {
-    // $result['post_id'] and $result['post_url'] are ready to use
+    // $result['post_id'] and $result['post_url'] are ready
 }
 ```
 
-Credits are deducted the same way as every other generation method — no separate billing. On WordPress 6.x the plugin functions normally; the Abilities registration is silently skipped.
+Credits are deducted the same way as every other generation method. On WordPress 6.x the plugin functions normally — Abilities registration is silently skipped.
 
 → Full documentation: [docs/abilities-api.md](docs/abilities-api.md)
 
-== Installation ==
+---
 
-You have two options to install AI Story Maker:
+## Display Shortcodes
 
-1. **Install from the WordPress Plugin Directory** (Recommended):
-   - Go to **Plugins > Add New** in your WordPress dashboard.
-   - Search for "**AI Story Maker**".
-   - Click **Install Now** and then **Activate**.
+| Shortcode | Description |
+|---|---|
+| `[aistma_posts_gadget]` | Filterable, searchable story grid or list |
+| `[aistma_scroller]` | Scrolling story ticker |
+| `[aistma_adsense]` | AdSense-ready display block |
+| `[aistma_data_overview]` | Data overview dashboard widget |
+| `[aistma_generation_calendar]` | Generation calendar widget |
+| `[aistma_recent_activity]` | Recent posts activity widget |
 
-*(Note: If the plugin is pending approval, use the manual method below.)*
+**Example with options:**
+```
+[aistma_posts_gadget posts_per_page="8" layout="grid" show_search="true"]
+```
 
-2. **Install via Uploading ZIP File**:
-   - Download the ZIP from [GitHub Repository](https://github.com/hmamoun/ai-story-maker).
-   - Go to **Plugins > Add New > Upload Plugin**.
-   - Upload the ZIP, install, and activate.
+---
 
-== After Installing ==
+## Installation
 
-1. **Create an OpenAI Account**  
-   [Sign up for OpenAI](https://platform.openai.com/signup) and create an API key.  
-   _Note: OpenAI offers free trial credits, but usage beyond the free tier may require a paid subscription._
+1. Install via the [WordPress Plugin Directory](https://wordpress.org/plugins/ai-story-maker/) or upload the ZIP manually via **Plugins → Add New → Upload Plugin**.
+2. Activate through the **Plugins** screen.
+3. Complete the welcome wizard — choose a subscription plan or connect your API keys.
+4. Create a prompt template.
+5. Generate your first story.
 
-2. **Create an Unsplash Developer Account**  
-   [Sign up for Unsplash](https://unsplash.com/join) and create an application to get your API Access Key.  
-   _Note: Unsplash's API is free for most use cases, but higher usage or commercial projects may be subject to restrictions or require a special agreement._
+---
 
-3. **Configure the API Keys**  
-   - Go to **AI Story Maker > Settings**.
-   - Enter your OpenAI and Unsplash API keys.
-   - Save your settings.
+## Writing Effective Prompts
 
-== Story Generation Settings ==
+- Be specific about the topic and target audience
+- Specify desired length and tone
+- Use image placeholders: `{img_unsplash:clean energy,solar}`
+- The first matched image becomes the featured image; others are placed inline
 
-- **Log Retention (Days)**: Define how long logs are kept. Set `0` to retain them indefinitely.
-- **Generate New Stories Every (Days)**: Schedule AI story creation automatically every few days.
-- **Select Story Author**: Choose a WordPress user to assign as the author of AI-generated content.
+**General Instructions** (set once, applied to all prompts) control global rules like article length and tone. **Prompt List** items generate individual content pieces on their own schedule.
 
-== Managing Prompts ==
+---
 
-The **Prompt Editor** allows you to build and control the instructions the AI follows.
-
-### How to Add a New Prompt
-
-1. Go to **AI Story Maker > Prompt Editor**.
-2. Click **Add New Prompt**.
-3. A new empty row appears.
-4. Fill in:
-   - **Prompt Text** (the instruction for the AI)
-   - **Category** (WordPress category to publish in)
-   - Other options (e.g., Auto-publish, Author, Photo placeholders)
-
-> **Remember**: After adding, editing, or deleting prompts, you must click **Save Changes** to confirm.
-
-### How to Delete a Prompt
-
-- Click the **Delete** button beside the prompt.
-- The row will be marked for deletion.
-- Press **Save Changes** to complete.
-
-### General Instructions vs Prompt Text
-
-- **General Instructions**: Global rules applied to **all** prompts (e.g., article length, tone).
-- **Prompt List**: Specific prompts that generate different content topics individually.
-
-General Instructions are combined automatically with each prompt during generation.
-
-### Fetching Related Photos
-
-- Insert `{img_unsplash:keyword1,keyword2}` inside your prompt text.
-- The plugin queries Unsplash and fetches matching royalty-free images.
-- The first image becomes the **featured image**; others are placed inline.
-
-== Screenshots ==
-
-_(Coming soon)_
-
-== Plugin File Structure ==
-
-ai-story-maker
-├── ai-story-maker.php
-├── LICENSE
-├── README.txt
-├── uninstall.php
-├── admin
-│   ├── class-aistma-admin.php
-│   ├── class-aistma-api-keys.php
-│   ├── class-aistma-prompt-editor.php
-│   ├── class-aistma-settings-page.php
-│   ├── index.php
-│   ├── css
-│   │   ├── admin.css
-│   │   └── index.php
-│   ├── js
-│   │   ├── admin.js
-│   │   └── index.php
-│   └── templates
-│       ├── general-settings-template.php
-│       ├── index.php
-│       ├── log-table-template.php
-│       ├── prompt-editor-template.php
-│       └── welcome-tab-template.php
-├── includes
-│   ├── class-aistma-log-manager.php
-│   ├── class-aistma-story-generator.php
-│   ├── index.php
-│   └── shortcode-story-scroller.php
-├── languages
-│   ├── ai-story-maker-es_ES.mo
-│   ├── ai-story-maker-es_ES.po
-│   ├── ai-story-maker-fr_CA.mo
-│   ├── ai-story-maker-fr_CA.po
-│   └── ai-story-maker.pot
-└── public
-    ├── index.php
-    ├── css
-    │   ├── aistma-style.css
-    │   └── index.php
-    ├── images
-    │   └── logo.svg
-    └── templates
-        ├── aistma-post-template.php
-        └── index.php
-        
-== Guide to Writing Prompts ==
-
-- Example prompt:  
-  `Write a news article about the latest trends in clean energy.`
-
-- Add `{img_unsplash:clean energy,renewable}` to fetch relevant images dynamically.
-
-The plugin ensures:
-- External images are placed correctly.
-- An attribution note about the AI model is automatically added.
-
-== Frequently Asked Questions ==
-
-= How do I configure API keys? =
-Go to **AI Story Maker Settings** and enter your OpenAI and Unsplash API keys.
-
-= Can I customize article formats? =
-Yes, edit the "General Instructions" field to control structure, tone, and style.
-
-= Can I disable automatic generation? =
-Yes, set "Generate New Stories Every" to `0` to disable scheduled stories.
-
-= Can I use the AI Story Maker Abilities to generate posts without installing or activating the plugin? =
-No. Abilities are registered locally by the plugin when it loads on your WordPress site. If the plugin is not installed and active, its abilities do not exist in the registry and cannot be invoked. There is no remote service that exposes them independently.
-
-= Will using Abilities to generate stories deduct my credits? =
-Yes, exactly the same as every other generation method. Ability-invoked generation goes through the same gateway path as the manual button, the activation wizard, and the weekly scheduler. Credits are deducted server-side by the gateway. If your plan has no credits remaining, the ability returns an error and no post is created.
-
-== Changelog ==
-
-= 1.0 =
-- Initial release with AI story generation, image integration, logging, and prompt editor.
-
-== Upgrade Notice ==
-
-= 1.0 =
-- First release. Make sure to configure API keys after activation.
-
-== External Services Disclosure ==
+## External Services
 
 This plugin connects to third-party APIs:
 
-1. **OpenAI API**
-   - Purpose: Generate AI content.
-   - Data sent: Prompt text and system instructions.
-   - [OpenAI Terms](https://openai.com/policies/terms-of-use) | [OpenAI Privacy Policy](https://openai.com/policies/privacy-policy)
+| Service | Purpose | Data Sent |
+|---|---|---|
+| [OpenAI](https://openai.com/) | Story and content generation | Prompt text, request metadata |
+| [Unsplash](https://unsplash.com/) | Royalty-free images | Image search keywords |
+| [Pexels](https://www.pexels.com/) | Royalty-free images | Image search keywords |
+| [Pixabay](https://pixabay.com/) | Royalty-free images | Image search keywords |
+| [Exedotcom Gateway](https://exedotcom.ca/) | Subscription & credits management | Domain, admin email, plugin version |
 
-2. **Unsplash API**
-   - Purpose: Fetch royalty-free images.
-   - Data sent: Keywords only (no personal data).
-   - [Unsplash Terms](https://unsplash.com/terms) | [Unsplash Privacy Policy](https://unsplash.com/privacy)
+No personal user data is collected or stored beyond domain and email for subscription validation.
 
-== How AI Story Maker Retrieves General Instructions ==
+- [OpenAI Terms](https://openai.com/policies/terms-of-use) · [OpenAI Privacy](https://openai.com/policies/privacy-policy)
+- [Unsplash Terms](https://unsplash.com/terms)
+- [Exedotcom API Terms](https://exedotcom.ca/api-terms)
 
-AI Story Maker dynamically fetches the general AI system instructions from the Exedotcom API Gateway instead of hardcoding them inside the plugin.
-	-	The plugin makes a secure HTTP request to retrieve the latest best-practice instructions.
-	-	If the request fails or returns no data, a default internal fallback is used to ensure smooth operation.
-	-	The retrieved instructions are cached temporarily to minimize remote calls and enhance performance.
-	-	Allows future improvements and best practices without needing plugin updates.
-	-	Ensures the generated articles continue to follow the latest content structure and SEO guidelines.
+---
 
-Privacy note:
-	-	No user personal data is sent.
-	-	Only the site URL and server IP address are transmitted for simple tracking and security purposes.
-	-	See our API terms of service at https://exedotcom.ca/api-terms (optional link if you plan to add later).
-   -  visit this address to see the latest provided instructions: https://exedotcom.ca/wp-json/exaig/v1/aistma-general-instructions
+## Changelog
 
+### 2.3.5
+Maintenance release: re-publishes 2.3.4 content under a clean tag.
 
-No personal user data is collected or stored.
+### 2.3.4
+- **NEW:** Admin review notice after 5 generations or 7 days of use
+- **NEW:** WP 7.0 Abilities API — `generate-story`, `enhance-content`, `schedule-stories`
+- **NEW:** Enriched site-topic prompt using site title, tagline, and SEO meta
 
-== Contributing ==
+### 2.3.2
+- **NEW:** Frontend dashboard widgets as shortcodes
+- **FIX:** Shortcode rendering outside the admin context
 
-We welcome contributions! Submit issues or pull requests via [GitHub](https://github.com/hmamoun/ai-story-maker).
+### 2.3.1
+- **FIX:** Insufficient credits after subscription cancellation
+- **FIX:** Gateway as single source of truth for credits
+- **FIX:** API keys masked in settings page
 
-== License ==
+### 2.3.0
+- **NEW:** Transaction history in admin dashboard
+- **NEW:** Pexels and Pixabay as additional image sources
+- **NEW:** Keyword support in prompts for SEO targeting
+- **SECURITY:** Server-side authentication for gateway requests
 
-GPLv2 or later. Free for personal and commercial use.
+### 2.1.3
+- **NEW:** AI Story Enhancer for post-level content improvements
 
-== Support the Project ==
+---
 
-If you find AI Story Maker helpful, you can [buy me a coffee](https://buymeacoffee.com/78vcTEm4i) ☕
+## Contributing
 
+Issues and pull requests welcome via [GitHub](https://github.com/hmamoun/ai-story-maker).
+
+---
+
+## License
+
+[GPLv2 or later](https://www.gnu.org/licenses/gpl-2.0.html) — free for personal and commercial use.
