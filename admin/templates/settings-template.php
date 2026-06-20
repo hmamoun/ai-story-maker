@@ -124,6 +124,63 @@ if ( ! defined( 'ABSPATH' ) ) {
 	</div>
 	<?php // Generation controls moved to a reusable template included globally. ?>
 </div>
+<script>
+(function () {
+	var btn     = document.getElementById('aistma-save-settings-btn');
+	var msgEl   = document.getElementById('aistma-settings-message');
+	var nonce   = window.aistmaSettings ? window.aistmaSettings.nonce   : '';
+	var ajaxUrl = window.aistmaSettings ? window.aistmaSettings.ajaxUrl : '';
+
+	function showMsg(msg, ok) {
+		if (!msgEl) return;
+		msgEl.textContent = msg;
+		msgEl.style.cssText = 'display:block;padding:8px 12px;margin:10px 0;border-radius:4px;'
+			+ (ok ? 'color:#28a745;background:#d4edda;border:1px solid #c3e6cb;'
+			      : 'color:#dc3545;background:#f8d7da;border:1px solid #f5c6cb;');
+		setTimeout(function () { msgEl.style.display = 'none'; }, 4000);
+	}
+
+	function fieldVal(el) {
+		return el.type === 'checkbox' ? (el.checked ? '1' : '0') : el.value;
+	}
+
+	// Enable Save button when any field changes
+	document.querySelectorAll('[data-setting]').forEach(function (el) {
+		el.addEventListener('change', function () { btn.disabled = false; });
+		el.addEventListener('input',  function () { btn.disabled = false; });
+	});
+
+	btn.addEventListener('click', function () {
+		var fields = document.querySelectorAll('[data-setting]');
+		btn.disabled = true;
+		btn.textContent = '<?php echo esc_js( __( 'Saving…', 'ai-story-maker' ) ); ?>';
+		var done = 0, errors = 0;
+		fields.forEach(function (field) {
+			var fd = new FormData();
+			fd.append('action',          'aistma_save_setting');
+			fd.append('aistma_security', nonce);
+			fd.append('setting_name',    field.getAttribute('data-setting'));
+			fd.append('setting_value',   fieldVal(field));
+			fetch(ajaxUrl, { method: 'POST', body: fd })
+				.then(function (r) { return r.text(); })
+				.then(function (t) { try { if (!JSON.parse(t).success) errors++; } catch(e) { errors++; } })
+				.catch(function () { errors++; })
+				.finally(function () {
+					done++;
+					if (done < fields.length) return;
+					btn.textContent = '<?php echo esc_js( __( 'Save Settings', 'ai-story-maker' ) ); ?>';
+					if (errors) {
+						showMsg('<?php echo esc_js( __( 'Some settings could not be saved.', 'ai-story-maker' ) ); ?>', false);
+						btn.disabled = false;
+					} else {
+						showMsg('<?php echo esc_js( __( 'Settings saved!', 'ai-story-maker' ) ); ?>', true);
+						btn.disabled = true;
+					}
+				});
+		});
+	});
+}());
+</script>
 
 </div>
 

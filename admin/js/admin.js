@@ -180,78 +180,8 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // === Settings Save Button ===
-    if (window.aistmaSettings) {
-        const aistmaNonce   = window.aistmaSettings.nonce;
-        const aistmaAjaxUrl = window.aistmaSettings.ajaxUrl;
-
-        function aistmaShowMsg(msg, success) {
-            const el = document.getElementById('aistma-settings-message');
-            if (!el) return;
-            el.textContent = msg;
-            el.style.cssText = 'display:block;padding:8px 12px;margin:10px 0;border-radius:4px;'
-                + (success
-                    ? 'color:#28a745;background:#d4edda;border:1px solid #c3e6cb;'
-                    : 'color:#dc3545;background:#f8d7da;border:1px solid #f5c6cb;');
-            setTimeout(function() { el.style.display = 'none'; }, 4000);
-        }
-
-        function aistmaFieldValue(el) {
-            return el.type === 'checkbox' ? (el.checked ? '1' : '0') : el.value;
-        }
-
-        // Any interaction with a [data-setting] field enables the Save button
-        document.addEventListener('change', function(e) {
-            if (!e.target.hasAttribute('data-setting')) return;
-            const btn = document.getElementById('aistma-save-settings-btn');
-            if (btn) btn.disabled = false;
-        });
-        document.addEventListener('input', function(e) {
-            if (!e.target.hasAttribute('data-setting')) return;
-            const btn = document.getElementById('aistma-save-settings-btn');
-            if (btn) btn.disabled = false;
-        });
-
-        document.addEventListener('click', function(e) {
-            if (e.target.id !== 'aistma-save-settings-btn') return;
-            const btn = e.target;
-            const fields = document.querySelectorAll('[data-setting]');
-            if (!fields.length) return;
-
-            btn.disabled = true;
-            btn.textContent = 'Saving…';
-
-            let done = 0, errors = 0;
-            fields.forEach(function(field) {
-                const fd = new FormData();
-                fd.append('action',          'aistma_save_setting');
-                fd.append('aistma_security', aistmaNonce);
-                fd.append('setting_name',    field.getAttribute('data-setting'));
-                fd.append('setting_value',   aistmaFieldValue(field));
-                fetch(aistmaAjaxUrl, { method: 'POST', body: fd })
-                    .then(function(r) { return r.text(); })
-                    .then(function(text) {
-                        try {
-                            if (!JSON.parse(text).success) errors++;
-                        } catch(e) { errors++; }
-                    })
-                    .catch(function() { errors++; })
-                    .finally(function() {
-                        done++;
-                        if (done < fields.length) return;
-                        btn.textContent = 'Save Settings';
-                        if (errors) {
-                            aistmaShowMsg('Some settings could not be saved.', false);
-                            btn.disabled = false;
-                        } else {
-                            aistmaShowMsg('Settings saved!', true);
-                            btn.disabled = true;
-                        }
-                    });
-            });
-        });
-    }
     });
+// Settings save JS is inlined in settings-template.php and subscriptions-template.php
 
     // check if the button exists before adding the event listener
     if (document.getElementById("aistma-generate-stories-button"))
