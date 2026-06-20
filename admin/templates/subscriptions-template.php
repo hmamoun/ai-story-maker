@@ -437,6 +437,13 @@ document.addEventListener('DOMContentLoaded', function() {
 	<p class="description">
 		<?php esc_html_e( 'Advanced: only required when ExeDotCom provides a managed-service auth key for protected gateway calls.', 'ai-story-maker' ); ?>
 	</p>
+
+	<div style="margin-top: 20px;">
+		<button id="aistma-save-settings-btn" class="button button-primary" disabled>
+			<?php esc_html_e( 'Save Settings', 'ai-story-maker' ); ?>
+		</button>
+		<div id="aistma-settings-message" style="display:none; margin-top: 10px;"></div>
+	</div>
 </div>
 </div>
 
