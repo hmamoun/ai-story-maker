@@ -208,6 +208,7 @@ document.addEventListener("DOMContentLoaded", function() {
     document.querySelectorAll('[data-setting]').forEach(function(el) {
         aistmaOriginals[el.getAttribute('data-setting')] = aistmaGetValue(el);
     });
+    console.log('[aistma] init — saveBtn:', aistmaSaveBtn, 'fields snapshotted:', Object.keys(aistmaOriginals));
 
     function aistmaHasChanges() {
         let changed = false;
@@ -220,7 +221,9 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     function aistmaUpdateSaveBtn() {
-        if (aistmaSaveBtn) aistmaSaveBtn.disabled = !aistmaHasChanges();
+        const hasChanges = aistmaHasChanges();
+        console.log('[aistma] updateSaveBtn — btn:', aistmaSaveBtn, 'hasChanges:', hasChanges, 'originals:', aistmaOriginals);
+        if (aistmaSaveBtn) aistmaSaveBtn.disabled = !hasChanges;
     }
 
     document.querySelectorAll('[data-setting]').forEach(function(el) {
