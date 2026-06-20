@@ -242,16 +242,24 @@ document.addEventListener("DOMContentLoaded", function() {
             method: 'POST',
             body: data
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                aistma_show_message(data.data.message, true);
+        .then(response => response.text())
+        .then(text => {
+            let json;
+            try {
+                json = JSON.parse(text);
+            } catch (e) {
+                console.error('aistma settings: non-JSON response', text);
+                aistma_show_message('Server error. Please try again.', false);
+                return;
+            }
+            if (json.success) {
+                aistma_show_message(json.data.message, true);
             } else {
-                aistma_show_message(data.data.message || 'Error saving setting.', false);
+                aistma_show_message((json.data && json.data.message) || 'Error saving setting.', false);
             }
         })
         .catch((error) => {
-            console.error('Settings save error:', error);
+            console.error('aistma settings: fetch error', error);
             aistma_show_message('Network error. Please try again.', false);
         })
         .finally(() => {
@@ -273,10 +281,10 @@ document.addEventListener("DOMContentLoaded", function() {
                 control.addEventListener('change', function() {
                     aistma_save_setting(setting, control.value);
                 });
-            } else if (control.type === 'text') {
+            } else if (control.type === 'text' || control.type === 'url') {
                 control.addEventListener('input', aistma_debounce(function() {
                     aistma_save_setting(setting, control.value);
-            }, 800)); // Increased debounce time for better UX
+            }, 800));
             }
         });
     });
