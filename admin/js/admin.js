@@ -181,104 +181,71 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     // === Settings Save Button ===
-    const aistmaSettingsMessage = document.getElementById("aistma-settings-message");
-    const aistmaNonce = window.aistmaSettings ? window.aistmaSettings.nonce : '';
-    const aistmaAjaxUrl = window.aistmaSettings ? window.aistmaSettings.ajaxUrl : '';
-    const aistmaSaveBtn = document.getElementById("aistma-save-settings-btn");
+    if (window.aistmaSettings) {
+        const aistmaNonce   = window.aistmaSettings.nonce;
+        const aistmaAjaxUrl = window.aistmaSettings.ajaxUrl;
 
-    function aistma_show_message(msg, success) {
-        if (!aistmaSettingsMessage) return;
-        aistmaSettingsMessage.textContent = msg;
-        aistmaSettingsMessage.style.color = success ? '#28a745' : '#dc3545';
-        aistmaSettingsMessage.style.backgroundColor = success ? '#d4edda' : '#f8d7da';
-        aistmaSettingsMessage.style.border = success ? '1px solid #c3e6cb' : '1px solid #f5c6cb';
-        aistmaSettingsMessage.style.padding = '8px 12px';
-        aistmaSettingsMessage.style.margin = '10px 0';
-        aistmaSettingsMessage.style.borderRadius = '4px';
-        aistmaSettingsMessage.style.display = 'block';
-        setTimeout(() => { aistmaSettingsMessage.style.display = 'none'; }, 4000);
-    }
-
-    function aistmaGetValue(el) {
-        return el.type === 'checkbox' ? (el.checked ? '1' : '0') : el.value;
-    }
-
-    // Snapshot values on load to detect changes
-    const aistmaOriginals = {};
-    document.querySelectorAll('[data-setting]').forEach(function(el) {
-        aistmaOriginals[el.getAttribute('data-setting')] = aistmaGetValue(el);
-    });
-    console.log('[aistma] init — saveBtn:', aistmaSaveBtn, 'fields snapshotted:', Object.keys(aistmaOriginals));
-
-    function aistmaHasChanges() {
-        let changed = false;
-        document.querySelectorAll('[data-setting]').forEach(function(el) {
-            if (aistmaGetValue(el) !== aistmaOriginals[el.getAttribute('data-setting')]) {
-                changed = true;
-            }
-        });
-        return changed;
-    }
-
-    function aistmaUpdateSaveBtn() {
-        const hasChanges = aistmaHasChanges();
-        console.log('[aistma] updateSaveBtn — btn:', aistmaSaveBtn, 'hasChanges:', hasChanges, 'originals:', aistmaOriginals);
-        if (aistmaSaveBtn) aistmaSaveBtn.disabled = !hasChanges;
-    }
-
-    document.querySelectorAll('[data-setting]').forEach(function(el) {
-        el.addEventListener('change', aistmaUpdateSaveBtn);
-        if (el.type === 'text' || el.type === 'url') {
-            el.addEventListener('input', aistmaUpdateSaveBtn);
+        function aistmaShowMsg(msg, success) {
+            const el = document.getElementById('aistma-settings-message');
+            if (!el) return;
+            el.textContent = msg;
+            el.style.cssText = 'display:block;padding:8px 12px;margin:10px 0;border-radius:4px;'
+                + (success
+                    ? 'color:#28a745;background:#d4edda;border:1px solid #c3e6cb;'
+                    : 'color:#dc3545;background:#f8d7da;border:1px solid #f5c6cb;');
+            setTimeout(function() { el.style.display = 'none'; }, 4000);
         }
-    });
 
-    if (aistmaSaveBtn) {
-        aistmaSaveBtn.addEventListener('click', function() {
-            const toSave = [];
-            document.querySelectorAll('[data-setting]').forEach(function(el) {
-                const key = el.getAttribute('data-setting');
-                const val = aistmaGetValue(el);
-                if (val !== aistmaOriginals[key]) toSave.push({ key, val });
-            });
-            if (!toSave.length) return;
+        function aistmaFieldValue(el) {
+            return el.type === 'checkbox' ? (el.checked ? '1' : '0') : el.value;
+        }
 
-            aistmaSaveBtn.disabled = true;
-            aistmaSaveBtn.textContent = 'Saving…';
+        // Any interaction with a [data-setting] field enables the Save button
+        document.addEventListener('change', function(e) {
+            if (!e.target.hasAttribute('data-setting')) return;
+            const btn = document.getElementById('aistma-save-settings-btn');
+            if (btn) btn.disabled = false;
+        });
+        document.addEventListener('input', function(e) {
+            if (!e.target.hasAttribute('data-setting')) return;
+            const btn = document.getElementById('aistma-save-settings-btn');
+            if (btn) btn.disabled = false;
+        });
+
+        document.addEventListener('click', function(e) {
+            if (e.target.id !== 'aistma-save-settings-btn') return;
+            const btn = e.target;
+            const fields = document.querySelectorAll('[data-setting]');
+            if (!fields.length) return;
+
+            btn.disabled = true;
+            btn.textContent = 'Saving…';
 
             let done = 0, errors = 0;
-            toSave.forEach(function(item) {
+            fields.forEach(function(field) {
                 const fd = new FormData();
-                fd.append('action', 'aistma_save_setting');
+                fd.append('action',          'aistma_save_setting');
                 fd.append('aistma_security', aistmaNonce);
-                fd.append('setting_name', item.key);
-                fd.append('setting_value', item.val);
+                fd.append('setting_name',    field.getAttribute('data-setting'));
+                fd.append('setting_value',   aistmaFieldValue(field));
                 fetch(aistmaAjaxUrl, { method: 'POST', body: fd })
-                    .then(r => r.text())
-                    .then(text => {
+                    .then(function(r) { return r.text(); })
+                    .then(function(text) {
                         try {
-                            const json = JSON.parse(text);
-                            if (!json.success) errors++;
-                        } catch(e) {
-                            console.error('aistma settings: non-JSON response', text);
-                            errors++;
-                        }
+                            if (!JSON.parse(text).success) errors++;
+                        } catch(e) { errors++; }
                     })
-                    .catch(() => errors++)
-                    .finally(() => {
+                    .catch(function() { errors++; })
+                    .finally(function() {
                         done++;
-                        if (done === toSave.length) {
-                            aistmaSaveBtn.textContent = 'Save Settings';
-                            if (errors) {
-                                aistma_show_message('Some settings could not be saved.', false);
-                                aistmaSaveBtn.disabled = false;
-                            } else {
-                                aistma_show_message('Settings saved!', true);
-                                document.querySelectorAll('[data-setting]').forEach(function(el) {
-                                    aistmaOriginals[el.getAttribute('data-setting')] = aistmaGetValue(el);
-                                });
-                                aistmaSaveBtn.disabled = true;
-                            }
+                        if (done < fields.length) return;
+                        btn.textContent = 'Save Settings';
+                        if (errors) {
+                            aistmaShowMsg('Some settings could not be saved.', false);
+                            btn.disabled = false;
+                        } else {
+                            aistmaShowMsg('Settings saved!', true);
+                            btn.disabled = true;
                         }
                     });
             });
