@@ -155,10 +155,12 @@ class AISTMA_Settings_Page {
 				update_option( 'aistma_opt_auther', intval( $setting_value ) );
 				break;
 			case 'aistma_show_ai_attribution':
-				update_option( 'aistma_show_ai_attribution', $setting_value ? 1 : 0 );
+				$val = ( new AISTMA_Story_Generator() )->is_free_subscription() ? 1 : ( $setting_value ? 1 : 0 );
+				update_option( 'aistma_show_ai_attribution', $val );
 				break;
 			case 'aistma_show_exedotcom_attribution':
-				update_option( 'aistma_show_exedotcom_attribution', $setting_value ? 1 : 0 );
+				$val = ( new AISTMA_Story_Generator() )->is_free_subscription() ? 1 : ( $setting_value ? 1 : 0 );
+				update_option( 'aistma_show_exedotcom_attribution', $val );
 				break;
 			case 'aistma_author_name':
 				update_option( 'aistma_author_name', sanitize_text_field( $setting_value ) );
